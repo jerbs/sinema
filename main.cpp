@@ -1,4 +1,4 @@
-#include "MediaPlayer.hh"
+#include "MediaPlayer.hpp"
 
 int main(int argc, char *argv[])
 {

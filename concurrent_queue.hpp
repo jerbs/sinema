@@ -1,5 +1,5 @@
-#ifndef CONCURRENT_QUEUE_HH
-#define CONCURRENT_QUEUE_HH
+#ifndef CONCURRENT_QUEUE_HPP
+#define CONCURRENT_QUEUE_HPP
 
 // thread-safe multiple producer, multiple consumer queue
 // http://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html

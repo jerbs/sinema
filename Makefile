@@ -41,6 +41,7 @@ clean:
 	-rm -f $(OBJECTS)
 	-rm -f $(DEPENDENCIES)
 	-rm -f *~
+	-rm -f .*~
 
 show:
 	@echo DEPENDENCIES: $(DEPENDENCIES)
