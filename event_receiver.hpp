@@ -37,11 +37,6 @@ protected:
 	: m_event_processor(evt_proc)
     {}
     ~event_receiver() {}
-
-    void terminate()
-    {
-	m_event_processor->terminate();
-    }
 };
 
 #endif

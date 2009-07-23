@@ -14,6 +14,7 @@ class event_processor
 
     typedef boost::function<void ()> receive_fct_t;
     typedef boost::function<void ()> timeout_fct_t;
+    typedef boost::function<void ()> main_loop_fct_t;
     typedef concurrent_queue<receive_fct_t> events_queue_t;
 
     events_queue_t m_events_queue;
@@ -23,16 +24,51 @@ public:
     event_processor() : m_quit(false) {}
     ~event_processor() {}
 
-    // Main loop to be executed within an own thread:
+    // Simple main loop to be executed within an own thread:
     void operator()()
     {
-	while(!m_quit)
+	while(!terminating())
 	{
-	    receive_fct_t func;
-	    m_events_queue.wait_and_pop(func);
-	    func();
+	    dequeue_and_process();
 	}
     }
+
+    // Return callable to create Boost thread with simple main loop:
+    main_loop_fct_t get_callable()
+    {
+	typedef void (event_processor::*op_fct_t)();
+	op_fct_t tmp = &event_processor::operator();
+	return boost::bind(tmp, this);
+    }
+
+    // Custom main loop provided by event_processor user:
+    template<class CustomLoop>
+    void operator()(CustomLoop loop)
+    {
+	(*loop)();
+    }
+
+
+
+    // Return callable to create Boost thread with custom main loop:
+    template<class CustomLoop>
+    main_loop_fct_t get_callable(CustomLoop& loop)
+    {
+	typedef void (event_processor::*op_fct_t)(CustomLoop& obj);
+	op_fct_t tmp = &event_processor::operator();
+	return boost::bind(tmp, this, loop);
+    }
+
+    // Callbacks needed to implement a custom main loop:
+    void dequeue_and_process()
+    {
+	receive_fct_t func;
+	m_events_queue.wait_and_pop(func);
+	func();
+    }
+
+    // Callbacks needed to implement a custom main loop:
+    bool terminating() {return m_quit;}
 
     void terminate() {m_quit = true;}
 
@@ -70,14 +106,12 @@ public:
 	queue_event(event, this);
     }
 
+private:
     void process(boost::shared_ptr<QuitEvent> event)
     {
 	DEBUG();
 	terminate();
     }
-
-private:
-
 
     void timeout(timeout_fct_t fct)
     {

@@ -13,11 +13,24 @@ class Demuxer : public event_receiver<Demuxer>
     // The friend declaration allows to define the process methods private:
     friend class event_processor;
 
+    boost::shared_ptr<event_processor> m_event_processor;
+
 public:
     Demuxer(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc)
+	: base_type(evt_proc),
+	  m_event_processor(evt_proc)
     {}
     ~Demuxer() {}
+
+    // Custom main loop for event_processor:
+    void operator()()
+    {
+	while(!m_event_processor->terminating())
+	{
+	    DEBUG();
+	    m_event_processor->dequeue_and_process();
+	}
+    }
 
 private:
     boost::shared_ptr<InitEvent> config;

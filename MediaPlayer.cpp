@@ -2,16 +2,11 @@
 
 #include <boost/make_shared.hpp>
 
-
 MediaPlayer::MediaPlayer()
 {
     // Create event_processor instances:
     eventProcessor1 = boost::make_shared<event_processor>();
     eventProcessor2 = boost::make_shared<event_processor>();
-
-    // Start each event_processor in an own thread:
-    thread1 = boost::thread( boost::bind(&event_processor::operator(), eventProcessor1 ) );
-    thread2 = boost::thread( boost::bind(&event_processor::operator(), eventProcessor2 ) );
 
     // Create event_receiver instances:
     fileReader = boost::make_shared<FileReader>(eventProcessor1);
@@ -20,6 +15,11 @@ MediaPlayer::MediaPlayer()
     audioDecoder = boost::make_shared<AudioDecoder>(eventProcessor1);
     videoOutput = boost::make_shared<VideoOutput>(eventProcessor2);
     audioOutput = boost::make_shared<AudioOutput>(eventProcessor2);
+
+    // Start each event_processor in an own thread.
+    // Demuxer has a custom main loop:
+    thread1 = boost::thread( eventProcessor1->get_callable(demuxer) );
+    thread2 = boost::thread( eventProcessor2->get_callable() );
 }
 
 MediaPlayer::~MediaPlayer()
