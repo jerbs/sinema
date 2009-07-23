@@ -1,6 +1,7 @@
 #ifndef MEDIA_PLAYER_HPP
 #define MEDIA_PLAYER_HPP
 
+#include "FileReader.hpp"
 #include "Demuxer.hpp"
 #include "VideoDecoder.hpp"
 #include "AudioDecoder.hpp"
@@ -20,6 +21,7 @@ public:
 
 private:
     // EventReceiver
+    boost::shared_ptr<FileReader> fileReader;
     boost::shared_ptr<Demuxer> demuxer;
     boost::shared_ptr<VideoDecoder> videoDecoder;
     boost::shared_ptr<AudioDecoder> audioDecoder;
@@ -38,6 +40,8 @@ private:
     // EventProcessor:
     boost::shared_ptr<event_processor> eventProcessor1;
     boost::shared_ptr<event_processor> eventProcessor2;
+
+    void sendInitEvents();
     
 };
 

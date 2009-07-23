@@ -15,7 +15,15 @@ public:
     ~AudioOutput() {}
 
 private:
-    void process(boost::shared_ptr<Start> event)
+    boost::shared_ptr<InitEvent> config;
+
+    void process(boost::shared_ptr<InitEvent> event)
+    {
+	DEBUG();
+	config = event;
+    }
+
+    void process(boost::shared_ptr<StartEvent> event)
     {
 	DEBUG();
     }

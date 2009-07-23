@@ -1,26 +1,44 @@
 #ifndef GENERAL_EVENTS_HPP
 #define GENERAL_EVENTS_HPP
 
+#include <boost/shared_ptr.hpp>
 #include <iostream>
 
 #define DEBUG(x) std::cout << __PRETTY_FUNCTION__  x << std::endl
 
-struct Quit
+class FileReader;
+class Demuxer;
+class VideoDecoder;
+class AudioDecoder;
+class VideoOutput;
+class AudioOutput;
+
+struct InitEvent
 {
-    Quit(){DEBUG();}
-    ~Quit(){DEBUG();}
+    boost::shared_ptr<FileReader> fileReader;
+    boost::shared_ptr<Demuxer> demuxer;
+    boost::shared_ptr<VideoDecoder> videoDecoder;
+    boost::shared_ptr<AudioDecoder> audioDecoder;
+    boost::shared_ptr<VideoOutput> videoOutput;
+    boost::shared_ptr<AudioOutput> audioOutput;
 };
 
-struct Start
+struct QuitEvent
 {
-    Start(){DEBUG();}
-    ~Start(){DEBUG();}
+    QuitEvent(){DEBUG();}
+    ~QuitEvent(){DEBUG();}
 };
 
-struct Stop
+struct StartEvent
 {
-    Stop(){DEBUG();}
-    ~Stop(){DEBUG();}
+    StartEvent(){DEBUG();}
+    ~StartEvent(){DEBUG();}
+};
+
+struct StopEvent
+{
+    StopEvent(){DEBUG();}
+    ~StopEvent(){DEBUG();}
 };
 
 #endif

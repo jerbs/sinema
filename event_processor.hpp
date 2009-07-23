@@ -70,7 +70,7 @@ public:
 	queue_event(event, this);
     }
 
-    void process(boost::shared_ptr<Quit> event)
+    void process(boost::shared_ptr<QuitEvent> event)
     {
 	DEBUG();
 	terminate();

@@ -2,9 +2,11 @@
 #define DEMUXER_HPP
 
 #include "GeneralEvents.hpp"
+#include "SystemStreamEvents.hpp"
 #include "event_receiver.hpp"
 
 #include <boost/shared_ptr.hpp>
+#include <boost/make_shared.hpp>
 
 class Demuxer : public event_receiver<Demuxer>
 {
@@ -18,15 +20,18 @@ public:
     ~Demuxer() {}
 
 private:
-    void process(boost::shared_ptr<Start> event)
+    boost::shared_ptr<InitEvent> config;
+    boost::shared_ptr<FileReader> fileReader;
+
+    void process(boost::shared_ptr<InitEvent> event)
     {
 	DEBUG();
+	fileReader = event->fileReader;
     }
 
-    void process(boost::shared_ptr<Stop> event)
-    {
-	DEBUG();
-    }
+    void process(boost::shared_ptr<StartEvent> event);
+    void process(boost::shared_ptr<StopEvent> event);
+    void process(boost::shared_ptr<SystemStreamChunkEvent> event);
 };
 
 #endif
