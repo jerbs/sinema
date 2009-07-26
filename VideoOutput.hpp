@@ -40,10 +40,15 @@ private:
 	queue_event(showNextFrameEvent);
     }
 
+    void process(boost::shared_ptr<OpenVideoOutputReq> event)
+    {
+	// DEBUG();
+    }
+
     void process(boost::shared_ptr<ShowNextFrame> event)
     {
 	// DEBUG();
-	start_timer(event, frameTimer);
+	// start_timer(event, frameTimer);
     }
 };
 

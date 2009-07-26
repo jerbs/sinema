@@ -29,17 +29,18 @@ private:
     boost::shared_ptr<AudioOutput> audioOutput;
 
     // Boost threads:
-    boost::thread thread1;
-    boost::thread thread2;
-    // boost::thread demuxerThread;
+    boost::thread demuxerThread;
+    boost::thread decoderThread;
+    boost::thread outputThread;
     // boost::thread videoDecoderThread;
     // boost::thread audioDecoderThread;
     // boost::thread videoOutputThread;
     // boost::thread audioOutputThread;
 
     // EventProcessor:
-    boost::shared_ptr<event_processor> eventProcessor1;
-    boost::shared_ptr<event_processor> eventProcessor2;
+    boost::shared_ptr<event_processor> demuxerEventProcessor;
+    boost::shared_ptr<event_processor> decoderEventProcessor;
+    boost::shared_ptr<event_processor> outputEventProcessor;
 
     void sendInitEvents();
     

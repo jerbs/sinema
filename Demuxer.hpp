@@ -6,7 +6,6 @@
 #include "event_receiver.hpp"
 
 #include <boost/shared_ptr.hpp>
-#include <boost/make_shared.hpp>
 
 class Demuxer : public event_receiver<Demuxer>
 {
@@ -15,36 +14,50 @@ class Demuxer : public event_receiver<Demuxer>
 
     boost::shared_ptr<event_processor> m_event_processor;
 
+    AVFormatContext* avFormatContext;
+    int audioStreamIndex;
+    int videoStreamIndex;
+
+    enum StreamStatus {
+	Closed,
+	Opened,
+	Failed
+    };
+    StreamStatus audioStreamStatus;
+    StreamStatus videoStreamStatus;
+
+    static Demuxer* obj;
+
+    int queuedPackets;
+    int maxQueuedPackets;
+
 public:
-    Demuxer(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc),
-	  m_event_processor(evt_proc)
-    {}
-    ~Demuxer() {}
+    Demuxer(event_processor_ptr_type evt_proc);
+    ~Demuxer();
 
     // Custom main loop for event_processor:
-    void operator()()
-    {
-	while(!m_event_processor->terminating())
-	{
-	    DEBUG();
-	    m_event_processor->dequeue_and_process();
-	}
-    }
+    void operator()();
 
 private:
-    boost::shared_ptr<InitEvent> config;
     boost::shared_ptr<FileReader> fileReader;
+    boost::shared_ptr<AudioDecoder> audioDecoder;
+    boost::shared_ptr<VideoDecoder> videoDecoder;
 
-    void process(boost::shared_ptr<InitEvent> event)
-    {
-	DEBUG();
-	fileReader = event->fileReader;
-    }
+    static int interrupt_cb();
 
+    void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<StartEvent> event);
     void process(boost::shared_ptr<StopEvent> event);
+
     void process(boost::shared_ptr<SystemStreamChunkEvent> event);
+
+    void process(boost::shared_ptr<OpenFileEvent> event);
+    void process(boost::shared_ptr<OpenAudioStreamResp> event);
+    void process(boost::shared_ptr<OpenAudioStreamFail> event);
+    void process(boost::shared_ptr<OpenVideoStreamResp> event);
+    void process(boost::shared_ptr<OpenVideoStreamFail> event);
+
+    void process(boost::shared_ptr<ConfirmPacketEvent> event);
 };
 
 #endif

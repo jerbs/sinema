@@ -27,6 +27,11 @@ private:
     {
 	DEBUG();
     }
+
+    void process(boost::shared_ptr<OpenAudioOutputReq> event)
+    {
+	DEBUG();
+    }
 };
 
 #endif

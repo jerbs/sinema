@@ -9,16 +9,6 @@
 #include <string>
 #include <boost/shared_ptr.hpp>
 
-struct OpenFileEvent
-{
-    OpenFileEvent(std::string fn) : fileName(fn) {}
-    std::string fileName;
-};
-
-struct CloseFileEvent
-{
-};
-
 class FileReader : public event_receiver<FileReader>
 {
     friend class event_processor;

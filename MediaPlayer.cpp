@@ -5,44 +5,42 @@
 MediaPlayer::MediaPlayer()
 {
     // Create event_processor instances:
-    eventProcessor1 = boost::make_shared<event_processor>();
-    eventProcessor2 = boost::make_shared<event_processor>();
+    demuxerEventProcessor = boost::make_shared<event_processor>();
+    decoderEventProcessor = boost::make_shared<event_processor>();
+    outputEventProcessor = boost::make_shared<event_processor>();
 
     // Create event_receiver instances:
-    fileReader = boost::make_shared<FileReader>(eventProcessor1);
-    demuxer = boost::make_shared<Demuxer>(eventProcessor1);
-    videoDecoder = boost::make_shared<VideoDecoder>(eventProcessor1);
-    audioDecoder = boost::make_shared<AudioDecoder>(eventProcessor1);
-    videoOutput = boost::make_shared<VideoOutput>(eventProcessor2);
-    audioOutput = boost::make_shared<AudioOutput>(eventProcessor2);
+    fileReader = boost::make_shared<FileReader>(demuxerEventProcessor);
+    demuxer = boost::make_shared<Demuxer>(demuxerEventProcessor);
+    videoDecoder = boost::make_shared<VideoDecoder>(decoderEventProcessor);
+    audioDecoder = boost::make_shared<AudioDecoder>(decoderEventProcessor);
+    videoOutput = boost::make_shared<VideoOutput>(outputEventProcessor);
+    audioOutput = boost::make_shared<AudioOutput>(outputEventProcessor);
 
     // Start each event_processor in an own thread.
     // Demuxer has a custom main loop:
-    thread1 = boost::thread( eventProcessor1->get_callable(demuxer) );
-    thread2 = boost::thread( eventProcessor2->get_callable() );
+    demuxerThread = boost::thread( demuxerEventProcessor->get_callable(demuxer) );
+    decoderThread = boost::thread( decoderEventProcessor->get_callable() );
+    outputThread  = boost::thread( outputEventProcessor->get_callable() );
 }
 
 MediaPlayer::~MediaPlayer()
 {
     boost::shared_ptr<QuitEvent> quitEvent(new QuitEvent());
-    eventProcessor1->queue_event(quitEvent);
-    eventProcessor2->queue_event(quitEvent);
+    demuxerEventProcessor->queue_event(quitEvent);
+    decoderEventProcessor->queue_event(quitEvent);
+    outputEventProcessor->queue_event(quitEvent);
 
-    thread1.join();
-    thread2.join();
-
-    // demuxerThread.join();
-    // videoDecoderThread.join();
-    // audioDecoderThread.join();
-    // videoOutputThread.join();
-    // audioOutputThread.join();
+    demuxerThread.join();
+    decoderThread.join();
+    outputThread.join();
 }
 
 void MediaPlayer::operator()()
 {
     sendInitEvents();
 
-    fileReader->queue_event(boost::make_shared<OpenFileEvent>("/vol/3sat.mpg"));
+    demuxer->queue_event(boost::make_shared<OpenFileEvent>("/vol/3sat.mpg"));
     // fileReader->queue_event(boost::make_shared<OpenFileEvent>("/dev/video0"));
 
     // Use a Smart Pointer:
