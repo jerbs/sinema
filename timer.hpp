@@ -156,4 +156,71 @@ private:
     }
 };
 
+inline double getSeconds(const timespec_t& t)
+{
+    double d = t.tv_sec + t.tv_nsec / (1000*1000*1000);
+    return d;
+}
+
+inline timespec_t getTimespec(double seconds)
+{
+    timespec_t t;
+    t.tv_sec = seconds;
+    t.tv_nsec = (seconds-double(t.tv_sec)) * 1000*1000*1000;
+    return t;
+}
+
+inline timespec_t operator+(const timespec_t& t1, const timespec_t& t2)
+{
+    timespec_t td;
+
+    td.tv_sec  = t1.tv_sec  + t2.tv_sec;
+    td.tv_nsec = t1.tv_nsec + t2.tv_nsec;
+    if (td.tv_nsec > 1000*1000*1000)
+    {
+	td.tv_sec  += 1;
+	td.tv_nsec -= 1000*1000*1000;
+    }
+
+    return td;
+}
+
+inline timespec_t operator-(const timespec_t& t1, const timespec_t& t2)
+{
+    timespec_t td;
+
+    td.tv_sec  = t1.tv_sec  - t2.tv_sec;
+    td.tv_nsec = t1.tv_nsec - t2.tv_nsec;
+    if (td.tv_nsec < 0)
+    {
+	td.tv_sec  -= 1;
+	td.tv_nsec += 1000*1000*1000;
+    }
+
+    return td;
+}
+
+inline bool operator>(const timespec_t& t1, const timespec_t& t2)
+{
+    if (t1.tv_sec>t2.tv_sec)
+    {
+	return true;
+    }
+    else if (t1.tv_sec==t2.tv_sec &&
+	     t1.tv_nsec>t2.tv_nsec)
+    {
+	return true;
+    }
+    else
+    {
+	return false;
+    }
+}
+
+inline std::ostream& operator<<(std::ostream& strm, timespec_t t)
+{
+    strm << "(" << t.tv_sec << "," << t.tv_nsec << ")";
+    return strm;
+}
+
 #endif

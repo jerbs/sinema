@@ -59,7 +59,10 @@ void MediaPlayer::operator()()
     videoOutput->queue_event(startEvent);
     audioOutput->queue_event(startEvent);
 
-    sleep(10);
+    while(1)
+    {
+	sleep(10);
+    }
 }
 
 void MediaPlayer::sendInitEvents()

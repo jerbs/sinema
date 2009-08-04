@@ -10,6 +10,7 @@ CFLAGS=-g -Wall
 
 # linker
 LDFLAGS=-lavutil -lavformat -lavcodec -lswscale -lz -lm -lboost_thread-mt
+LDFLAGS+= -L/usr/X11R6/lib -lX11 -lXext -lXv
 
 # CFLAGS should be the last
 ALL_CFLAGS=$(CFLAGS)

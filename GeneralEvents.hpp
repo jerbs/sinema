@@ -7,9 +7,12 @@
 extern "C"
 {
 #include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
 }
 
-#define DEBUG(x) std::cout << __PRETTY_FUNCTION__  x << std::endl
+#define DEBUG(x)
+// #define DEBUG(x) std::cout << __PRETTY_FUNCTION__  x << std::endl
 #define ERROR(x) std::cerr << "Error: " << __PRETTY_FUNCTION__  x << std::endl
 
 class FileReader;
@@ -137,6 +140,23 @@ struct OpenVideoOutputReq
 {
     int width;
     int height;
+};
+
+struct ResizeVideoOutputReq
+{
+    int width;
+    int height;
+};
+
+class XFVideoImage;
+
+struct DeleteXFVideoImage
+{
+    DeleteXFVideoImage(boost::shared_ptr<XFVideoImage> image)
+	: image(image)
+    {}
+
+    boost::shared_ptr<XFVideoImage> image;
 };
 
 #endif
