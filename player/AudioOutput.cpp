@@ -1,9 +1,9 @@
-#include "AudioOutput.hpp"
-#include "AudioDecoder.hpp"
-#include "VideoOutput.hpp"
-#include "AlsaFacade.hpp"
-#include "SyncTest.hpp"
-#include "timer.hpp"
+#include "player/AudioOutput.hpp"
+#include "player/AudioDecoder.hpp"
+#include "player/VideoOutput.hpp"
+#include "player/AlsaFacade.hpp"
+#include "player/SyncTest.hpp"
+#include "platform/timer.hpp"
 
 #include <boost/make_shared.hpp>
 

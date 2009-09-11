@@ -1,6 +1,6 @@
-#include "AudioDecoder.hpp"
-#include "AudioOutput.hpp"
-#include "Demuxer.hpp"
+#include "player/AudioDecoder.hpp"
+#include "player/AudioOutput.hpp"
+#include "player/Demuxer.hpp"
 
 #include <boost/make_shared.hpp>
 #include <iomanip>

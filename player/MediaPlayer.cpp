@@ -1,4 +1,4 @@
-#include "MediaPlayer.hpp"
+#include "player/MediaPlayer.hpp"
 
 #include <boost/make_shared.hpp>
 

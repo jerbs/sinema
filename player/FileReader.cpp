@@ -1,5 +1,5 @@
-#include "FileReader.hpp"
-#include "Demuxer.hpp"
+#include "player/FileReader.hpp"
+#include "player/Demuxer.hpp"
 
 #include <boost/make_shared.hpp>
 

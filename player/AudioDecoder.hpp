@@ -1,9 +1,9 @@
 #ifndef AUDIO_DECODER_HPP
 #define AUDIO_DECODER_HPP
 
-#include "GeneralEvents.hpp"
-#include "event_receiver.hpp"
-#include "AlsaFacade.hpp"
+#include "player/GeneralEvents.hpp"
+#include "platform/event_receiver.hpp"
+#include "player/AlsaFacade.hpp"
 
 class AudioDecoder : public event_receiver<AudioDecoder>
 {

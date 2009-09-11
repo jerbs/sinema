@@ -1,9 +1,9 @@
 #ifndef VIDEO_OUTPUT_HPP
 #define VIDEO_OUTPUT_HPP
 
-#include "GeneralEvents.hpp"
-#include "event_receiver.hpp"
-#include "XlibFacade.hpp"
+#include "player/GeneralEvents.hpp"
+#include "platform/event_receiver.hpp"
+#include "player/XlibFacade.hpp"
 
 #include <sys/ipc.h>  // to allocate shared memory
 #include <sys/shm.h>  // to allocate shared memory

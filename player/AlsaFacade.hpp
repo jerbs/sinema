@@ -1,7 +1,7 @@
 #ifndef ALSA_FACADE_HPP
 #define ALSA_FACADE_HPP
 
-#include "GeneralEvents.hpp"
+#include "player/GeneralEvents.hpp"
 
 extern "C"
 {

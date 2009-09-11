@@ -1,0 +1,12 @@
+#!/bin/sh
+
+set -x
+
+cp /usr/share/aclocal/libtool.m4 ./aclocal.m4
+mkdir config
+
+aclocal -I config
+libtoolize --force --copy
+autoheader
+automake --foreign --add-missing --copy
+autoconf

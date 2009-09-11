@@ -1,6 +1,6 @@
-#include "XlibFacade.hpp"
-#include "XlibHelpers.hpp"
-#include "Logging.hpp"
+#include "player/XlibFacade.hpp"
+#include "player/XlibHelpers.hpp"
+#include "platform/Logging.hpp"
 
 #include <sys/ipc.h>  // to allocate shared memory
 #include <sys/shm.h>  // to allocate shared memory

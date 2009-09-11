@@ -1,7 +1,7 @@
 #ifndef SYNCTEST
-#include "MediaPlayer.hpp"
+#include "player/MediaPlayer.hpp"
 #else
-#include "SyncTest.hpp"
+#include "player/SyncTest.hpp"
 #endif
 
 #include <iostream>

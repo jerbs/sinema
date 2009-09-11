@@ -1,7 +1,7 @@
 #ifndef GENERAL_EVENTS_HPP
 #define GENERAL_EVENTS_HPP
 
-#include "Logging.hpp"
+#include "platform/Logging.hpp"
 
 #include <boost/shared_ptr.hpp>
 #include <time.h>

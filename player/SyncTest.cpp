@@ -1,8 +1,8 @@
 #ifdef SYNCTEST
 
-#include "SyncTest.hpp"
-#include "AudioOutput.hpp"
-#include "VideoOutput.hpp"
+#include "player/SyncTest.hpp"
+#include "player/AudioOutput.hpp"
+#include "player/VideoOutput.hpp"
 
 #include <string.h>
 #include <math.h>

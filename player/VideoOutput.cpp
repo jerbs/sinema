@@ -1,5 +1,5 @@
-#include "VideoOutput.hpp"
-#include "VideoDecoder.hpp"
+#include "player/VideoOutput.hpp"
+#include "player/VideoDecoder.hpp"
 
 #ifdef SYNCTEST
 #include "SyncTest.hpp"

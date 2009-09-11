@@ -2,10 +2,10 @@
 #define SYNC_TEST_HPP
 
 #ifdef SYNCTEST
-#include "GeneralEvents.hpp"
-#include "event_receiver.hpp"
-#include "XlibFacade.hpp"
-#include "AlsaFacade.hpp"
+#include "player/GeneralEvents.hpp"
+#include "platform/event_receiver.hpp"
+#include "player/XlibFacade.hpp"
+#include "player/AlsaFacade.hpp"
 
 #include <boost/shared_ptr.hpp>
 

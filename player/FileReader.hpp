@@ -1,9 +1,9 @@
 #ifndef FILE_READER_HPP
 #define FILE_READER_HPP
 
-#include "GeneralEvents.hpp"
-#include "SystemStreamEvents.hpp"
-#include "event_receiver.hpp"
+#include "player/GeneralEvents.hpp"
+#include "player/SystemStreamEvents.hpp"
+#include "platform/event_receiver.hpp"
 
 #include <aio.h>
 #include <string>

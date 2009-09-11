@@ -1,12 +1,12 @@
 #ifndef MEDIA_PLAYER_HPP
 #define MEDIA_PLAYER_HPP
 
-#include "FileReader.hpp"
-#include "Demuxer.hpp"
-#include "VideoDecoder.hpp"
-#include "AudioDecoder.hpp"
-#include "VideoOutput.hpp"
-#include "AudioOutput.hpp"
+#include "player/FileReader.hpp"
+#include "player/Demuxer.hpp"
+#include "player/VideoDecoder.hpp"
+#include "player/AudioDecoder.hpp"
+#include "player/VideoOutput.hpp"
+#include "player/AudioOutput.hpp"
 
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>

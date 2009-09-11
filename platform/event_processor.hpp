@@ -1,8 +1,8 @@
 #ifndef EVENT_PROCESSOR_HPP
 #define EVENT_PROCESSOR_HPP
 
-#include "concurrent_queue.hpp"
-#include "timer.hpp"
+#include "platform/concurrent_queue.hpp"
+#include "platform/timer.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>

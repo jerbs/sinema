@@ -1,6 +1,6 @@
-#include "VideoDecoder.hpp"
-#include "VideoOutput.hpp"
-#include "Demuxer.hpp"
+#include "player/VideoDecoder.hpp"
+#include "player/VideoOutput.hpp"
+#include "player/Demuxer.hpp"
 
 #include <boost/make_shared.hpp>
 #include <iomanip>

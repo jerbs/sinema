@@ -1,7 +1,7 @@
 #ifndef EVENT_RECEIVER_HPP
 #define EVENT_RECEIVER_HPP
 
-#include "event_processor.hpp"
+#include "platform/event_processor.hpp"
 
 template <class MostDerived>
 class event_receiver

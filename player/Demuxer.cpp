@@ -1,7 +1,7 @@
-#include "Demuxer.hpp"
-#include "FileReader.hpp"
-#include "AudioDecoder.hpp"
-#include "VideoDecoder.hpp"
+#include "player/Demuxer.hpp"
+#include "player/FileReader.hpp"
+#include "player/AudioDecoder.hpp"
+#include "player/VideoDecoder.hpp"
 
 #include <boost/make_shared.hpp>
 #include <stdlib.h>
