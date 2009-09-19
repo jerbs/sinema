@@ -89,10 +89,13 @@ void AudioOutput::playNextChunk()
 
 	if (frame->atBegin())
 	{
+	    DEBUG( << "Frame: byteSize=" << frame->getFrameByteSize() 
+		   << ", allocated=" << frame->numAllocatedBytes() );
 	    sendAudioSyncInfo(frame->getPTS());
 	}
 
 	bool finished = alsa->play(frame);
+
 	if (finished)
 	{
 	    frameQueue.pop();
@@ -115,18 +118,20 @@ void AudioOutput::playNextChunk()
 
 void AudioOutput::startChunkTimer()
 {
-    snd_pcm_sframes_t overallLatencyInFrames;
-    if (alsa->getOverallLatency(overallLatencyInFrames))
-    {
-	double latencyInSeconds = double(overallLatencyInFrames) / double(sampleRate);
-	DEBUG(<< "latencyInSeconds=" << latencyInSeconds);
+    snd_pcm_sframes_t filled = alsa->getBufferFillLevel();
+    double filledInSeconds = double(filled) / double(sampleRate);
+    timespec_t dt = getTimespec(filledInSeconds * 0.1);
+    timespec_t t_min = getTimespec(0.01);
 
-	// Single shot relative timer:
-	timespec_t dt = getTimespec(latencyInSeconds*0.5);
-	chunkTimer.relative(dt);
-	DEBUG(<< "time=" << getSeconds(chunkTimer.get_current_time()) << ", sec=" << getSeconds(dt));
-	start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
+    if (dt < t_min)
+    {
+	// Start timer with at least 10ms too avoid busy loop.
+	dt = t_min;
     }
+
+    chunkTimer.relative(dt);
+    DEBUG(<< "time=" << getSeconds(chunkTimer.get_current_time()) << ", sec=" << getSeconds(dt));
+    start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
 }
 
 void AudioOutput::sendAudioSyncInfo(double nextPTS)
@@ -146,5 +151,9 @@ void AudioOutput::sendAudioSyncInfo(double nextPTS)
 
 	boost::shared_ptr<AudioSyncInfo> audioSyncInfo(new AudioSyncInfo(currentPTS, currentTime));
 	videoOutput->queue_event(audioSyncInfo);
+    }
+    else
+    {
+	// It is not necessary to send every audioSyncInfo event.
     }
 }

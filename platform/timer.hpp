@@ -202,12 +202,12 @@ inline timespec_t operator-(const timespec_t& t1, const timespec_t& t2)
 
 inline bool operator>(const timespec_t& t1, const timespec_t& t2)
 {
-    if (t1.tv_sec>t2.tv_sec)
+    if (t1.tv_sec > t2.tv_sec)
     {
 	return true;
     }
-    else if (t1.tv_sec==t2.tv_sec &&
-	     t1.tv_nsec>t2.tv_nsec)
+    else if (t1.tv_sec == t2.tv_sec &&
+	     t1.tv_nsec > t2.tv_nsec)
     {
 	return true;
     }
@@ -215,6 +215,11 @@ inline bool operator>(const timespec_t& t1, const timespec_t& t2)
     {
 	return false;
     }
+}
+
+inline bool operator<(const timespec_t& t1, const timespec_t& t2)
+{
+    return t2 > t1;
 }
 
 inline std::ostream& operator<<(std::ostream& strm, timespec_t t)

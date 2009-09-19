@@ -132,6 +132,7 @@ void VideoDecoder::decode()
 	boost::shared_ptr<VideoPacketEvent> videoPacketEvent(packetQueue.front());
 	packetQueue.pop();
 
+	DEBUG(<< "Queueing ConfirmPacketEvent");
 	demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
 
 	AVPacket& avPacket = videoPacketEvent->avPacket;
@@ -250,5 +251,6 @@ void VideoDecoder::queue()
     xfVideoImage->setPTS(pts);
     videoOutput->queue_event(xfVideoImage);
     avFrameIsFree = true;
+    DEBUG(<< "Queueing XFVideoImage");
 }
 

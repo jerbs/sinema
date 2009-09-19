@@ -96,6 +96,9 @@ extern std::ostream& operator<<(std::ostream& strm, AVRational r);
 
 void AudioDecoder::decode()
 {
+    DEBUG(<< "packetQueue: "  << (packetQueue.empty() ? "empty" : "has data")
+	  << ", frameQueue: " << (frameQueue.empty()  ? "empty" : "has data"));
+
     while ( !packetQueue.empty() &&
 	    !frameQueue.empty() )
     {
@@ -154,6 +157,7 @@ void AudioDecoder::decode()
 		{
 		    // Decoded the complete AVPacket
 		    packetQueue.pop();
+		    DEBUG(<< "Queueing ConfirmPacketEvent");
 		    demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
 		    posCurrentPacket = 0;
 		    numFramesCurrentPacket = 0;
@@ -164,6 +168,7 @@ void AudioDecoder::decode()
 		    // Decoded samples are available
 		    frameQueue.pop();
 		    audioFrame->setPTS(framePTS);
+		    DEBUG(<< "Queueing AFAudioFrame");
 		    audioOutput->queue_event(audioFrame);
 		}
 	    }
@@ -171,6 +176,7 @@ void AudioDecoder::decode()
 	    {
 		// Skip packet
 		packetQueue.pop();
+		DEBUG(<< "Queueing ConfirmPacketEvent");
 		demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
 		
 		DEBUG(<< "W avcodec_decode_audio2 failed: " << ret);
@@ -180,6 +186,7 @@ void AudioDecoder::decode()
         {
 	    // Skip packet
 	    packetQueue.pop();
+	    DEBUG(<< "Queueing ConfirmPacketEvent");
 	    demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
 
             DEBUG(<< "W empty packet");

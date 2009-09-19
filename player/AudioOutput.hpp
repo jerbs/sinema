@@ -36,9 +36,6 @@ private:
     unsigned int channels;
     unsigned int frameSize;
 
-    double displayedPTS;
-    timespec_t displayedTime;
-
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<StartEvent> event);
     void process(boost::shared_ptr<OpenAudioOutputReq> event);

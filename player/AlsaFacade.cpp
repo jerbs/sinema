@@ -140,20 +140,23 @@ void AFPCMDigitalAudioInterface::setPcmHwParams()
 	exit(-1);
     }
 
+    // Try to get a greater buffer:
+    dir = 1;
     err = snd_pcm_hw_params_set_buffer_time_near(handle, hwparams, &buffer_time, &dir);
     if (err < 0)
     {
 	ERROR(<< "snd_pcm_hw_params_set_buffer_time_near failed: " << snd_strerror(err));
 	exit(-1);
     }
+    DEBUG( << "buffer_time = " << buffer_time );
 
-    err = snd_pcm_hw_params_get_buffer_size(hwparams, &size);
+    err = snd_pcm_hw_params_get_buffer_size(hwparams, &buffer_size);
     if (err < 0)
     {
 	ERROR(<< "snd_pcm_hw_params_get_buffer_size failed: " << snd_strerror(err));
 	exit(-1);
     }
-    buffer_size = size;
+    DEBUG( << "buffer_size = " << buffer_size );
 
     err = snd_pcm_hw_params_set_period_time_near(handle, hwparams, &period_time, &dir);
     if (err < 0)
@@ -246,6 +249,7 @@ void AFPCMDigitalAudioInterface::dump()
 
 int AFPCMDigitalAudioInterface::xrun_recovery(int err)
 {
+    std::cout << "xrun_recovery" << std::endl;
     DEBUG(<< "err=" << snd_strerror(err));
 
     if (err == -EPIPE)
@@ -450,27 +454,33 @@ bool AFPCMDigitalAudioInterface::getOverallLatency(snd_pcm_sframes_t& latency)
     DEBUG();
 
     snd_pcm_state_t state = snd_pcm_state(handle);
+
     if (state == SND_PCM_STATE_RUNNING)
     {
-	DEBUG(<< "RUNNING");
 	int err = snd_pcm_delay(handle, &latency);
-    
-	if (err<0)
+
+	if (err==0)
 	{
-	    ERROR(<< "snd_pcm_delay failed: " << snd_strerror(err));	    
-
-	    snd_pcm_state_t state = snd_pcm_state(handle);
-	    if (state == SND_PCM_STATE_RUNNING)
-	    {
-		exit(-1);
-	    }
-
-	    return false;
+	    DEBUG(<< "latency=" << latency);
+	    return true;
 	}
 
-	DEBUG(<< "latency=" << latency);
-	return true;
+	ERROR(<< "snd_pcm_delay failed: " << snd_strerror(err));
+	return false;
     }
 
+    ERROR(<< "Playback not running: " << snd_pcm_state_name(state));
     return false;
+}
+
+snd_pcm_sframes_t AFPCMDigitalAudioInterface::getBufferFillLevel()
+{
+    // Get number of free frames in the buffer:
+    snd_pcm_sframes_t available = snd_pcm_avail(handle);
+    snd_pcm_sframes_t filled = buffer_size-available;
+
+    DEBUG( << "fillLevel=" << filled << "/" << buffer_size
+	   << "=" << double(filled)/double(buffer_size) );
+
+    return filled;
 }

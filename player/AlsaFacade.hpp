@@ -82,6 +82,7 @@ public:
 
     bool play(boost::shared_ptr<AFAudioFrame> frame);
     bool getOverallLatency(snd_pcm_sframes_t& delay);
+    snd_pcm_sframes_t getBufferFillLevel();
 
 private:
     AFPCMDigitalAudioInterface();
@@ -103,7 +104,7 @@ private:
     snd_pcm_format_t format;
     unsigned int bytesPerSample;
 
-    snd_pcm_sframes_t buffer_size;
+    snd_pcm_uframes_t buffer_size;
     snd_pcm_uframes_t period_size;
     unsigned int buffer_time;        // ring buffer length in us
     unsigned int period_time;        // period time in us
