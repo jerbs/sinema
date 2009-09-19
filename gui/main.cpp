@@ -4,6 +4,9 @@
 // Copyright (C) Joachim Erbs, 2009
 //
 
+#include <gtkmm/main.h>
+#include <gtkmm/window.h>
+
 #ifndef SYNCTEST
 #include "player/MediaPlayer.hpp"
 #else
@@ -14,6 +17,9 @@
 
 int main(int argc, char *argv[])
 {
+    Gtk::Main kit(argc, argv);
+    Gtk::Window window;
+
 #ifndef SYNCTEST
 
     if (argc != 2)
@@ -32,6 +38,7 @@ int main(int argc, char *argv[])
     
 #endif
 
-
+    Gtk::Main::run(window);
+    
     return 0;
 }

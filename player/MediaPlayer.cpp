@@ -76,11 +76,6 @@ void MediaPlayer::operator()(std::string file)
     audioDecoder->queue_event(startEvent);
     videoOutput->queue_event(startEvent);
     audioOutput->queue_event(startEvent);
-
-    while(1)
-    {
-	sleep(10);
-    }
 }
 
 void MediaPlayer::sendInitEvents()

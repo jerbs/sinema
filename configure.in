@@ -11,7 +11,7 @@ dnl --------------
 dnl
 dnl AC_INIT must be the first.
 
-AC_INIT([helloworld], [1.0])
+AC_INIT([player], [1.0])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE
@@ -58,6 +58,13 @@ dnl ------------
 dnl
 dnl Check for libraries. Libraries may be needed for further checks.
 
+PKG_CHECK_MODULES([PLAYER], [libavformat libavcodec libavutil libswscale])
+AC_SUBST(PLAYER_CFLAGS)
+AC_SUBST(PLAYER_LIBS)
+
+PKG_CHECK_MODULES([GUI], [gtkmm-2.4 >= 2.8.0])
+AC_SUBST(GUI_CFLAGS)
+AC_SUBST(GUI_LIBS)
 
 dnl
 dnl 5. Headers
