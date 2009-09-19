@@ -16,8 +16,10 @@ Demuxer::Demuxer(event_processor_ptr_type evt_proc)
       videoStreamIndex(-1),
       audioStreamStatus(Closed),
       videoStreamStatus(Closed),
-      queuedPackets(0),
-      maxQueuedPackets(10)
+      queuedAudioPackets(0),
+      queuedVideoPackets(0),
+      targetQueuedAudioPackets(10),
+      targetQueuedVideoPackets(10)
 {
     av_register_all();
 
@@ -139,10 +141,16 @@ void Demuxer::process(boost::shared_ptr<SystemStreamChunkEvent> event)
     fileReader->queue_event(boost::make_shared<SystemStreamGetMoreDataEvent>());
 }
 
-void Demuxer::process(boost::shared_ptr<ConfirmPacketEvent> event)
+void Demuxer::process(boost::shared_ptr<ConfirmAudioPacketEvent> event)
 {
     DEBUG();
-    queuedPackets--;
+    queuedAudioPackets--;
+}
+
+void Demuxer::process(boost::shared_ptr<ConfirmVideoPacketEvent> event)
+{
+    DEBUG();
+    queuedVideoPackets--;
 }
 
 void Demuxer::operator()()
@@ -160,7 +168,8 @@ void Demuxer::operator()()
 
 	if ( audioStreamStatus == Opened &&
 	     videoStreamStatus == Opened &&
-	     queuedPackets < maxQueuedPackets)
+	     ( queuedAudioPackets < targetQueuedAudioPackets ||
+	       queuedVideoPackets < targetQueuedVideoPackets ) )
 	{
 	    int ret = av_read_frame(avFormatContext, avPacket);
 	    if (ret == 0)
@@ -169,13 +178,13 @@ void Demuxer::operator()()
 		if (avPacket->stream_index == videoStreamIndex)
 		{
 		    DEBUG(<< "sending VideoPacketEvent");
-		    queuedPackets++;
+		    queuedVideoPackets++;
 		    videoDecoder->queue_event(boost::make_shared<VideoPacketEvent>(avPacket));
 		}
 		else if (avPacket->stream_index == audioStreamIndex)
 		{
 		    DEBUG(<< "sending AudioPacketEvent");
-		    queuedPackets++;
+		    queuedAudioPackets++;
 		    audioDecoder->queue_event(boost::make_shared<AudioPacketEvent>(avPacket));
 		}
 		else

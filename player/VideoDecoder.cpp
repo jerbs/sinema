@@ -132,8 +132,8 @@ void VideoDecoder::decode()
 	boost::shared_ptr<VideoPacketEvent> videoPacketEvent(packetQueue.front());
 	packetQueue.pop();
 
-	DEBUG(<< "Queueing ConfirmPacketEvent");
-	demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
+	DEBUG(<< "Queueing ConfirmVideoPacketEvent");
+	demuxer->queue_event(boost::make_shared<ConfirmVideoPacketEvent>());
 
 	AVPacket& avPacket = videoPacketEvent->avPacket;
 	video_pkt_pts = avPacket.pts;

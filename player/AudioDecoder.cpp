@@ -157,8 +157,8 @@ void AudioDecoder::decode()
 		{
 		    // Decoded the complete AVPacket
 		    packetQueue.pop();
-		    DEBUG(<< "Queueing ConfirmPacketEvent");
-		    demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
+		    DEBUG(<< "Queueing ConfirmAudioPacketEvent");
+		    demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
 		    posCurrentPacket = 0;
 		    numFramesCurrentPacket = 0;
 		}
@@ -176,8 +176,8 @@ void AudioDecoder::decode()
 	    {
 		// Skip packet
 		packetQueue.pop();
-		DEBUG(<< "Queueing ConfirmPacketEvent");
-		demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
+		DEBUG(<< "Queueing ConfirmAudioPacketEvent");
+		demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
 		
 		DEBUG(<< "W avcodec_decode_audio2 failed: " << ret);
 	    }
@@ -186,8 +186,8 @@ void AudioDecoder::decode()
         {
 	    // Skip packet
 	    packetQueue.pop();
-	    DEBUG(<< "Queueing ConfirmPacketEvent");
-	    demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
+	    DEBUG(<< "Queueing ConfirmAudioPacketEvent");
+	    demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
 
             DEBUG(<< "W empty packet");
         }

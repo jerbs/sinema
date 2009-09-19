@@ -28,8 +28,10 @@ class Demuxer : public event_receiver<Demuxer>
 
     static Demuxer* obj;
 
-    int queuedPackets;
-    int maxQueuedPackets;
+    int queuedAudioPackets;
+    int queuedVideoPackets;
+    int targetQueuedAudioPackets;
+    int targetQueuedVideoPackets;
 
 public:
     Demuxer(event_processor_ptr_type evt_proc);
@@ -57,7 +59,8 @@ private:
     void process(boost::shared_ptr<OpenVideoStreamResp> event);
     void process(boost::shared_ptr<OpenVideoStreamFail> event);
 
-    void process(boost::shared_ptr<ConfirmPacketEvent> event);
+    void process(boost::shared_ptr<ConfirmAudioPacketEvent> event);
+    void process(boost::shared_ptr<ConfirmVideoPacketEvent> event);
 };
 
 #endif

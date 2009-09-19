@@ -134,7 +134,11 @@ struct VideoPacketEvent
     AVPacket avPacket;
 };
 
-struct ConfirmPacketEvent
+struct ConfirmAudioPacketEvent
+{
+};
+
+struct ConfirmVideoPacketEvent
 {
 };
 
