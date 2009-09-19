@@ -1,3 +1,9 @@
+//
+// X11 and Xv Extension Interface
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef XLIB_FACADE_HPP
 #define XLIB_FACADE_HPP
 

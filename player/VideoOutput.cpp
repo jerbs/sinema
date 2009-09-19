@@ -1,3 +1,9 @@
+//
+// Video Output
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/VideoOutput.hpp"
 #include "player/VideoDecoder.hpp"
 

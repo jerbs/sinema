@@ -1,3 +1,9 @@
+//
+// Audio Decoder
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef AUDIO_DECODER_HPP
 #define AUDIO_DECODER_HPP
 

@@ -1,3 +1,9 @@
+//
+// Media Player Events
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef GENERAL_EVENTS_HPP
 #define GENERAL_EVENTS_HPP
 

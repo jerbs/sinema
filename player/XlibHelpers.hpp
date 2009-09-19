@@ -1,3 +1,9 @@
+//
+// X11 Helpers and Debug Functions
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef XV_HELPERS_HPP
 #define XV_HELPERS_HPP
 

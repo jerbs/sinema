@@ -1,3 +1,9 @@
+//
+// Audio Decoder
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/AudioDecoder.hpp"
 #include "player/AudioOutput.hpp"
 #include "player/Demuxer.hpp"

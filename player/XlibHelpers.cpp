@@ -1,3 +1,9 @@
+//
+// X11 Helpers and Debug Functions
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "XlibHelpers.hpp"
 
 using namespace std;

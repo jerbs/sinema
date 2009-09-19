@@ -1,3 +1,9 @@
+//
+// Demultiplexer
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef DEMUXER_HPP
 #define DEMUXER_HPP
 

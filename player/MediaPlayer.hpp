@@ -1,3 +1,9 @@
+//
+// Media Player
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef MEDIA_PLAYER_HPP
 #define MEDIA_PLAYER_HPP
 

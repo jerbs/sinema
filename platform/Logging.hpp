@@ -1,3 +1,9 @@
+//
+// Thread-Safe Logging
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef LOGGING_HPP
 #define LOGGING_HPP
 

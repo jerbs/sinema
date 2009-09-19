@@ -1,3 +1,9 @@
+//
+// X11 and Xv Extension Interface
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/XlibFacade.hpp"
 #include "player/XlibHelpers.hpp"
 #include "platform/Logging.hpp"

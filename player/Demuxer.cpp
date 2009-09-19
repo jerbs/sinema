@@ -1,3 +1,9 @@
+//
+// Demultiplexer
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/Demuxer.hpp"
 #include "player/FileReader.hpp"
 #include "player/AudioDecoder.hpp"

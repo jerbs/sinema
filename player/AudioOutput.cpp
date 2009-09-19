@@ -1,3 +1,9 @@
+//
+// Audio Output
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/AudioOutput.hpp"
 #include "player/AudioDecoder.hpp"
 #include "player/VideoOutput.hpp"

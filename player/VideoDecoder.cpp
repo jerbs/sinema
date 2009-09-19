@@ -1,3 +1,9 @@
+//
+// Video Decoder
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/VideoDecoder.hpp"
 #include "player/VideoOutput.hpp"
 #include "player/Demuxer.hpp"

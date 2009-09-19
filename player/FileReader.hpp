@@ -1,3 +1,9 @@
+//
+// File Reader
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef FILE_READER_HPP
 #define FILE_READER_HPP
 

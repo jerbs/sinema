@@ -1,3 +1,9 @@
+//
+// Audio/Video Synchronization Test
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifdef SYNCTEST
 
 #include "player/SyncTest.hpp"

@@ -1,3 +1,9 @@
+//
+// Inter Thread Communication - Event Receiver
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef EVENT_RECEIVER_HPP
 #define EVENT_RECEIVER_HPP
 

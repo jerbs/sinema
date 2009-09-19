@@ -1,3 +1,9 @@
+//
+// Video Decoder
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef VIDEO_DECODER_HPP
 #define VIDEO_DECODER_HPP
 

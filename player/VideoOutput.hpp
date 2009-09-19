@@ -1,3 +1,9 @@
+//
+// Video Output
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef VIDEO_OUTPUT_HPP
 #define VIDEO_OUTPUT_HPP
 

@@ -1,3 +1,9 @@
+//
+// File Reader
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/FileReader.hpp"
 #include "player/Demuxer.hpp"
 

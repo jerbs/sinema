@@ -1,3 +1,9 @@
+//
+// Media Player
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef SYNCTEST
 #include "player/MediaPlayer.hpp"
 #else

@@ -1,3 +1,9 @@
+//
+// Timer Service
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef TIMER_HPP
 #define TIMER_HPP
 

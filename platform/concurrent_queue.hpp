@@ -1,8 +1,11 @@
+//
+// Thread-Safe multiple Producer, multiple Consumer Queue
+//
+// http://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html
+//
+
 #ifndef CONCURRENT_QUEUE_HPP
 #define CONCURRENT_QUEUE_HPP
-
-// thread-safe multiple producer, multiple consumer queue
-// http://www.justsoftwaresolutions.co.uk/threading/implementing-a-thread-safe-queue-using-condition-variables.html
 
 #include <boost/thread/thread.hpp>
 #include <boost/thread/condition_variable.hpp>

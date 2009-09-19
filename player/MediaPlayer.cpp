@@ -1,3 +1,9 @@
+//
+// Media Player
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/MediaPlayer.hpp"
 
 #include <boost/make_shared.hpp>

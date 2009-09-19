@@ -1,4 +1,8 @@
-// g++ Logging.cpp -o Logging -lboost_thread-mt
+//
+// Thread-Safe Logging
+//
+// Copyright (C) Joachim Erbs, 2009
+//
 
 #include "Logging.hpp"
 #include "event_receiver.hpp"

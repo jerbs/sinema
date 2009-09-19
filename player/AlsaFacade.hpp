@@ -1,3 +1,9 @@
+//
+// ALSA Interface
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef ALSA_FACADE_HPP
 #define ALSA_FACADE_HPP
 

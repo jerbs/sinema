@@ -1,3 +1,9 @@
+//
+// ALSA Interface
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #include "player/AlsaFacade.hpp"
 
 #include <iostream>

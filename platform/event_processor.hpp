@@ -1,3 +1,9 @@
+//
+// Inter Thread Communication - Event Processor
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef EVENT_PROCESSOR_HPP
 #define EVENT_PROCESSOR_HPP
 

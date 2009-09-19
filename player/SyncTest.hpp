@@ -1,3 +1,9 @@
+//
+// Audio/Video Synchronization Test
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef SYNC_TEST_HPP
 #define SYNC_TEST_HPP
 

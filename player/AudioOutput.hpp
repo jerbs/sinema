@@ -1,3 +1,9 @@
+//
+// Audio Output
+//
+// Copyright (C) Joachim Erbs, 2009
+//
+
 #ifndef AUDIO_OUTPUT_HPP
 #define AUDIO_OUTPUT_HPP
 
