@@ -38,15 +38,31 @@ private:
     boost::shared_ptr<AFPCMDigitalAudioInterface> alsa;
     std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
 
+    typedef enum {
+	IDLE,
+	INIT,
+	OPEN,
+	PAUSE,
+	STILL,
+	PLAYING
+    } state_t;
+
+    state_t state;
+
+    bool isOpen() {return (state >= OPEN) ? true : false;}
+
     unsigned int sampleRate;
     unsigned int channels;
     unsigned int frameSize;
 
     void process(boost::shared_ptr<InitEvent> event);
-    void process(boost::shared_ptr<StartEvent> event);
     void process(boost::shared_ptr<OpenAudioOutputReq> event);
     void process(boost::shared_ptr<AFAudioFrame> event);
     void process(boost::shared_ptr<PlayNextChunk> event);
+
+    void process(boost::shared_ptr<CommandPlay> event);
+    void process(boost::shared_ptr<CommandPause> event);
+    void process(boost::shared_ptr<CommandStop> event);
 
     void createAudioFrame();
     void playNextChunk();

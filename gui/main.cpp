@@ -5,7 +5,7 @@
 //
 
 #include <gtkmm/main.h>
-#include <gtkmm/window.h>
+#include "gui/ControlWindow.hpp"
 
 #ifndef SYNCTEST
 #include "player/MediaPlayer.hpp"
@@ -18,7 +18,6 @@
 int main(int argc, char *argv[])
 {
     Gtk::Main kit(argc, argv);
-    Gtk::Window window;
 
 #ifndef SYNCTEST
 
@@ -31,14 +30,15 @@ int main(int argc, char *argv[])
     MediaPlayer mediaPlayer;
     mediaPlayer(argv[1]);
 
+    ControlWindow controlWindow(mediaPlayer);
+    Gtk::Main::run(controlWindow);
+
 #else
 
     SyncTestApp syncTestApp;
     syncTestApp();
-    
+
 #endif
 
-    Gtk::Main::run(window);
-    
     return 0;
 }

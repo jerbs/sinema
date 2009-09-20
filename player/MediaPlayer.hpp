@@ -26,6 +26,10 @@ public:
 
     void operator()(std::string file);
 
+    void play();
+    void pause();
+    void stop();
+
 private:
     // EventReceiver
     boost::shared_ptr<FileReader> fileReader;

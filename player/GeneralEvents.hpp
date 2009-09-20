@@ -189,4 +189,12 @@ struct DeleteXFVideoImage
     boost::shared_ptr<XFVideoImage> image;
 };
 
+struct CommandPlay{};
+struct CommandPause{};
+struct CommandStop{};
+struct CommandPrevious{};
+struct CommandNext{};
+struct CommandRewind{};
+struct CommandForward{};
+
 #endif

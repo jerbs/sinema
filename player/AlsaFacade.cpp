@@ -30,6 +30,7 @@ AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAud
       period_size(4096),
       buffer_time(500000), // ring buffer length in us
       period_time(100000), // period time in us
+      nextPTS(0),
       first(true)
 {
     int ret;
@@ -371,9 +372,10 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
     snd_pcm_sframes_t commitres;
     int err;
 
-    // snd_pcm_uframes_t frames = period_size;
+    // Number of frames(samples) available:
     snd_pcm_uframes_t frames = frame->getFrameByteSize()/ (channels * 2);
     err = snd_pcm_mmap_begin(handle, &my_areas, &offset, &frames);
+    // Here frames is the number of free continous samples in the playback buffer.
     if (err < 0)
     {
 	if ((err = xrun_recovery(err)) < 0)
@@ -385,8 +387,13 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
     }
 
     DEBUG(<<" frames=" << frames);
+    if (frame->atBegin())
+    {
+	nextPTS = frame->getPTS();
+    }
     bool finished = copyFrame(my_areas, offset, frames, frame);
-	
+    nextPTS += double(frames)/double(sampleRate);
+
     commitres = snd_pcm_mmap_commit(handle, offset, frames);
     if (commitres < 0 || (snd_pcm_uframes_t)commitres != frames)
     {
@@ -489,4 +496,15 @@ snd_pcm_sframes_t AFPCMDigitalAudioInterface::getBufferFillLevel()
 	   << "=" << double(filled)/double(buffer_size) );
 
     return filled;
+}
+
+double AFPCMDigitalAudioInterface::getNextPTS()
+{
+    return nextPTS;
+}
+
+void AFPCMDigitalAudioInterface::pause(bool enable)
+{
+    // Pause is not supported by all hardware: snd_pcm_hw_params_can_pause()
+    snd_pcm_pause(handle, enable ? 1 : 0);
 }

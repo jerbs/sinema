@@ -66,16 +66,10 @@ void MediaPlayer::operator()(std::string file)
     // http://www.boost.org/doc/libs/1_39_0/libs/smart_ptr/intrusive_ptr.html
 
     // make_shared, allocate_shared (with user-supplied allocator)
-    // This should be encapsulated to allow switching between both solutions without changing user code.
+    // This should be encapsulated to allow switching between both solutions 
+    // without changing user code.
 
     // demuxer->queue_event(new Start()); // OK: This fails to compile.
-
-    boost::shared_ptr<StartEvent> startEvent(new StartEvent());
-    demuxer->queue_event(startEvent);
-    videoDecoder->queue_event(startEvent);
-    audioDecoder->queue_event(startEvent);
-    videoOutput->queue_event(startEvent);
-    audioOutput->queue_event(startEvent);
 }
 
 void MediaPlayer::sendInitEvents()
@@ -95,4 +89,25 @@ void MediaPlayer::sendInitEvents()
      audioDecoder->queue_event(initEvent);
      videoOutput->queue_event(initEvent);
      audioOutput->queue_event(initEvent);
+}
+
+void MediaPlayer::play()
+{
+    boost::shared_ptr<CommandPlay> commandPlay(new CommandPlay());
+    videoOutput->queue_event(commandPlay);
+    audioOutput->queue_event(commandPlay);
+}
+
+void MediaPlayer::pause()
+{
+    boost::shared_ptr<CommandPause> commandPause(new CommandPause());
+    videoOutput->queue_event(commandPause);
+    audioOutput->queue_event(commandPause);
+}
+
+void MediaPlayer::stop()
+{
+    boost::shared_ptr<CommandStop> commandStop(new CommandStop());
+    videoOutput->queue_event(commandStop);
+    audioOutput->queue_event(commandStop);
 }

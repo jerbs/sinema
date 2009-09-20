@@ -25,46 +25,93 @@ AudioOutput::~AudioOutput()
 void AudioOutput::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG();
-#ifdef SYNCTEST
-    syncTest = event->syncTest;
-#else
-    audioDecoder = event->audioDecoder;
-#endif
-    videoOutput = event->videoOutput;
-}
 
-void AudioOutput::process(boost::shared_ptr<StartEvent> event)
-{
-    DEBUG();
+    if (state == IDLE)
+    {
+#ifdef SYNCTEST
+	syncTest = event->syncTest;
+#else
+	audioDecoder = event->audioDecoder;
+#endif
+	videoOutput = event->videoOutput;
+
+	state = INIT;
+    }
 }
 
 void AudioOutput::process(boost::shared_ptr<OpenAudioOutputReq> event)
 {
-    sampleRate = event->sample_rate;
-    channels = event->channels;
-    frameSize = event->frame_size;
-
-    DEBUG(<< "sampleRate=" << sampleRate << ", channels=" << channels << ", frameSize=" << frameSize);
-
-    alsa = boost::make_shared<AFPCMDigitalAudioInterface>(event);
-
-    for (int i=0; i<10; i++)
+    if (state == INIT)
     {
-        createAudioFrame();
+	sampleRate = event->sample_rate;
+	channels = event->channels;
+	frameSize = event->frame_size;
+
+	DEBUG(<< "sampleRate=" << sampleRate << ", channels=" << channels << ", frameSize=" << frameSize);
+
+	alsa = boost::make_shared<AFPCMDigitalAudioInterface>(event);
+
+	for (int i=0; i<10; i++)
+	{
+	    createAudioFrame();
+	}
+
+	state = OPEN;
     }
 }
 
 void AudioOutput::process(boost::shared_ptr<AFAudioFrame> event)
 {
     DEBUG();
-    frameQueue.push(event);
-    playNextChunk();
+
+    if (isOpen())
+    {
+	frameQueue.push(event);
+
+	switch (state)
+	{
+	case OPEN:
+	case STILL:
+	case PLAYING:
+	    playNextChunk();
+	    break;
+
+	default:
+	    break;
+	}
+    }
 }
 
 void AudioOutput::process(boost::shared_ptr<PlayNextChunk> event)
 {
     DEBUG();
-    playNextChunk();
+
+    if (state == PLAYING)
+    {
+	playNextChunk();
+    }
+}
+
+void AudioOutput::process(boost::shared_ptr<CommandPlay> event)
+{
+    if (isOpen())
+    {
+	alsa->pause(false);
+	playNextChunk();
+    }
+}
+
+void AudioOutput::process(boost::shared_ptr<CommandPause> event)
+{
+    if (isOpen())
+    {
+	state = PAUSE;
+	alsa->pause(true);
+    }
+}
+
+void AudioOutput::process(boost::shared_ptr<CommandStop> event)
+{
 }
 
 void AudioOutput::createAudioFrame()
@@ -87,20 +134,27 @@ void AudioOutput::playNextChunk()
 	{
 	    DEBUG(<< "frameQueue empty");
 	    // No frame available to play.
-	    break;
-	    // return;
+	    state = STILL;
+	    return;
 	}
 
 	boost::shared_ptr<AFAudioFrame> frame(frameQueue.front());
 
-	if (frame->atBegin())
-	{
-	    DEBUG( << "Frame: byteSize=" << frame->getFrameByteSize() 
-		   << ", allocated=" << frame->numAllocatedBytes() );
-	    sendAudioSyncInfo(frame->getPTS());
-	}
+	bool nextAudioFrame = frame->atBegin();
 
 	bool finished = alsa->play(frame);
+
+	// Here audio is playing and latency can be determined, i.e. sending
+	// AudioSyncInfo is possible. VideoOutput needs an AudioSyncInfo when 
+	// restarting after pause. Periodic AudioSyncInfo events are necessary
+	// to ensure AV-Sync.
+
+	if (state != PLAYING ||   // Restarting after pause.
+	    nextAudioFrame)       // Periodic AudioSyncInfo events.
+	{
+	    // Here audio is playing and latency can be determined.
+	    sendAudioSyncInfo(alsa->getNextPTS());
+	}
 
 	if (finished)
 	{
@@ -138,6 +192,8 @@ void AudioOutput::startChunkTimer()
     chunkTimer.relative(dt);
     DEBUG(<< "time=" << getSeconds(chunkTimer.get_current_time()) << ", sec=" << getSeconds(dt));
     start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
+
+    state = PLAYING;
 }
 
 void AudioOutput::sendAudioSyncInfo(double nextPTS)

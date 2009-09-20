@@ -33,7 +33,8 @@ public:
 {                                                           \
    TraceUnit traceUnit;                                     \
    traceUnit << "Error: " << __PRETTY_FUNCTION__ << " " s;  \
-   std::cout << "Error: " << __PRETTY_FUNCTION__ << " " s;  \
+   std::cout << "Error: " << __PRETTY_FUNCTION__ << " " s   \
+             << std::endl;	                            \
 }
 
 // -------------------------------------------------------------------

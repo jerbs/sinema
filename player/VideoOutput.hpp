@@ -59,23 +59,31 @@ private:
     typedef enum {
 	IDLE,
 	INIT,
-	RUNNING
+	OPEN,
+	PAUSE,
+	STILL,
+	PLAYING
     } state_t;
 
     state_t state;
+
+    bool isOpen() {return (state >= OPEN) ? true : false;}
 
     bool audioSync;
     double audioSnapshotPTS;
     timespec_t audioSnapshotTime;
 
     void process(boost::shared_ptr<InitEvent> event);
-    void process(boost::shared_ptr<StartEvent> event);
     void process(boost::shared_ptr<OpenVideoOutputReq> event);
     void process(boost::shared_ptr<ResizeVideoOutputReq> event);
     void process(boost::shared_ptr<XFVideoImage> event);
     void process(boost::shared_ptr<DeleteXFVideoImage> event);
     void process(boost::shared_ptr<ShowNextFrame> event);
     void process(boost::shared_ptr<AudioSyncInfo> event);
+
+    void process(boost::shared_ptr<CommandPlay> event);
+    void process(boost::shared_ptr<CommandPause> event);
+    void process(boost::shared_ptr<CommandStop> event);
 
     void createVideoImage();
     void displayNextFrame();
