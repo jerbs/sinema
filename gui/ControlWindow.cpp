@@ -45,11 +45,9 @@ ControlWindow::~ControlWindow()
 {
 }
 
-extern std::string file;
-
 void ControlWindow::on_button_play()
 {
-    m_MediaPlayer.open(file);
+    m_MediaPlayer.open();
     m_MediaPlayer.play();
 }
 
@@ -65,10 +63,12 @@ void ControlWindow::on_button_stop()
 
 void ControlWindow::on_button_prev()
 {
+    m_MediaPlayer.skipBack();
 }
 
 void ControlWindow::on_button_next()
 {
+    m_MediaPlayer.skipForward();
 }
 
 void ControlWindow::on_button_rewind()

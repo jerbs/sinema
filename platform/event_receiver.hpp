@@ -25,6 +25,17 @@ public:
     }
 
     template<class Event>
+    void defer_event(boost::shared_ptr<Event> event)
+    {
+	m_event_processor->defer_event(event, static_cast<most_derived*>(this));
+    }
+
+    void queue_deferred_events()
+    {
+	m_event_processor->queue_deferred_events();
+    }
+
+    template<class Event>
     void start_timer(boost::shared_ptr<Event> event, timer& t)
     {
 	m_event_processor->start_timer(event, static_cast<most_derived*>(this), t);

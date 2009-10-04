@@ -14,8 +14,7 @@
 #endif
 
 #include <iostream>
-
-std::string file;
+#include <boost/make_shared.hpp>
 
 int main(int argc, char *argv[])
 {
@@ -23,17 +22,19 @@ int main(int argc, char *argv[])
 
 #ifndef SYNCTEST
 
-    if (argc != 2)
+    if (argc < 2)
     {
-	std::cout << "Usage: " << argv[0] << " <file>" << std::endl;
+	std::cout << "Usage: " << argv[0] << " <file1> [<file2> ... <filen>]" << std::endl;
 	exit(-1);
     }
 
-    MediaPlayer mediaPlayer;
-    mediaPlayer.init();
+    boost::shared_ptr<PlayList> playList(new PlayList());
+    for (int i=1; i<argc; i++)
+	playList->append(std::string(argv[i]));
 
-    file = std::string(argv[1]);
-    mediaPlayer.open(file);
+    MediaPlayer mediaPlayer(playList);
+    mediaPlayer.init();
+    mediaPlayer.open();
 
     ControlWindow controlWindow(mediaPlayer);
     Gtk::Main::run(controlWindow);

@@ -28,6 +28,7 @@ class event_processor
     typedef concurrent_queue<receive_fct_t> events_queue_t;
 
     events_queue_t m_events_queue;
+    events_queue_t m_deferred_events_queue;
     bool m_quit;
 
 public:
@@ -91,6 +92,25 @@ public:
 	process_fct_t tmp = &EventReceiver::process;
 	receive_fct_t fct = boost::bind(tmp, obj, event);
 	m_events_queue.push(fct);
+    }
+
+    template<class Event, class EventReceiver>
+    void defer_event(boost::shared_ptr<Event> event, EventReceiver* obj)
+    {
+	typedef void (EventReceiver::*process_fct_t)(boost::shared_ptr<Event>);
+	// tmp variable avoids a static_cast<>
+	process_fct_t tmp = &EventReceiver::process;
+	receive_fct_t fct = boost::bind(tmp, obj, event);
+	m_deferred_events_queue.push(fct);
+    }
+
+    void queue_deferred_events()
+    {
+	receive_fct_t fct;
+	while(m_deferred_events_queue.try_pop(fct))
+	{
+	    m_events_queue.push(fct);
+	}
     }
 
     template<class Event, class EventReceiver>

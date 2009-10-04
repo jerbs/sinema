@@ -13,6 +13,7 @@
 #include "player/AudioDecoder.hpp"
 #include "player/VideoOutput.hpp"
 #include "player/AudioOutput.hpp"
+#include "player/PlayList.hpp"
 
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
@@ -21,16 +22,19 @@
 class MediaPlayer
 {
 public:
-    MediaPlayer();
+    MediaPlayer(boost::shared_ptr<PlayList> playList);
     ~MediaPlayer();
 
     void init();
 
-    void open(std::string file);
+    void open();
     void close();
 
     void play();
     void pause();
+
+    void skipBack();
+    void skipForward();
 
 private:
     // EventReceiver
@@ -54,6 +58,9 @@ private:
     boost::shared_ptr<event_processor> demuxerEventProcessor;
     boost::shared_ptr<event_processor> decoderEventProcessor;
     boost::shared_ptr<event_processor> outputEventProcessor;
+
+    // PlayList:
+    boost::shared_ptr<PlayList> playList;
 
     void sendInitEvents();
     

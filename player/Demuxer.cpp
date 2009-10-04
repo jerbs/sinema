@@ -58,6 +58,13 @@ void Demuxer::process(boost::shared_ptr<OpenFileEvent> event)
 {
     if (systemStreamStatus != SystemStreamClosed)
     {
+	if (systemStreamStatus == SystemStreamClosing)
+	{
+	    // Directly putting the event back into the queue
+	    // would result in a busy loop.
+	    DEBUG(<< "defer");
+	    defer_event(event);
+	}
 	return;
     }
 
@@ -249,6 +256,8 @@ void Demuxer::updateSystemStreamStatusClosing()
 
 	    av_close_input_file(avFormatContext);
 	    avFormatContext = 0;
+
+	    queue_deferred_events();
 	}
     }
 }

@@ -230,9 +230,7 @@ struct DeleteXFVideoImage
 
 struct CommandPlay{};
 struct CommandPause{};
-// struct CommandStop{};
-struct CommandPrevious{};
-struct CommandNext{};
+
 struct CommandRewind{};
 struct CommandForward{};
 

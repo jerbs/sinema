@@ -13,15 +13,6 @@
 
 #include <boost/make_shared.hpp>
 
-AudioOutput::AudioOutput(event_processor_ptr_type evt_proc)
-    : base_type(evt_proc),
-      alsa()
-{}
-
-AudioOutput::~AudioOutput()
-{
-}
-
 void AudioOutput::process(boost::shared_ptr<InitEvent> event)
 {
     if (state == IDLE)

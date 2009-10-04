@@ -19,7 +19,8 @@ void logfunc(void* p, int i, const char* format, va_list ap)
     vprintf(format, ap);
 }
 
-MediaPlayer::MediaPlayer()
+MediaPlayer::MediaPlayer(boost::shared_ptr<PlayList> playList)
+    : playList(playList)
 {
     av_log_set_callback(logfunc);
 
@@ -89,8 +90,9 @@ void MediaPlayer::sendInitEvents()
      audioOutput->queue_event(initEvent);
 }
 
-void MediaPlayer::open(std::string file)
+void MediaPlayer::open()
 {
+    std::string file = playList->getCurrent();
     demuxer->queue_event(boost::make_shared<OpenFileEvent>(file));
 }
 
@@ -111,4 +113,24 @@ void MediaPlayer::pause()
     boost::shared_ptr<CommandPause> commandPause(new CommandPause());
     videoOutput->queue_event(commandPause);
     audioOutput->queue_event(commandPause);
+}
+
+void MediaPlayer::skipBack()
+{
+    std::string file = playList->getPrevious();
+    if (!file.empty())
+    {
+	close();
+	open();
+    }
+}
+
+void MediaPlayer::skipForward()
+{
+    std::string file = playList->getNext();
+    if (!file.empty())
+    {
+	close();
+	open();
+    }
 }

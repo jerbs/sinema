@@ -22,8 +22,13 @@ class AudioOutput : public event_receiver<AudioOutput>
     friend class event_processor;
 
 public:
-    AudioOutput(event_processor_ptr_type evt_proc);
-    ~AudioOutput();
+    AudioOutput(event_processor_ptr_type evt_proc)
+	: base_type(evt_proc),
+	  alsa(),
+	  state(IDLE)
+    {}
+    ~AudioOutput()
+    {}
 
 private:
 #ifdef SYNCTEST
