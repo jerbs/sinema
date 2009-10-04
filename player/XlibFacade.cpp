@@ -10,6 +10,8 @@
 
 #include <sys/ipc.h>  // to allocate shared memory
 #include <sys/shm.h>  // to allocate shared memory
+#include <errno.h>
+#include <string.h>   // strerror
 
 #undef DEBUG
 #define DEBUG(s)
@@ -23,7 +25,7 @@ XFDisplay::XFDisplay()
     m_display = XOpenDisplay( NULL );
     if (!m_display)
     {
-	throw XFException("Cannot open Display");
+	THROW(XFException, << "Cannot open Display");
     }
 }
 
@@ -79,7 +81,7 @@ XFWindow::XFWindow(unsigned int width, unsigned int height)
 
 	if (i == numVisualInfo)
 	{
-	    throw(XFException("XMatchVisualInfo: Nothing found"));
+	    THROW(XFException, << "XMatchVisualInfo: Nothing found");
 	}
     }
 
@@ -156,7 +158,7 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
     bool shmExtAvailable = XShmQueryExtension(m_display);
     if (!shmExtAvailable)
     {
-	throw XFException("No shared memory extension available.");
+	THROW(XFException, << "No shared memory extension available.");
     }
 
     // Check to see if Xv extension is available:
@@ -173,7 +175,7 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
     case XvBadExtension:
     case XvBadAlloc:
     default:
-	throw XFException("No Xv extension available.");
+	THROW(XFException, << "No Xv extension available.");
     }
 
     // Querry XvAdapterInfo:
@@ -188,7 +190,7 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
     case XvBadExtension:
     case XvBadAlloc:
     default:
-	throw XFException("XvQueryAdaptors failed.");
+	THROW(XFException, << "XvQueryAdaptors failed.");
     }
 
     xvPortId = INVALID_XV_PORT_ID;
@@ -228,7 +230,7 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
 	    case Success:
 		break;
 	    default:
-		throw XFException("XvQueryEncodings failed.");
+		THROW(XFException, << "XvQueryEncodings failed.");
 	    }
 
 	    for (unsigned int j=0; j<num_ei; j++)
@@ -274,12 +276,12 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
 
     if (xvPortId == INVALID_XV_PORT_ID)
     {
-	throw XFException("No XvAdaptorPort found.");
+	THROW(XFException, << "No XvAdaptorPort found.");
     }
 
     if (!imageFormat)
     {
-	throw XFException("Needed image format not found.");
+	THROW(XFException, << "Needed image format not found.");
     }
 
     // Create a graphics context
@@ -417,15 +419,30 @@ XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
 				xfVideo->yuvWidth, xfVideo->yuvHeight,
 				&yuvShmInfo);
 
+    DEBUG(<< "requested: " << xfVideo->yuvWidth << "*" << xfVideo->yuvHeight
+	  << " got: " << yuvImage->width << "*" << yuvImage->height);
+
     // Allocate the shared memory requested by the server:
     yuvShmInfo.shmid = shmget(IPC_PRIVATE,
 			      yuvImage->data_size,
 			      IPC_CREAT | 0777);
+    if (yuvShmInfo.shmid == -1)
+    {
+	THROW(XFException,
+	      << "shmget failed"
+	      << " data_size=" << yuvImage->data_size
+	      << " errno=" << strerror(errno) << "(" << errno << ")");
+    }
+
     // Attach the shared memory to the address space of the calling process:
     shmAddr = shmat(yuvShmInfo.shmid, 0, 0);
     if (shmAddr == (void*)-1)
     {
-	throw XFException("shmat failed");
+	THROW(XFException,
+	      << "shmat failed"
+	      << " yuvShmInfo.shmid=" << yuvShmInfo.shmid 
+	      << " data_size=" << yuvImage->data_size
+	      << " errno=" << strerror(errno) << "(" << errno << ")");
     }
 
     // Update XShmSegmentInfo and XvImage with pointer to shared memory:
@@ -436,7 +453,7 @@ XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
     // Attach the shared memory to the X server:
     if (!XShmAttach(xfVideo->display(), &yuvShmInfo))
     {
-	throw XFException("XShmAttach failed !");
+	THROW(XFException, << "XShmAttach failed !");
     }
 
     DEBUG( "yuvImage data_size = " << std::dec << yuvImage->data_size );
@@ -444,10 +461,14 @@ XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
 
 XFVideoImage::~XFVideoImage()
 {
-    XFree(yuvImage);
     // Detach shared memory from the address space of the calling process:
     shmdt(shmAddr);
-    // Invers operation of shmget?
+
+    // Mark the shared memory segment to be destroyed.
+    // The invers operation of shmget:
+    shmctl(yuvShmInfo.shmid, IPC_RMID, 0);
+
+    XFree(yuvImage);
 }
 
 // -------------------------------------------------------------------

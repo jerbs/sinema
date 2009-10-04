@@ -33,8 +33,15 @@ public:
 {                                                           \
    TraceUnit traceUnit;                                     \
    traceUnit << "Error: " << __PRETTY_FUNCTION__ << " " s;  \
-   std::cout << "Error: " << __PRETTY_FUNCTION__ << " " s   \
-             << std::endl;	                            \
+   std::cout << traceUnit.str() << std::endl;	            \
+}
+
+#define THROW(t,s)                                              \
+{                                                               \
+   TraceUnit traceUnit;                                         \
+   traceUnit << "Exception: " << __PRETTY_FUNCTION__ << " " s;  \
+   std::cout << traceUnit.str() << std::endl;			\
+   throw(t(traceUnit.str()));					\
 }
 
 // -------------------------------------------------------------------

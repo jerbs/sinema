@@ -14,11 +14,12 @@
 #include <X11/extensions/Xvlib.h>
 
 #include <boost/shared_ptr.hpp>
+#include <string>
 
 struct XFException
 {
-    XFException(const char* s) : s(s) {}
-    const char* s;
+    XFException(const std::string &s) : s(s) {}
+    std::string s;
 };
 
 class XFDisplay

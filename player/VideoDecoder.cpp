@@ -306,7 +306,9 @@ void VideoDecoder::queue()
     if (avCodecContext->width != int(width) ||
 	avCodecContext->height != int(height))
     {
-	ERROR(<< "Frame buffer with wrong size");
+	DEBUG(<< "Frame buffer with wrong size."
+	      << " needed:" << avCodecContext->width << "*" << avCodecContext->height
+	      << " got: " << width << "*" << height);
 
 	videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
 
