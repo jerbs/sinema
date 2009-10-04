@@ -20,14 +20,11 @@ void VideoDecoder::process(boost::shared_ptr<InitEvent> event)
     videoOutput = event->videoOutput;
 }
 
-void VideoDecoder::process(boost::shared_ptr<StartEvent> event)
-{
-    DEBUG();
-}
-
 void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 {
-    DEBUG(<< "streamIndex = " << event->streamIndex);
+    if (state == Closed)
+    {
+	DEBUG(<< "streamIndex = " << event->streamIndex);
 
     int videoStreamIndex = event->streamIndex;
     avFormatContext = event->avFormatContext;
@@ -40,11 +37,6 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 
 	if (avCodecContext->codec_type == CODEC_TYPE_VIDEO)
 	{
-	    boost::shared_ptr<OpenVideoOutputReq> req(new OpenVideoOutputReq());
-	    req->width = avCodecContext->width;
-	    req->height = avCodecContext->height;
-	    videoOutput->queue_event(req);
-
 	    avCodec = avcodec_find_decoder(avCodecContext->codec_id);
 	    if (avCodec)
 	    {
@@ -64,7 +56,13 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 						NULL, NULL, NULL);        // SwsFilter*
 		    if (swsContext)
 		    {
-			demuxer->queue_event(boost::make_shared<OpenVideoStreamResp>(videoStreamIndex));
+			boost::shared_ptr<OpenVideoOutputReq> req(new OpenVideoOutputReq());
+			req->width = avCodecContext->width;
+			req->height = avCodecContext->height;
+			videoOutput->queue_event(req);
+
+			state = Opening;
+
 			return;
 		    }
 		    else
@@ -98,25 +96,115 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
     avStream = 0;
     videoStreamIndex = -1;
 
+    }
+
     demuxer->queue_event(boost::make_shared<OpenVideoStreamFail>(videoStreamIndex));
+}
+
+void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputResp> event)
+{
+    if (state == Opening)
+    {
+	DEBUG();
+
+	demuxer->queue_event(boost::make_shared<OpenVideoStreamResp>(videoStreamIndex));
+	state = Opened;
+    }
+}
+
+void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputFail> event)
+{
+    if (state == Opening)
+    {
+	DEBUG();
+
+	avcodec_close(avCodecContext);
+
+	avFormatContext = 0;
+	avCodecContext = 0;
+	avCodec = 0;
+	avStream = 0;
+	videoStreamIndex = -1;
+
+	demuxer->queue_event(boost::make_shared<OpenVideoStreamFail>(videoStreamIndex));
+
+	state = Closed;
+    }
+}
+
+void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq> event)
+{
+    if (state != Closed)
+    {
+	DEBUG();
+
+	if (state == Opened)
+	{
+	    avcodec_close(avCodecContext);
+	}
+
+	// Throw away all queued packets:
+	while (!packetQueue.empty())
+	{
+	    packetQueue.pop();
+	}
+
+	// Throw away all queued frames:
+	while (!frameQueue.empty())
+	{
+	    frameQueue.pop();
+	}
+
+	videoOutput->queue_event(boost::make_shared<CloseVideoOutputReq>());
+
+	state = Closing;
+    }
+}
+
+void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp> event)
+{
+    if (state == Closing)
+    {
+	DEBUG();
+
+	avFormatContext = 0;
+	avCodecContext = 0;
+	avCodec = 0;
+	avStream = 0;
+	videoStreamIndex = -1;
+
+	// Keep avFrame.
+	avFrameIsFree = true;
+	pts = 0;
+
+	demuxer->queue_event(boost::make_shared<CloseVideoStreamResp>());
+
+	state = Closed;
+    }
 }
 
 void VideoDecoder::process(boost::shared_ptr<VideoPacketEvent> event)
 {
-    DEBUG();
-    packetQueue.push(event);
-    decode();
+    if (state == Opened)
+    {
+	DEBUG();
+
+	packetQueue.push(event);
+	decode();
+    }
 }
 
 void VideoDecoder::process(boost::shared_ptr<XFVideoImage> event)
 {
-    DEBUG();
+    if (state == Opened || state == Opening)
+    {
+	DEBUG();
 
-    frameQueue.push(event);
-    queue();
-    decode();
+	frameQueue.push(event);
+	queue();
+	decode();
+    }
 }
-
 
 std::ostream& operator<<(std::ostream& strm, AVRational r)
 {
@@ -182,6 +270,7 @@ void VideoDecoder::decode()
 		queue();
 		if (!avFrameIsFree)
 		{
+		    // Call queue() again when a frame is available.
 		    return;
 		}
 	    }

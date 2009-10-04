@@ -24,11 +24,13 @@ public:
     MediaPlayer();
     ~MediaPlayer();
 
-    void operator()(std::string file);
+    void init();
+
+    void open(std::string file);
+    void close();
 
     void play();
     void pause();
-    void stop();
 
 private:
     // EventReceiver

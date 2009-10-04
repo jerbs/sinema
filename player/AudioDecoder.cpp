@@ -18,14 +18,11 @@ void AudioDecoder::process(boost::shared_ptr<InitEvent> event)
     audioOutput = event->audioOutput;
 }
 
-void AudioDecoder::process(boost::shared_ptr<StartEvent> event)
-{
-    DEBUG();
-}
-
 void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 {
-    DEBUG(<< "streamIndex = " << event->streamIndex);
+    if (state == Closed)
+    {
+	DEBUG(<< "streamIndex = " << event->streamIndex);
 
     audioStreamIndex = event->streamIndex;
     avFormatContext = event->avFormatContext;
@@ -38,12 +35,6 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 
 	if (avCodecContext->codec_type == CODEC_TYPE_AUDIO)
 	{
-	    boost::shared_ptr<OpenAudioOutputReq> req(new OpenAudioOutputReq());
-	    req->sample_rate = avCodecContext->sample_rate;
-	    req->channels = avCodecContext->channels;
-	    req->frame_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-	    audioOutput->queue_event(req);
-
 	    avCodec = avcodec_find_decoder(avCodecContext->codec_id);
 	    if (avCodec)
 	    {
@@ -52,7 +43,14 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 		{
 		    avStream = avFormatContext->streams[audioStreamIndex];
 
-		    demuxer->queue_event(boost::make_shared<OpenAudioStreamResp>(audioStreamIndex));
+		    boost::shared_ptr<OpenAudioOutputReq> req(new OpenAudioOutputReq());
+		    req->sample_rate = avCodecContext->sample_rate;
+		    req->channels = avCodecContext->channels;
+		    req->frame_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+		    audioOutput->queue_event(req);
+
+		    state = Opening;
+
 		    return;
 		}
 		else
@@ -81,21 +79,111 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
     avStream = 0;
     audioStreamIndex = -1;
 
+    }
+
     demuxer->queue_event(boost::make_shared<OpenAudioStreamFail>(audioStreamIndex));
+}
+
+void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputResp> event)
+{
+    if (state == Opening)
+    {
+	DEBUG();
+
+	demuxer->queue_event(boost::make_shared<OpenAudioStreamResp>(audioStreamIndex));
+	state = Opened;
+    }
+}
+
+void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputFail> event)
+{
+    if (state == Opening)
+    {
+	DEBUG();
+
+	avcodec_close(avCodecContext);
+
+	avFormatContext = 0;
+	avCodecContext = 0;
+	avCodec = 0;
+	avStream = 0;
+	audioStreamIndex = -1;
+
+	demuxer->queue_event(boost::make_shared<OpenAudioStreamFail>(audioStreamIndex));
+
+	state = Closed;
+    }
+}
+
+void AudioDecoder::process(boost::shared_ptr<CloseAudioStreamReq> event)
+{
+    if (state != Closed)
+    {
+	DEBUG();
+
+	if (state == Opened)
+	{
+	    avcodec_close(avCodecContext);
+	}
+
+	// Throw away all queued packets:
+	while (!packetQueue.empty())
+	{
+	    packetQueue.pop();
+	}
+	posCurrentPacket = 0;
+
+	// Throw away all queued frames:
+	while (!frameQueue.empty())
+	{
+	    frameQueue.pop();
+	}
+	numFramesCurrentPacket = 0;
+
+	audioOutput->queue_event(boost::make_shared<CloseAudioOutputReq>());
+
+	state = Closing;
+    }
+}
+
+void AudioDecoder::process(boost::shared_ptr<CloseAudioOutputResp> event)
+{
+    if (state == Closing)
+    {
+	DEBUG();
+
+	avFormatContext = 0;
+	avCodecContext = 0;
+	avCodec = 0;
+	avStream = 0;
+	audioStreamIndex = -1;
+
+	demuxer->queue_event(boost::make_shared<CloseAudioStreamResp>());
+
+	state = Closed;
+    }
 }
 
 void AudioDecoder::process(boost::shared_ptr<AudioPacketEvent> event)
 {
-    DEBUG();
-    packetQueue.push(event);
-    decode();
+    if (state == Opened)
+    {
+	DEBUG();
+
+	packetQueue.push(event);
+	decode();
+    }
 }
 
 void AudioDecoder::process(boost::shared_ptr<AFAudioFrame> event)
 {
-    DEBUG();
-    frameQueue.push(event);
-    decode();
+    if (state == Opened || state == Opening)
+    {
+	DEBUG();
+
+	frameQueue.push(event);
+	decode();
+    }
 }
 
 extern std::ostream& operator<<(std::ostream& strm, AVRational r);
@@ -163,16 +251,16 @@ void AudioDecoder::decode()
 		{
 		    // Decoded the complete AVPacket
 		    packetQueue.pop();
+		    posCurrentPacket = 0;
 		    DEBUG(<< "Queueing ConfirmAudioPacketEvent");
 		    demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
-		    posCurrentPacket = 0;
-		    numFramesCurrentPacket = 0;
 		}
 
 		if (frameByteSize > 0)
 		{
 		    // Decoded samples are available
 		    frameQueue.pop();
+		    numFramesCurrentPacket = 0;
 		    audioFrame->setPTS(framePTS);
 		    DEBUG(<< "Queueing AFAudioFrame");
 		    audioOutput->queue_event(audioFrame);

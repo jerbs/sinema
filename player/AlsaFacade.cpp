@@ -508,3 +508,9 @@ void AFPCMDigitalAudioInterface::pause(bool enable)
     // Pause is not supported by all hardware: snd_pcm_hw_params_can_pause()
     snd_pcm_pause(handle, enable ? 1 : 0);
 }
+
+void AFPCMDigitalAudioInterface::stop()
+{
+    // Stop PCM dropping pending frames:
+    snd_pcm_drop(handle);
+}

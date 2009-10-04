@@ -92,6 +92,7 @@ public:
     double getNextPTS();
 
     void pause(bool enable);
+    void stop();
 
 private:
     AFPCMDigitalAudioInterface();

@@ -15,6 +15,8 @@
 
 #include <iostream>
 
+std::string file;
+
 int main(int argc, char *argv[])
 {
     Gtk::Main kit(argc, argv);
@@ -28,7 +30,10 @@ int main(int argc, char *argv[])
     }
 
     MediaPlayer mediaPlayer;
-    mediaPlayer(argv[1]);
+    mediaPlayer.init();
+
+    file = std::string(argv[1]);
+    mediaPlayer.open(file);
 
     ControlWindow controlWindow(mediaPlayer);
     Gtk::Main::run(controlWindow);

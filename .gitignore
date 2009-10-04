@@ -19,6 +19,7 @@ config.log
 config.status
 configure
 configure.scan
+core
 libtool
 log
 m4

@@ -17,10 +17,10 @@ using namespace std;
 
 void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG();
-
     if (state == IDLE)
     {
+	DEBUG();
+
 #ifdef SYNCTEST
 	syncTest = event->syncTest;
 #else
@@ -32,10 +32,10 @@ void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 
 void VideoOutput::process(boost::shared_ptr<OpenVideoOutputReq> event)
 {
-    DEBUG();
-
     if (state == INIT)
     {
+	DEBUG();
+
 	xfVideo = boost::make_shared<XFVideo>(event->width, event->height);
 
 	for (int i=0; i<10; i++)
@@ -44,15 +44,42 @@ void VideoOutput::process(boost::shared_ptr<OpenVideoOutputReq> event)
 	}
 
 	state = OPEN;
+
+	videoDecoder->queue_event(boost::make_shared<OpenVideoOutputResp>());
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
+{
+    if (isOpen())
+    {
+	DEBUG();
+
+	// Xv Window is closed.
+	// Alternative is showing a black frame or a logo.
+	// xfVideo->stop();
+
+	// Throw away all queued frames:
+	while ( !frameQueue.empty() )
+	{
+	    frameQueue.pop();
+	}
+
+	xfVideo.reset();
+
+	state = INIT;
+	audioSync = false;
+
+	videoDecoder->queue_event(boost::make_shared<CloseVideoOutputResp>());
     }
 }
 
 void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
 {
-    DEBUG();
-
     if (isOpen())
     {
+	DEBUG();
+
 	xfVideo->resize(event->width, event->height);
 	createVideoImage();
     }
@@ -60,10 +87,10 @@ void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
 
 void VideoOutput::process(boost::shared_ptr<XFVideoImage> event)
 {
-    DEBUG();
-
     if (isOpen())
     {
+	DEBUG();
+
 	frameQueue.push(event);
 
 	switch (state)
@@ -92,15 +119,18 @@ void VideoOutput::process(boost::shared_ptr<DeleteXFVideoImage> event)
 
 void VideoOutput::process(boost::shared_ptr<ShowNextFrame> event)
 {
-    DEBUG();
     if (state == PLAYING)
     {
+	DEBUG();
+
 	displayNextFrame();
     }
 }
 
 void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
 {
+    if (isOpen())
+    {
     audioSync = true;
     audioSnapshotPTS = event->pts;
     audioSnapshotTime = event->abstime;
@@ -112,12 +142,15 @@ void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
     {
 	startFrameTimer();
     }
+    }
 }
 
 void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
     {
+	DEBUG();
+
 	displayNextFrame();
     }
 }
@@ -126,13 +159,11 @@ void VideoOutput::process(boost::shared_ptr<CommandPause> event)
 {
     if (isOpen())
     {
+	DEBUG();
+
 	state = PAUSE;
 	audioSync = false;
     }
-}
-
-void VideoOutput::process(boost::shared_ptr<CommandStop> event)
-{
 }
 
 void VideoOutput::createVideoImage()

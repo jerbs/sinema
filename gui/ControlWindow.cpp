@@ -45,8 +45,11 @@ ControlWindow::~ControlWindow()
 {
 }
 
+extern std::string file;
+
 void ControlWindow::on_button_play()
 {
+    m_MediaPlayer.open(file);
     m_MediaPlayer.play();
 }
 
@@ -57,7 +60,7 @@ void ControlWindow::on_button_pause()
 
 void ControlWindow::on_button_stop()
 {
-    m_MediaPlayer.stop();
+    m_MediaPlayer.close();
 }
 
 void ControlWindow::on_button_prev()

@@ -57,12 +57,12 @@ private:
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<OpenAudioOutputReq> event);
+    void process(boost::shared_ptr<CloseAudioOutputReq> event);
     void process(boost::shared_ptr<AFAudioFrame> event);
     void process(boost::shared_ptr<PlayNextChunk> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);
-    void process(boost::shared_ptr<CommandStop> event);
 
     void createAudioFrame();
     void playNextChunk();

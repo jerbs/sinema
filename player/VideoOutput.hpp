@@ -75,6 +75,7 @@ private:
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<OpenVideoOutputReq> event);
+    void process(boost::shared_ptr<CloseVideoOutputReq> event);
     void process(boost::shared_ptr<ResizeVideoOutputReq> event);
     void process(boost::shared_ptr<XFVideoImage> event);
     void process(boost::shared_ptr<DeleteXFVideoImage> event);
@@ -83,7 +84,6 @@ private:
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);
-    void process(boost::shared_ptr<CommandStop> event);
 
     void createVideoImage();
     void displayNextFrame();

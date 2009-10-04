@@ -55,11 +55,9 @@ MediaPlayer::~MediaPlayer()
     outputThread.join();
 }
 
-void MediaPlayer::operator()(std::string file)
+void MediaPlayer::init()
 {
     sendInitEvents();
-
-    demuxer->queue_event(boost::make_shared<OpenFileEvent>(file));
 
     // Use a Smart Pointer:
     // http://www.boost.org/doc/libs/1_39_0/libs/smart_ptr/smart_ptr.htm
@@ -91,6 +89,16 @@ void MediaPlayer::sendInitEvents()
      audioOutput->queue_event(initEvent);
 }
 
+void MediaPlayer::open(std::string file)
+{
+    demuxer->queue_event(boost::make_shared<OpenFileEvent>(file));
+}
+
+void MediaPlayer::close()
+{
+    demuxer->queue_event(boost::make_shared<CloseFileEvent>());
+}
+
 void MediaPlayer::play()
 {
     boost::shared_ptr<CommandPlay> commandPlay(new CommandPlay());
@@ -103,11 +111,4 @@ void MediaPlayer::pause()
     boost::shared_ptr<CommandPause> commandPause(new CommandPause());
     videoOutput->queue_event(commandPause);
     audioOutput->queue_event(commandPause);
-}
-
-void MediaPlayer::stop()
-{
-    boost::shared_ptr<CommandStop> commandStop(new CommandStop());
-    videoOutput->queue_event(commandStop);
-    audioOutput->queue_event(commandStop);
 }

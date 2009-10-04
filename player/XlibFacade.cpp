@@ -11,6 +11,9 @@
 #include <sys/ipc.h>  // to allocate shared memory
 #include <sys/shm.h>  // to allocate shared memory
 
+#undef DEBUG
+#define DEBUG(s)
+
 using namespace std;
 
 // -------------------------------------------------------------------

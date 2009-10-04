@@ -21,13 +21,24 @@ class Demuxer : public event_receiver<Demuxer>
     boost::shared_ptr<event_processor> m_event_processor;
 
     AVFormatContext* avFormatContext;
+
+    enum SystemStreamStatus {
+	SystemStreamClosed,
+	SystemStreamOpening,
+	SystemStreamOpened,
+	SystemStreamFailed,
+	SystemStreamClosing
+    };
+    SystemStreamStatus systemStreamStatus;
+
     int audioStreamIndex;
     int videoStreamIndex;
 
     enum StreamStatus {
-	Closed,
-	Opened,
-	Failed
+	StreamClosed,
+	StreamOpening,
+	StreamOpened,
+	StreamClosing
     };
     StreamStatus audioStreamStatus;
     StreamStatus videoStreamStatus;
@@ -54,7 +65,6 @@ private:
     static int interrupt_cb();
 
     void process(boost::shared_ptr<InitEvent> event);
-    void process(boost::shared_ptr<StartEvent> event);
     void process(boost::shared_ptr<StopEvent> event);
 
     void process(boost::shared_ptr<SystemStreamChunkEvent> event);
@@ -65,8 +75,15 @@ private:
     void process(boost::shared_ptr<OpenVideoStreamResp> event);
     void process(boost::shared_ptr<OpenVideoStreamFail> event);
 
+    void process(boost::shared_ptr<CloseFileEvent> event);
+    void process(boost::shared_ptr<CloseAudioStreamResp> event);
+    void process(boost::shared_ptr<CloseVideoStreamResp> event);
+
     void process(boost::shared_ptr<ConfirmAudioPacketEvent> event);
     void process(boost::shared_ptr<ConfirmVideoPacketEvent> event);
+
+    void updateSystemStreamStatusOpening();
+    void updateSystemStreamStatusClosing();
 };
 
 #endif

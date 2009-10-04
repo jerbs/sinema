@@ -24,10 +24,10 @@ AudioOutput::~AudioOutput()
 
 void AudioOutput::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG();
-
     if (state == IDLE)
     {
+	DEBUG();
+
 #ifdef SYNCTEST
 	syncTest = event->syncTest;
 #else
@@ -57,15 +57,39 @@ void AudioOutput::process(boost::shared_ptr<OpenAudioOutputReq> event)
 	}
 
 	state = OPEN;
+
+	audioDecoder->queue_event(boost::make_shared<OpenAudioOutputResp>());
+    }
+}
+
+void AudioOutput::process(boost::shared_ptr<CloseAudioOutputReq> event)
+{
+    if (isOpen())
+    {
+	DEBUG();
+
+	alsa->stop();
+
+	// Throw away all queued frames:
+	while ( !frameQueue.empty() )
+	{
+	    frameQueue.pop();
+	}
+
+	alsa.reset();
+
+	state = INIT;
+
+	audioDecoder->queue_event(boost::make_shared<CloseAudioOutputResp>());
     }
 }
 
 void AudioOutput::process(boost::shared_ptr<AFAudioFrame> event)
 {
-    DEBUG();
-
     if (isOpen())
     {
+	DEBUG();
+
 	frameQueue.push(event);
 
 	switch (state)
@@ -84,10 +108,10 @@ void AudioOutput::process(boost::shared_ptr<AFAudioFrame> event)
 
 void AudioOutput::process(boost::shared_ptr<PlayNextChunk> event)
 {
-    DEBUG();
-
     if (state == PLAYING)
     {
+	DEBUG();
+
 	playNextChunk();
     }
 }
@@ -96,6 +120,8 @@ void AudioOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
     {
+	DEBUG();
+
 	alsa->pause(false);
 	playNextChunk();
     }
@@ -105,13 +131,11 @@ void AudioOutput::process(boost::shared_ptr<CommandPause> event)
 {
     if (isOpen())
     {
+	DEBUG();
+
 	state = PAUSE;
 	alsa->pause(true);
     }
-}
-
-void AudioOutput::process(boost::shared_ptr<CommandStop> event)
-{
 }
 
 void AudioOutput::createAudioFrame()
@@ -126,6 +150,8 @@ void AudioOutput::createAudioFrame()
 
 void AudioOutput::playNextChunk()
 {
+    if (isOpen())
+    {
     DEBUG(<< "time=" << chunkTimer.get_current_time());
 
     while(1)
@@ -174,6 +200,7 @@ void AudioOutput::playNextChunk()
     }
 
     startChunkTimer();
+    }
 }
 
 void AudioOutput::startChunkTimer()

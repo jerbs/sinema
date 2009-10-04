@@ -29,6 +29,9 @@ class AudioOutput;
 class SyncTest;
 #endif
 
+// ===================================================================
+// General Events
+
 struct InitEvent
 {
     boost::shared_ptr<FileReader> fileReader;
@@ -54,6 +57,9 @@ struct StopEvent
     ~StopEvent(){DEBUG();}
 };
 
+// ===================================================================
+// 
+
 struct OpenFileEvent
 {
     OpenFileEvent(std::string fn) : fileName(fn) {}
@@ -63,6 +69,8 @@ struct OpenFileEvent
 struct CloseFileEvent
 {
 };
+
+// ===================================================================
 
 struct OpenAudioStreamReq
 {
@@ -86,6 +94,8 @@ struct OpenAudioStreamFail
     int streamIndex;
 };
 
+// ===================================================================
+
 struct OpenVideoStreamReq
 {
     OpenVideoStreamReq(int si, AVFormatContext* fc)
@@ -107,6 +117,15 @@ struct OpenVideoStreamFail
     OpenVideoStreamFail(int si) : streamIndex(si) {}
     int streamIndex;
 };
+
+// ===================================================================
+
+struct CloseAudioStreamReq {};
+struct CloseAudioStreamResp {};
+struct CloseVideoStreamReq {};
+struct CloseVideoStreamResp {};
+
+// ===================================================================
 
 struct AudioPacketEvent
 {
@@ -148,6 +167,8 @@ struct ConfirmVideoPacketEvent
 {
 };
 
+// ===================================================================
+
 struct OpenAudioOutputReq
 {
     unsigned int sample_rate;
@@ -155,17 +176,33 @@ struct OpenAudioOutputReq
     unsigned int frame_size;
 };
 
+struct OpenAudioOutputResp{};
+struct OpenAudioOutputFail{};
+
+struct CloseAudioOutputReq{};
+struct CloseAudioOutputResp{};
+
+// ===================================================================
+
 struct OpenVideoOutputReq
 {
     int width;
     int height;
 };
 
+struct OpenVideoOutputResp{};
+struct OpenVideoOutputFail{};
+
+struct CloseVideoOutputReq{};
+struct CloseVideoOutputResp{};
+
 struct ResizeVideoOutputReq
 {
     int width;
     int height;
 };
+
+// ===================================================================
 
 struct AudioSyncInfo
 {
@@ -189,12 +226,16 @@ struct DeleteXFVideoImage
     boost::shared_ptr<XFVideoImage> image;
 };
 
+// ===================================================================
+
 struct CommandPlay{};
 struct CommandPause{};
-struct CommandStop{};
+// struct CommandStop{};
 struct CommandPrevious{};
 struct CommandNext{};
 struct CommandRewind{};
 struct CommandForward{};
+
+// ===================================================================
 
 #endif
