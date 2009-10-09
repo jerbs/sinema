@@ -19,7 +19,7 @@ struct PlayNextChunk{};
 
 class AudioOutput : public event_receiver<AudioOutput>
 {
-    friend class event_processor;
+    friend class event_processor<>;
 
 public:
     AudioOutput(event_processor_ptr_type evt_proc)

@@ -18,6 +18,9 @@ struct QuitEvent
 {
 };
 
+typedef boost::function<void ()> receive_fct_t;
+
+template<class concurrent_queue = concurrent_queue<receive_fct_t> >
 class event_processor
 {
     friend class timer;
@@ -25,7 +28,7 @@ class event_processor
     typedef boost::function<void ()> receive_fct_t;
     typedef boost::function<void ()> timeout_fct_t;
     typedef boost::function<void ()> main_loop_fct_t;
-    typedef concurrent_queue<receive_fct_t> events_queue_t;
+    typedef concurrent_queue events_queue_t;
 
     events_queue_t m_events_queue;
     events_queue_t m_deferred_events_queue;
@@ -143,7 +146,7 @@ private:
 	terminate();
     }
 
-    void timeout(timeout_fct_t fct)
+    void timeout(receive_fct_t fct)
     {
 	m_events_queue.push(fct);
     }

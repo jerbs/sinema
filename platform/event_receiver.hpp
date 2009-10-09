@@ -9,13 +9,15 @@
 
 #include "platform/event_processor.hpp"
 
-template <class MostDerived>
+template <class MostDerived,
+	  class concurrent_queue = concurrent_queue<receive_fct_t> >
 class event_receiver
 {
-    friend class event_processor;
+    friend class event_processor<concurrent_queue>;
+
     typedef MostDerived most_derived;
 
-    boost::shared_ptr<event_processor> m_event_processor;
+    boost::shared_ptr<event_processor<concurrent_queue> > m_event_processor;
 
 public:
     template<class Event>
@@ -47,8 +49,9 @@ public:
     }
 
 protected:
-    typedef event_receiver<MostDerived> base_type;
-    typedef boost::shared_ptr<event_processor> event_processor_ptr_type;
+    typedef event_receiver<MostDerived, concurrent_queue> base_type;
+
+    typedef boost::shared_ptr<event_processor<concurrent_queue> > event_processor_ptr_type;
 
     event_receiver(event_processor_ptr_type evt_proc)
 	: m_event_processor(evt_proc)

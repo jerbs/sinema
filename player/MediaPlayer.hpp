@@ -55,9 +55,9 @@ private:
     // boost::thread audioOutputThread;
 
     // EventProcessor:
-    boost::shared_ptr<event_processor> demuxerEventProcessor;
-    boost::shared_ptr<event_processor> decoderEventProcessor;
-    boost::shared_ptr<event_processor> outputEventProcessor;
+    boost::shared_ptr<event_processor<> > demuxerEventProcessor;
+    boost::shared_ptr<event_processor<> > decoderEventProcessor;
+    boost::shared_ptr<event_processor<> > outputEventProcessor;
 
     // PlayList:
     boost::shared_ptr<PlayList> playList;

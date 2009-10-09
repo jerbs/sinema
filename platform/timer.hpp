@@ -14,13 +14,16 @@
 #include <time.h>
 #include <stdio.h>   // perror
 
+template<class concurrent_queue>
 class event_processor;
 
 typedef struct timespec timespec_t;
 
 class timer : private boost::noncopyable
 {
+    template<class concurrent_queue>
     friend class event_processor;
+
     typedef boost::function<void ()> timeout_fct_t;
     typedef struct timespec timespec_t;
     typedef struct itimerspec itimerspec_t;

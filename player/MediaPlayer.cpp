@@ -25,9 +25,9 @@ MediaPlayer::MediaPlayer(boost::shared_ptr<PlayList> playList)
     av_log_set_callback(logfunc);
 
     // Create event_processor instances:
-    demuxerEventProcessor = boost::make_shared<event_processor>();
-    decoderEventProcessor = boost::make_shared<event_processor>();
-    outputEventProcessor = boost::make_shared<event_processor>();
+    demuxerEventProcessor = boost::make_shared<event_processor<> >();
+    decoderEventProcessor = boost::make_shared<event_processor<> >();
+    outputEventProcessor = boost::make_shared<event_processor<> >();
 
     // Create event_receiver instances:
     fileReader = boost::make_shared<FileReader>(demuxerEventProcessor);

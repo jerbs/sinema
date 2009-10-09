@@ -13,7 +13,7 @@
 
 class AudioDecoder : public event_receiver<AudioDecoder>
 {
-    friend class event_processor;
+    friend class event_processor<>;
 
     enum state_t {
 	Closed,

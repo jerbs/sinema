@@ -13,7 +13,7 @@
 
 class TraceReceiver : public event_receiver<TraceReceiver>
 {
-    friend class event_processor;
+    friend class event_processor<>;
     
 public:
     
@@ -39,7 +39,7 @@ class SystemTrace
 private:
     SystemTrace()
     {
-	traceEventProcessor = boost::make_shared<event_processor>();
+	traceEventProcessor = boost::make_shared<event_processor<> >();
 	traceReceiver = boost::make_shared<TraceReceiver>(traceEventProcessor);
 	traceThread  = boost::thread( traceEventProcessor->get_callable() );
     }
@@ -62,7 +62,7 @@ private:
     }
 
 private:
-    boost::shared_ptr<event_processor> traceEventProcessor;
+    boost::shared_ptr<event_processor<> > traceEventProcessor;
     boost::shared_ptr<TraceReceiver> traceReceiver;
     boost::thread traceThread;
 

@@ -28,7 +28,7 @@ struct ShowNextFrame {};
 
 class VideoOutput : public event_receiver<VideoOutput>
 {
-    friend class event_processor;
+    friend class event_processor<>;
 
 public:
     VideoOutput(event_processor_ptr_type evt_proc)

@@ -17,7 +17,7 @@
 
 class FileReader : public event_receiver<FileReader>
 {
-    friend class event_processor;
+    friend class event_processor<>;
     typedef struct aiocb aiocb_t;
 
 public:

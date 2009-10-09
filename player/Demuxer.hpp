@@ -16,9 +16,9 @@
 class Demuxer : public event_receiver<Demuxer>
 {
     // The friend declaration allows to define the process methods private:
-    friend class event_processor;
+    friend class event_processor<>;
 
-    boost::shared_ptr<event_processor> m_event_processor;
+    boost::shared_ptr<event_processor<> > m_event_processor;
 
     AVFormatContext* avFormatContext;
 

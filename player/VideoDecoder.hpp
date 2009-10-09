@@ -15,7 +15,7 @@
 
 class VideoDecoder : public event_receiver<VideoDecoder>
 {
-    friend class event_processor;
+    friend class event_processor<>;
 
     enum state_t {
 	Closed,
