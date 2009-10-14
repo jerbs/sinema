@@ -74,6 +74,7 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
 	audioSync = false;
 	lastNotifiedTime = -1;
 	displayedFramePTS = 0;
+	ignoreAudioSync = 0;
 
 	videoDecoder->queue_event(boost::make_shared<CloseVideoOutputResp>());
     }
@@ -134,7 +135,7 @@ void VideoOutput::process(boost::shared_ptr<ShowNextFrame> event)
 
 void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
 {
-    if (isOpen())
+    if (isOpen() && ignoreAudioSync == 0)
     {
     audioSync = true;
     audioSnapshotPTS = event->pts;
@@ -174,6 +175,17 @@ void VideoOutput::process(boost::shared_ptr<FlushReq> event)
 
 	// Audio synchronization has to be reestablished:
 	audioSync = false;
+
+	ignoreAudioSync++;
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<AudioFlushedInd> event)
+{
+    if (isOpen())
+    {
+	DEBUG();
+	ignoreAudioSync--;
     }
 }
 

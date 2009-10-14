@@ -143,6 +143,8 @@ struct SeekRelativeReq
 
 struct FlushReq {};
 
+struct AudioFlushedInd {};
+
 // ===================================================================
 
 struct AudioPacketEvent

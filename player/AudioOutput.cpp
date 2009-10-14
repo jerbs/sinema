@@ -132,6 +132,9 @@ void AudioOutput::process(boost::shared_ptr<FlushReq> event)
 
 	// No frame available to display.
 	state = OPEN;
+
+	// Notify VideoOutput about flushed AudioOutput:
+	videoOutput->queue_event(boost::make_shared<AudioFlushedInd>());
     }
 }
 
@@ -171,8 +174,6 @@ void AudioOutput::playNextChunk()
 {
     if (isOpen())
     {
-    DEBUG(<< "time=" << chunkTimer.get_current_time());
-
     while(1)
     {
 	if (frameQueue.empty())
@@ -182,6 +183,8 @@ void AudioOutput::playNextChunk()
 	    state = STILL;
 	    return;
 	}
+
+	DEBUG(<< "time=" << chunkTimer.get_current_time());
 
 	boost::shared_ptr<AFAudioFrame> frame(frameQueue.front());
 
@@ -243,12 +246,12 @@ void AudioOutput::startChunkTimer()
 
 void AudioOutput::sendAudioSyncInfo(double nextPTS)
 {
-    DEBUG();
     // Do I have to use the frameTimer of class VideoOutput here?
     struct timespec currentTime = chunkTimer.get_current_time();
     snd_pcm_sframes_t overallLatencyInFrames;
     if (alsa->getOverallLatency(overallLatencyInFrames))
     {
+	DEBUG();
 	double latencyInSeconds = double(overallLatencyInFrames) / double(sampleRate);
 	double currentPTS = nextPTS - latencyInSeconds;
 

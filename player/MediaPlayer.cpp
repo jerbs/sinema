@@ -169,6 +169,7 @@ void MediaPlayer::skipForward()
 
 void MediaPlayer::jumpSeconds(int secondsDelta)
 {
+    DEBUG(<< secondsDelta);
     // Send SeekRelativeReq indirectly to Demuxer via VideoOutput 
     // which has to fill the current PTS:
     videoOutput->queue_event(boost::make_shared<SeekRelativeReq>

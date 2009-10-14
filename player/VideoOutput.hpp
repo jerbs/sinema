@@ -36,6 +36,7 @@ public:
 	  state(IDLE),
 	  audioSync(false),
 	  audioSnapshotPTS(0),
+	  ignoreAudioSync(0),
 	  lastNotifiedTime(-1),
 	  displayedFramePTS(0)
     {
@@ -76,6 +77,7 @@ private:
     bool audioSync;
     double audioSnapshotPTS;
     timespec_t audioSnapshotTime;
+    int ignoreAudioSync;
 
     int lastNotifiedTime;
 
@@ -90,6 +92,7 @@ private:
     void process(boost::shared_ptr<ShowNextFrame> event);
     void process(boost::shared_ptr<AudioSyncInfo> event);
     void process(boost::shared_ptr<FlushReq> event);
+    void process(boost::shared_ptr<AudioFlushedInd> event);
     void process(boost::shared_ptr<SeekRelativeReq> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
