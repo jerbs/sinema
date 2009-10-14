@@ -79,6 +79,8 @@ private:
     timespec_t audioSnapshotTime;
     int ignoreAudioSync;
 
+    boost::shared_ptr<AudioSyncInfo> audioSyncInfo;
+
     int lastNotifiedTime;
 
     double displayedFramePTS;

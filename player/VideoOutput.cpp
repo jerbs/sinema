@@ -76,6 +76,8 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
 	displayedFramePTS = 0;
 	ignoreAudioSync = 0;
 
+	audioSyncInfo.reset();
+
 	videoDecoder->queue_event(boost::make_shared<CloseVideoOutputResp>());
     }
 }
@@ -135,19 +137,31 @@ void VideoOutput::process(boost::shared_ptr<ShowNextFrame> event)
 
 void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
 {
-    if (isOpen() && ignoreAudioSync == 0)
-    {
-    audioSync = true;
-    audioSnapshotPTS = event->pts;
-    audioSnapshotTime = event->abstime;
+    audioSyncInfo.reset();
 
-    DEBUG(<< "audioSnapshotPTS =" << audioSnapshotPTS
-	  << ", audioSnapshotTime=" << audioSnapshotTime);
-
-    if (state == STILL)
+    if (isOpen())
     {
-	startFrameTimer();
-    }
+	if (ignoreAudioSync == 0)
+	{
+	    audioSync = true;
+	    audioSnapshotPTS = event->pts;
+	    audioSnapshotTime = event->abstime;
+
+	    DEBUG(<< "audioSnapshotPTS =" << audioSnapshotPTS
+		  << ", audioSnapshotTime=" << audioSnapshotTime);
+
+	    if (state == STILL)
+	    {
+		startFrameTimer();
+	    }
+	}
+
+	if (ignoreAudioSync == -1)
+	{
+	    // AudioFlushedInd received, but FlushReq is not yet received.
+	    // Defer AudioSyncInfo event:
+	    audioSyncInfo = event;
+	}
     }
 }
 
@@ -177,6 +191,12 @@ void VideoOutput::process(boost::shared_ptr<FlushReq> event)
 	audioSync = false;
 
 	ignoreAudioSync++;
+
+	if (audioSyncInfo)
+	{
+	    // Process deferred AudioSyncInfo event:
+	    process(audioSyncInfo);
+	}
     }
 }
 
