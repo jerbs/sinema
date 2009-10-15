@@ -88,7 +88,7 @@ private:
 
     void sendInitEvents();
 
-    virtual void process(boost::shared_ptr<NotificationCurrentTitle> event) = 0;
+    virtual void process(boost::shared_ptr<NotificationFileInfo> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event) = 0;
 };
 

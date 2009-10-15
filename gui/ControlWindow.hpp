@@ -37,7 +37,8 @@ protected:
     virtual void on_button_forward();
 
     void set_title(Glib::ustring title);
-    void set_time(int seconds);
+    void set_duration(double seconds);
+    void set_time(double seconds);
 
     GtkmmMediaPlayer& m_MediaPlayer;
 
@@ -46,6 +47,7 @@ protected:
     Gtk::VBox m_VBox_Level1;
     Gtk::HBox m_HBox_Level2;
     Gtk::VBox m_VBox_Level3;
+    Gtk::HBox m_HBox_Level4;
 
     Gtk::Table m_Table;
     Gtk::Button m_Play, m_Pause, m_Stop;
@@ -53,16 +55,13 @@ protected:
 
     Gtk::Label m_LabelTitle;
     Gtk::Label m_LabelTime;
+    Gtk::Label m_LabelDuration;
 
     Gtk::Adjustment m_AdjustmentPosition;
     Gtk::HScrollbar m_ScrollbarPosition;
 
     Gtk::Adjustment m_AdjustmentVolume;
     Gtk::VScale m_VScaleVolume;
-
-    // Dispatcher
-    Glib::Dispatcher m_dispatcherTitle;
-    Glib::Dispatcher m_dispatcherTime;
 };
 
 #endif

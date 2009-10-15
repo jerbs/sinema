@@ -15,7 +15,8 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
       m_HBox_Level0(false, 2),  // not homogeneous, spacing
       m_VBox_Level1(false, 2), 
       m_HBox_Level2(false, 10),
-      m_VBox_Level3(false, 2), 
+      m_VBox_Level3(false, 2),
+      m_HBox_Level4(false, 10),
       m_Table(2, 4, true), // height, width, homogeneous
       m_Play("Play"),
       m_Pause("Pause"),
@@ -50,9 +51,13 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     m_HBox_Level2.pack_start(m_VBox_Level3);
 
     m_LabelTitle.set_text("Title");
-    m_LabelTime.set_text("00:00:00");
     m_VBox_Level3.pack_start(m_LabelTitle);
-    m_VBox_Level3.pack_start(m_LabelTime);
+    m_VBox_Level3.pack_start(m_HBox_Level4);
+
+    m_LabelTime.set_text("00:00:00");
+    m_LabelDuration.set_text("00:00:00");    
+    m_HBox_Level4.pack_start(m_LabelTime);
+    m_HBox_Level4.pack_start(m_LabelDuration);
 
     m_VBox_Level1.pack_end(m_ScrollbarPosition, Gtk::PACK_SHRINK);
 
@@ -70,7 +75,8 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     m_Rewind.signal_clicked().connect( sigc::mem_fun(*this, &ControlWindow::on_button_rewind) );
     m_Forward.signal_clicked().connect( sigc::mem_fun(*this, &ControlWindow::on_button_forward) );
 
-    m_MediaPlayer.notificationCurrentTitle.connect( sigc::mem_fun(*this, &ControlWindow::set_title) );
+    m_MediaPlayer.notificationFileName.connect( sigc::mem_fun(*this, &ControlWindow::set_title) );
+    m_MediaPlayer.notificationDuration.connect( sigc::mem_fun(*this, &ControlWindow::set_duration) );
     m_MediaPlayer.notificationCurrentTime.connect( sigc::mem_fun(*this, &ControlWindow::set_time) );
 
     show_all_children();
@@ -121,7 +127,7 @@ void ControlWindow::set_title(Glib::ustring title)
     m_LabelTitle.set_text(title);
 }
 
-void ControlWindow::set_time(int seconds)
+std::string getTimeString(int seconds)
 {
     int a = seconds/60;
     int h = a/60;
@@ -133,5 +139,16 @@ void ControlWindow::set_time(int seconds)
        << std::setw(2) << h << ":"
        << std::setw(2) << m << ":"
        << std::setw(2) << s;
-    m_LabelTime.set_text(ss.str());
+
+    return ss.str();
+}
+
+void ControlWindow::set_time(double seconds)
+{
+    m_LabelTime.set_text(getTimeString(seconds));
+}
+
+void ControlWindow::set_duration(double seconds)
+{
+    m_LabelDuration.set_text(getTimeString(seconds));
 }

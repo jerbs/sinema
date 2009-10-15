@@ -20,9 +20,11 @@ void GtkmmMediaPlayer::notifyGuiThread()
     m_dispatcher();
 }
 
-void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationCurrentTitle> event)
+void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationFileInfo> event)
 {
-    notificationCurrentTitle(event->title);
+    notificationFileName(event->fileName);
+    notificationDuration(event->duration);
+    notificationCurrentTime(0);
 }
 
 void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationCurrentTime> event)

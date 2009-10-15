@@ -190,7 +190,13 @@ void Demuxer::updateSystemStreamStatusOpening()
 	{
 	    // Successfully opened audio and video stream.
 	    systemStreamStatus = SystemStreamOpened;
-	    mediaPlayer->queue_event(boost::make_shared<NotificationCurrentTitle>(fileName));
+
+	    boost::shared_ptr<NotificationFileInfo> nfi(new NotificationFileInfo());
+	    const double INV_AV_TIME_BASE = double(1)/AV_TIME_BASE;
+	    nfi->fileName = fileName;
+	    nfi->duration = double(avFormatContext->duration) * INV_AV_TIME_BASE;
+	    nfi->file_size = avFormatContext->file_size;
+	    mediaPlayer->queue_event(nfi);
 	}
 	else
 	{
@@ -261,6 +267,9 @@ void Demuxer::updateSystemStreamStatusClosing()
 
 	    av_close_input_file(avFormatContext);
 	    avFormatContext = 0;
+
+	    // Reset current time in GUI, keep title and duration:
+	    mediaPlayer->queue_event(boost::make_shared<NotificationCurrentTime>(0));
 
 	    queue_deferred_events();
 	}

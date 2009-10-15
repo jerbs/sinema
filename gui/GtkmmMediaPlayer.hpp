@@ -17,14 +17,15 @@ class GtkmmMediaPlayer : public MediaPlayer
     static Glib::Dispatcher m_dispatcher;
 
 public:
-    sigc::signal<void, std::string> notificationCurrentTitle;
+    sigc::signal<void, std::string> notificationFileName;
+    sigc::signal<void, int> notificationDuration;
     sigc::signal<void, int> notificationCurrentTime;
 
     GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList);
 
     static void notifyGuiThread();
 
-    virtual void process(boost::shared_ptr<NotificationCurrentTitle> event);
+    virtual void process(boost::shared_ptr<NotificationFileInfo> event);
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event);
 };
 

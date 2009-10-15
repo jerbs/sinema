@@ -258,12 +258,11 @@ struct CommandForward{};
 
 // ===================================================================
 
-struct NotificationCurrentTitle
+struct NotificationFileInfo
 {
-    NotificationCurrentTitle(std::string title)
-	: title(title)
-    {}
-    std::string title;
+    std::string fileName;
+    double duration;
+    int64_t file_size;
 };
 
 struct NotificationCurrentTime
