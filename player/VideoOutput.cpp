@@ -112,6 +112,11 @@ void VideoOutput::process(boost::shared_ptr<XFVideoImage> event)
 	    startFrameTimer();
 	    break;
 
+	case FLUSHED:
+	    state = STILL;
+	    displayNextFrame();
+	    break;
+
 	default:
 	    break;
 	}
@@ -184,8 +189,10 @@ void VideoOutput::process(boost::shared_ptr<FlushReq> event)
 	// be ignored.
 	stop_timer(frameTimer);
 
-	// No frame available to display.
-	state = STILL;
+	// No frame available to display. In state FLUSHED the next frame is
+	// immediately shown when received without starting a timer before,
+	// as it would be done in state STILL.
+	state = FLUSHED;
 
 	// Audio synchronization has to be reestablished:
 	audioSync = false;

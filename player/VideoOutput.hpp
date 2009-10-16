@@ -66,6 +66,7 @@ private:
 	INIT,
 	OPEN,
 	PAUSE,
+	FLUSHED,
 	STILL,
 	PLAYING
     } state_t;
