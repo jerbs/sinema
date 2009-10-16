@@ -18,8 +18,8 @@ class GtkmmMediaPlayer : public MediaPlayer
 
 public:
     sigc::signal<void, std::string> notificationFileName;
-    sigc::signal<void, int> notificationDuration;
-    sigc::signal<void, int> notificationCurrentTime;
+    sigc::signal<void, double> notificationDuration;
+    sigc::signal<void, double> notificationCurrentTime;
 
     GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList);
 

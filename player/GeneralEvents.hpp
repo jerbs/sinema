@@ -131,6 +131,14 @@ struct CloseVideoStreamResp {};
 
 // ===================================================================
 
+struct SeekAbsoluteReq
+{
+    SeekAbsoluteReq(int64_t seekTarget)
+	: seekTarget(seekTarget)
+    {}
+    int64_t seekTarget;  // seconds * AV_TIME_BASE
+};
+
 struct SeekRelativeReq
 {
     SeekRelativeReq(int64_t seekOffset)

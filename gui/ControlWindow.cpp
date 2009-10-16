@@ -12,6 +12,7 @@
 ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     : Gtk::Window(),
       m_MediaPlayer(mediaPlayer),
+      acceptAdjustmentPositionValueChanged(true),
       m_HBox_Level0(false, 2),  // not homogeneous, spacing
       m_VBox_Level1(false, 2), 
       m_HBox_Level2(false, 10),
@@ -67,6 +68,14 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     m_VScaleVolume.set_inverted(true);
     m_HBox_Level0.pack_end(m_VScaleVolume, Gtk::PACK_SHRINK);
 
+    m_AdjustmentPosition.set_lower(0);
+    m_AdjustmentPosition.set_upper(0);
+    m_AdjustmentPosition.set_page_increment(60);  
+    m_AdjustmentPosition.set_page_size(60);
+    m_AdjustmentPosition.set_step_increment(10);
+    m_AdjustmentPosition.signal_changed().connect(sigc::mem_fun(*this, &ControlWindow::on_position_changed));
+    m_AdjustmentPosition.signal_value_changed().connect(sigc::mem_fun(*this, &ControlWindow::on_position_value_changed));
+
     m_Play.signal_clicked().connect( sigc::mem_fun(*this, &ControlWindow::on_button_play) );
     m_Pause.signal_clicked().connect( sigc::mem_fun(*this, &ControlWindow::on_button_pause) );
     m_Stop.signal_clicked().connect( sigc::mem_fun(*this, &ControlWindow::on_button_stop) );
@@ -114,12 +123,28 @@ void ControlWindow::on_button_next()
 
 void ControlWindow::on_button_rewind()
 {
-    m_MediaPlayer.jumpSeconds(-10);
+    m_MediaPlayer.seekRelative(-10);
 }
 
 void ControlWindow::on_button_forward()
 {
-    m_MediaPlayer.jumpSeconds(+10);
+    m_MediaPlayer.seekRelative(+10);
+}
+
+void ControlWindow::on_position_changed()
+{
+    // Adjustment other than the value changed.
+    std::cout << "on_position_changed" << std::endl;
+}
+
+void ControlWindow::on_position_value_changed()
+{
+    if (acceptAdjustmentPositionValueChanged)
+    {
+	// Adjustment value changed.
+	std::cout << "on_position_value_changed: " << m_AdjustmentPosition.get_value() << std::endl;
+	m_MediaPlayer.seekAbsolute(m_AdjustmentPosition.get_value());
+    }
 }
 
 void ControlWindow::set_title(Glib::ustring title)
@@ -146,9 +171,13 @@ std::string getTimeString(int seconds)
 void ControlWindow::set_time(double seconds)
 {
     m_LabelTime.set_text(getTimeString(seconds));
+    acceptAdjustmentPositionValueChanged = false;
+    m_AdjustmentPosition.set_value(seconds);
+    acceptAdjustmentPositionValueChanged = true;
 }
 
 void ControlWindow::set_duration(double seconds)
 {
     m_LabelDuration.set_text(getTimeString(seconds));
+    m_AdjustmentPosition.set_upper(seconds);
 }

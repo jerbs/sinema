@@ -167,11 +167,17 @@ void MediaPlayer::skipForward()
     }
 }
 
-void MediaPlayer::jumpSeconds(int secondsDelta)
+void MediaPlayer::seekAbsolute(double second)
+{
+    demuxer->queue_event(boost::make_shared<SeekAbsoluteReq>
+			 (second*AV_TIME_BASE));
+}
+
+void MediaPlayer::seekRelative(double secondsDelta)
 {
     DEBUG(<< secondsDelta);
     // Send SeekRelativeReq indirectly to Demuxer via VideoOutput 
     // which has to fill the current PTS:
     videoOutput->queue_event(boost::make_shared<SeekRelativeReq>
-			     (int64_t(secondsDelta)*int64_t(AV_TIME_BASE)));
+			     (secondsDelta*AV_TIME_BASE));
 }

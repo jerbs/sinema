@@ -35,12 +35,15 @@ protected:
     virtual void on_button_next();
     virtual void on_button_rewind();
     virtual void on_button_forward();
+    virtual void on_position_changed();
+    virtual void on_position_value_changed();
 
     void set_title(Glib::ustring title);
     void set_duration(double seconds);
     void set_time(double seconds);
 
     GtkmmMediaPlayer& m_MediaPlayer;
+    bool acceptAdjustmentPositionValueChanged;
 
     // Child widgets:
     Gtk::HBox m_HBox_Level0;

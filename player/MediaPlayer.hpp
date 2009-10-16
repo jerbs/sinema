@@ -55,7 +55,8 @@ public:
     void skipBack();
     void skipForward();
 
-    void jumpSeconds(int secondsDelta);
+    void seekAbsolute(double second);
+    void seekRelative(double secondsDelta);
 
     // protected:
     void processEventQueue();

@@ -289,8 +289,18 @@ void Demuxer::process(boost::shared_ptr<SeekRelativeReq> event)
 	// For other streams it is avFormatContext->streams[streamIndex]->time_base.
 
 	int64_t seekTarget = event->seekOffset + event->displayedFramePTS * AV_TIME_BASE;
+	process(boost::make_shared<SeekAbsoluteReq>(seekTarget));
+    }
+}
+
+void Demuxer::process(boost::shared_ptr<SeekAbsoluteReq> event)
+{
+    if (systemStreamStatus==SystemStreamOpened ||
+	systemStreamStatus==SystemStreamOpening)
+    {
+	DEBUG();
 	AVRational time_base = avFormatContext->streams[videoStreamIndex]->time_base;
-	int64_t targetTimestamp = av_rescale_q(seekTarget, AV_TIME_BASE_Q, time_base);
+	int64_t targetTimestamp = av_rescale_q(event->seekTarget, AV_TIME_BASE_Q, time_base);
 
 	int seekFlags = 0;  // AVSEEK_FLAG_BACKWARD
 
