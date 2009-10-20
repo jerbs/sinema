@@ -10,6 +10,7 @@
 #include "player/GeneralEvents.hpp"
 #include "platform/event_receiver.hpp"
 #include "player/AlsaFacade.hpp"
+#include "player/AlsaMixer.hpp"
 
 #include <queue>
 
@@ -22,13 +23,8 @@ class AudioOutput : public event_receiver<AudioOutput>
     friend class event_processor<>;
 
 public:
-    AudioOutput(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc),
-	  alsa(),
-	  state(IDLE)
-    {}
-    ~AudioOutput()
-    {}
+    AudioOutput(event_processor_ptr_type evt_proc);
+    ~AudioOutput();
 
 private:
 #ifdef SYNCTEST
@@ -37,10 +33,12 @@ private:
     boost::shared_ptr<AudioDecoder> audioDecoder;
 #endif
     boost::shared_ptr<VideoOutput> videoOutput;
+    MediaPlayer* mediaPlayer;
 
     timer chunkTimer;
 
     boost::shared_ptr<AFPCMDigitalAudioInterface> alsa;
+    boost::shared_ptr<AFMixer> alsaMixer;
     std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
 
     typedef enum {
@@ -66,9 +64,12 @@ private:
     void process(boost::shared_ptr<AFAudioFrame> event);
     void process(boost::shared_ptr<PlayNextChunk> event);
     void process(boost::shared_ptr<FlushReq> event);
+    void process(boost::shared_ptr<AlsaMixerElemEvent> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);
+    void process(boost::shared_ptr<CommandSetPlaybackVolume> event);
+    void process(boost::shared_ptr<CommandSetPlaybackSwitch> event);
 
     void createAudioFrame();
     void playNextChunk();

@@ -31,3 +31,8 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationCurrentTime> event)
 {
     notificationCurrentTime(event->time);
 }
+
+void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationCurrentVolume> event)
+{
+    notificationCurrentVolume(*event);
+}

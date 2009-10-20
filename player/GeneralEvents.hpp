@@ -264,6 +264,22 @@ struct CommandPause{};
 struct CommandRewind{};
 struct CommandForward{};
 
+struct CommandSetPlaybackVolume
+{
+    CommandSetPlaybackVolume(long volume)
+	: volume(volume)
+    {}
+    long volume;
+};
+
+struct CommandSetPlaybackSwitch
+{
+    CommandSetPlaybackSwitch(bool enabled)
+	: enabled(enabled)
+    {}
+    bool enabled;
+};
+
 // ===================================================================
 
 struct NotificationFileInfo
@@ -279,6 +295,15 @@ struct NotificationCurrentTime
 	: time(time)
     {}
     double time;
+};
+
+struct NotificationCurrentVolume
+{
+    std::string name;
+    long volume;
+    bool enabled;
+    long minVolume;
+    long maxVolume;
 };
 
 // ===================================================================

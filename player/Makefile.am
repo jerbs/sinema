@@ -2,4 +2,4 @@
 
 ## Convinience library:
 noinst_LTLIBRARIES    = libplayer.la
-libplayer_la_SOURCES = AlsaFacade.cpp AudioDecoder.cpp AudioOutput.cpp Demuxer.cpp FileReader.cpp MediaPlayer.cpp PlayList.cpp SyncTest.cpp VideoDecoder.cpp VideoOutput.cpp XlibFacade.cpp XlibHelpers.cpp
+libplayer_la_SOURCES = AlsaFacade.cpp AlsaMixer.cpp AudioDecoder.cpp AudioOutput.cpp Demuxer.cpp FileReader.cpp MediaPlayer.cpp PlayList.cpp SyncTest.cpp VideoDecoder.cpp VideoOutput.cpp XlibFacade.cpp XlibHelpers.cpp

@@ -7,11 +7,22 @@
 #include "player/AudioOutput.hpp"
 #include "player/AudioDecoder.hpp"
 #include "player/VideoOutput.hpp"
+#include "player/MediaPlayer.hpp"
 #include "player/AlsaFacade.hpp"
 #include "player/SyncTest.hpp"
 #include "platform/timer.hpp"
 
 #include <boost/make_shared.hpp>
+
+AudioOutput::AudioOutput(event_processor_ptr_type evt_proc)
+    : base_type(evt_proc),
+      state(IDLE)
+{
+}
+
+AudioOutput::~AudioOutput()
+{
+}
 
 void AudioOutput::process(boost::shared_ptr<InitEvent> event)
 {
@@ -25,6 +36,9 @@ void AudioOutput::process(boost::shared_ptr<InitEvent> event)
 	audioDecoder = event->audioDecoder;
 #endif
 	videoOutput = event->videoOutput;
+	mediaPlayer = event->mediaPlayer;
+
+	alsaMixer = boost::make_shared<AFMixer>(this, mediaPlayer);
 
 	state = INIT;
     }
@@ -138,6 +152,12 @@ void AudioOutput::process(boost::shared_ptr<FlushReq> event)
     }
 }
 
+void AudioOutput::process(boost::shared_ptr<AlsaMixerElemEvent> event)
+{
+    if (alsaMixer)
+    	alsaMixer->process(event);
+}
+
 void AudioOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
@@ -158,6 +178,18 @@ void AudioOutput::process(boost::shared_ptr<CommandPause> event)
 	state = PAUSE;
 	alsa->pause(true);
     }
+}
+
+void AudioOutput::process(boost::shared_ptr<CommandSetPlaybackVolume> event)
+{
+    if (alsaMixer)
+	alsaMixer->setPlaybackVolume(event->volume);
+}
+
+void AudioOutput::process(boost::shared_ptr<CommandSetPlaybackSwitch> event)
+{
+    if (alsaMixer)
+	alsaMixer->setPlaybackSwitch(event->enabled);
 }
 
 void AudioOutput::createAudioFrame()

@@ -58,6 +58,9 @@ public:
     void seekAbsolute(double second);
     void seekRelative(double secondsDelta);
 
+    void setPlaybackVolume(double volume);
+    void setPlaybackSwitch(bool enabled);
+
     // protected:
     void processEventQueue();
 
@@ -91,6 +94,7 @@ private:
 
     virtual void process(boost::shared_ptr<NotificationFileInfo> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event) = 0;
+    virtual void process(boost::shared_ptr<NotificationCurrentVolume> event) = 0;
 };
 
 #endif

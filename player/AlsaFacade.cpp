@@ -13,6 +13,9 @@ static char const * deviceName = "plug:default";
 //static char const * deviceName = "plug:SLAVE=hw";
 //static char const * deviceName = "plughw:0,0";
 
+// ./amixer -D default scontents
+
+
 AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAudioOutputReq> req)
     : device(deviceName),
       handle(0),

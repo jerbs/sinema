@@ -13,6 +13,7 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     : Gtk::Window(),
       m_MediaPlayer(mediaPlayer),
       acceptAdjustmentPositionValueChanged(true),
+      acceptAdjustmentVolumeValueChanged(true),
       m_HBox_Level0(false, 2),  // not homogeneous, spacing
       m_VBox_Level1(false, 2), 
       m_HBox_Level2(false, 10),
@@ -29,7 +30,8 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
       m_AdjustmentPosition(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
       m_ScrollbarPosition(m_AdjustmentPosition),
       m_AdjustmentVolume(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
-      m_VScaleVolume(m_AdjustmentVolume)
+      m_VScaleVolume(m_AdjustmentVolume),
+      m_Mute()
 {
     set_title("Control Window");
 
@@ -66,7 +68,10 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     m_VScaleVolume.set_draw_value(false);
     // Lowest value at buttom, highest at top:
     m_VScaleVolume.set_inverted(true);
-    m_HBox_Level0.pack_end(m_VScaleVolume, Gtk::PACK_SHRINK);
+    m_HBox_Level0.pack_end(m_VBox_Level1a);
+
+    m_VBox_Level1a.pack_start(m_VScaleVolume, Gtk::PACK_EXPAND_WIDGET);
+    m_VBox_Level1a.pack_end(m_Mute, Gtk::PACK_SHRINK);
 
     m_AdjustmentPosition.set_lower(0);
     m_AdjustmentPosition.set_upper(0);
@@ -75,6 +80,15 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     m_AdjustmentPosition.set_step_increment(10);
     m_AdjustmentPosition.signal_changed().connect(sigc::mem_fun(*this, &ControlWindow::on_position_changed));
     m_AdjustmentPosition.signal_value_changed().connect(sigc::mem_fun(*this, &ControlWindow::on_position_value_changed));
+
+    m_AdjustmentVolume.set_lower(0);
+    m_AdjustmentVolume.set_upper(0);
+    m_AdjustmentVolume.set_page_increment(0);  
+    m_AdjustmentVolume.set_page_size(0);
+    m_AdjustmentVolume.set_step_increment(0);
+    m_AdjustmentVolume.signal_changed().connect(sigc::mem_fun(*this, &ControlWindow::on_volume_changed));
+    m_AdjustmentVolume.signal_value_changed().connect(sigc::mem_fun(*this, &ControlWindow::on_volume_value_changed));
+    m_Mute.signal_toggled().connect(sigc::mem_fun(*this, &ControlWindow::on_mute_toggled));
 
     m_Play.signal_clicked().connect( sigc::mem_fun(*this, &ControlWindow::on_button_play) );
     m_Pause.signal_clicked().connect( sigc::mem_fun(*this, &ControlWindow::on_button_pause) );
@@ -87,6 +101,7 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     m_MediaPlayer.notificationFileName.connect( sigc::mem_fun(*this, &ControlWindow::set_title) );
     m_MediaPlayer.notificationDuration.connect( sigc::mem_fun(*this, &ControlWindow::set_duration) );
     m_MediaPlayer.notificationCurrentTime.connect( sigc::mem_fun(*this, &ControlWindow::set_time) );
+    m_MediaPlayer.notificationCurrentVolume.connect( sigc::mem_fun(*this, &ControlWindow::set_volume) );
 
     show_all_children();
 }
@@ -134,7 +149,6 @@ void ControlWindow::on_button_forward()
 void ControlWindow::on_position_changed()
 {
     // Adjustment other than the value changed.
-    std::cout << "on_position_changed" << std::endl;
 }
 
 void ControlWindow::on_position_value_changed()
@@ -142,8 +156,29 @@ void ControlWindow::on_position_value_changed()
     if (acceptAdjustmentPositionValueChanged)
     {
 	// Adjustment value changed.
-	std::cout << "on_position_value_changed: " << m_AdjustmentPosition.get_value() << std::endl;
 	m_MediaPlayer.seekAbsolute(m_AdjustmentPosition.get_value());
+    }
+}
+
+void ControlWindow::on_volume_changed()
+{
+}
+
+void ControlWindow::on_volume_value_changed()
+{
+    if (acceptAdjustmentVolumeValueChanged)
+    {
+	// Adjustment value changed.
+	m_MediaPlayer.setPlaybackVolume(m_AdjustmentVolume.get_value());
+    }
+}
+
+void ControlWindow::on_mute_toggled()
+{
+    if (acceptAdjustmentVolumeValueChanged)
+    {
+	// Mute button toggled
+	m_MediaPlayer.setPlaybackSwitch(m_Mute.get_active());
     }
 }
 
@@ -180,4 +215,19 @@ void ControlWindow::set_duration(double seconds)
 {
     m_LabelDuration.set_text(getTimeString(seconds));
     m_AdjustmentPosition.set_upper(seconds);
+}
+
+void ControlWindow::set_volume(NotificationCurrentVolume vol)
+{
+    double stepIncrement = double(vol.maxVolume - vol.minVolume) / 100;
+    double pageIncrement = stepIncrement * 5;
+    acceptAdjustmentVolumeValueChanged = false;
+    m_AdjustmentVolume.set_lower(vol.minVolume);
+    m_AdjustmentVolume.set_upper(vol.maxVolume);
+    m_AdjustmentVolume.set_page_increment(pageIncrement);
+    m_AdjustmentVolume.set_page_size(pageIncrement);
+    m_AdjustmentVolume.set_step_increment(stepIncrement);
+    m_AdjustmentVolume.set_value(vol.volume);
+    m_Mute.set_active(vol.enabled);
+    acceptAdjustmentVolumeValueChanged = true;
 }

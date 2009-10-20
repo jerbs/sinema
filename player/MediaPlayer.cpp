@@ -181,3 +181,13 @@ void MediaPlayer::seekRelative(double secondsDelta)
     videoOutput->queue_event(boost::make_shared<SeekRelativeReq>
 			     (secondsDelta*AV_TIME_BASE));
 }
+
+void MediaPlayer::setPlaybackVolume(double volume)
+{
+    audioOutput->queue_event(boost::make_shared<CommandSetPlaybackVolume>(volume));
+}
+
+void MediaPlayer::setPlaybackSwitch(bool enabled)
+{
+    audioOutput->queue_event(boost::make_shared<CommandSetPlaybackSwitch>(enabled));
+}
