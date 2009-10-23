@@ -92,6 +92,13 @@ private:
 
     void sendInitEvents();
 
+    void process(boost::shared_ptr<EndOfSystemStream> event);
+    void process(boost::shared_ptr<EndOfAudioStream> event);
+    void process(boost::shared_ptr<EndOfVideoStream> event);
+
+    bool endOfAudioStream;
+    bool endOfVideoStream;
+
     virtual void process(boost::shared_ptr<NotificationFileInfo> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentVolume> event) = 0;

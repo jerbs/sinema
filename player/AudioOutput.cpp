@@ -16,7 +16,8 @@
 
 AudioOutput::AudioOutput(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
-      state(IDLE)
+      state(IDLE),
+      eos(false)
 {
 }
 
@@ -95,6 +96,7 @@ void AudioOutput::process(boost::shared_ptr<AFAudioFrame> event)
     {
 	DEBUG();
 
+	eos = false;
 	frameQueue.push(event);
 
 	switch (state)
@@ -149,6 +151,22 @@ void AudioOutput::process(boost::shared_ptr<FlushReq> event)
 
 	// Notify VideoOutput about flushed AudioOutput:
 	videoOutput->queue_event(boost::make_shared<AudioFlushedInd>());
+    }
+}
+
+void AudioOutput::process(boost::shared_ptr<EndOfAudioStream> event)
+{
+    if (isOpen())
+    {
+	DEBUG();
+	eos = true;
+	if (frameQueue.empty())
+	{
+	    if (!startEosTimer())
+	    {
+		mediaPlayer->queue_event(boost::make_shared<EndOfAudioStream>());
+	    }
+	}
     }
 }
 
@@ -210,9 +228,17 @@ void AudioOutput::playNextChunk()
     {
 	if (frameQueue.empty())
 	{
-	    DEBUG(<< "frameQueue empty");
 	    // No frame available to play.
 	    state = STILL;
+	    if (eos)
+	    {
+		if (!startEosTimer())
+		{
+		    // Timer is not started again.
+		    // I.e. the audio device has played all samples.
+		    mediaPlayer->queue_event(boost::make_shared<EndOfAudioStream>());
+		}
+	    }
 	    return;
 	}
 
@@ -274,6 +300,27 @@ void AudioOutput::startChunkTimer()
     start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
 
     state = PLAYING;
+}
+
+bool AudioOutput::startEosTimer()
+{
+    snd_pcm_sframes_t overallLatencyInFrames;
+    if (alsa->getOverallLatency(overallLatencyInFrames))
+    {
+	// Audio device is still playing the last frames.
+	state = PLAYING;
+	double overallLatencyInSeconds = double(overallLatencyInFrames) / double(sampleRate);
+	timespec_t dt = getTimespec(overallLatencyInSeconds);
+	if (dt != getTimespec(0))
+	{
+	    chunkTimer.relative(dt);
+	    DEBUG(<< "start_timer overallLatencyInSeconds=" << overallLatencyInSeconds);
+	    start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
+	    return true;
+	}
+    }
+
+    return false;
 }
 
 void AudioOutput::sendAudioSyncInfo(double nextPTS)

@@ -95,6 +95,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
     avCodec = 0;
     avStream = 0;
     videoStreamIndex = -1;
+    eos = false;
 
     }
 
@@ -193,6 +194,7 @@ void VideoDecoder::process(boost::shared_ptr<VideoPacketEvent> event)
     {
 	DEBUG();
 
+	eos = false;
 	packetQueue.push(event);
 	decode();
     }
@@ -233,6 +235,22 @@ void VideoDecoder::process(boost::shared_ptr<FlushReq> event)
 
 	// Forward event to VideoOutput:
 	videoOutput->queue_event(event);
+    }
+}
+
+void VideoDecoder::process(boost::shared_ptr<EndOfVideoStream> event)
+{
+    if (state == Opened)
+    {
+	DEBUG();
+	eos = true;
+
+	if (packetQueue.empty())
+	{
+	    // Decoded everything in this stream.
+	    videoOutput->queue_event(boost::make_shared<EndOfVideoStream>());
+	    eos = false;
+	}
     }
 }
 
@@ -310,6 +328,15 @@ void VideoDecoder::decode()
 	    ERROR(<< "avcodec_decode_video failed");
 	}
     }
+
+    if (eos && avFrameIsFree && packetQueue.empty())
+    {
+	// Decoded everything in this stream.
+	DEBUG(<< "forwarding EndOfVideoStream");
+	videoOutput->queue_event(boost::make_shared<EndOfVideoStream>());
+	eos = false;
+    }
+
 }
 
 void VideoDecoder::queue()

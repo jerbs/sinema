@@ -40,6 +40,8 @@ class VideoDecoder : public event_receiver<VideoDecoder>
     std::queue<boost::shared_ptr<XFVideoImage> > frameQueue;
     std::queue<boost::shared_ptr<VideoPacketEvent> > packetQueue;
 
+    bool eos;
+
     struct SwsContext* swsContext;
 
 public:
@@ -55,6 +57,7 @@ public:
 	  avFrame(avcodec_alloc_frame()),
 	  avFrameIsFree(true),
 	  pts(0),
+	  eos(false),
 	  swsContext(0)
     {}
     ~VideoDecoder()
@@ -83,6 +86,7 @@ private:
     void process(boost::shared_ptr<VideoPacketEvent> event);
     void process(boost::shared_ptr<XFVideoImage> event);
     void process(boost::shared_ptr<FlushReq> event);
+    void process(boost::shared_ptr<EndOfVideoStream> event);		 
 
     void decode();
     void queue();

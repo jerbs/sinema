@@ -258,6 +258,12 @@ struct DeleteXFVideoImage
 
 // ===================================================================
 
+struct EndOfSystemStream {};
+struct EndOfAudioStream {};
+struct EndOfVideoStream {};
+
+// ===================================================================
+
 struct CommandPlay{};
 struct CommandPause{};
 

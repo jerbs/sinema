@@ -99,6 +99,7 @@ void VideoOutput::process(boost::shared_ptr<XFVideoImage> event)
     {
 	DEBUG();
 
+	eos = false;
 	frameQueue.push(event);
 
 	switch (state)
@@ -222,6 +223,19 @@ void VideoOutput::process(boost::shared_ptr<SeekRelativeReq> event)
     demuxer->queue_event(event);
 }
 
+void VideoOutput::process(boost::shared_ptr<EndOfVideoStream> event)
+{
+    if (isOpen())
+    {
+	DEBUG();
+	eos = true;
+	if (frameQueue.empty())
+	{
+	    mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
+	}
+    }
+}
+
 void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
@@ -258,6 +272,10 @@ void VideoOutput::displayNextFrame()
     {
 	// No frame available to display.
 	state = STILL;
+	if (eos)
+	{
+	    mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
+	}
 	return;
     }
 
@@ -313,6 +331,10 @@ void VideoOutput::startFrameTimer()
 	// To calculate the timer the next frame and audio synchronization 
 	// information must be available.
 	state = STILL;
+	if (eos)
+	{
+	    mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
+	}
 	return;
     }
 

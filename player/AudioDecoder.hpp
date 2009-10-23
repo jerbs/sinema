@@ -36,6 +36,7 @@ class AudioDecoder : public event_receiver<AudioDecoder>
     std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
     std::queue<boost::shared_ptr<AudioPacketEvent> > packetQueue;
 
+    bool eos;
 
 public:
     AudioDecoder(event_processor_ptr_type evt_proc)
@@ -47,7 +48,8 @@ public:
 	  avStream(0),
 	  audioStreamIndex(-1),
 	  posCurrentPacket(0),
-	  numFramesCurrentPacket(0)
+	  numFramesCurrentPacket(0),
+	  eos(false)
     {}
     ~AudioDecoder()
     {}
@@ -65,6 +67,7 @@ private:
     void process(boost::shared_ptr<AudioPacketEvent> event);
     void process(boost::shared_ptr<AFAudioFrame> event);
     void process(boost::shared_ptr<FlushReq> event);
+    void process(boost::shared_ptr<EndOfAudioStream> event);
 
     void decode();
 };

@@ -78,6 +78,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
     avCodec = 0;
     avStream = 0;
     audioStreamIndex = -1;
+    eos = false;
 
     }
 
@@ -170,6 +171,7 @@ void AudioDecoder::process(boost::shared_ptr<AudioPacketEvent> event)
     {
 	DEBUG();
 
+	eos = false;
 	packetQueue.push(event);
 	decode();
     }
@@ -211,6 +213,21 @@ void AudioDecoder::process(boost::shared_ptr<FlushReq> event)
     }
 }
 
+void AudioDecoder::process(boost::shared_ptr<EndOfAudioStream> event)
+{
+    if (state == Opened)
+    {
+	DEBUG();
+	eos = true;
+
+	if (packetQueue.empty())
+	{
+	    // Decoded everything in this stream.
+	    audioOutput->queue_event(boost::make_shared<EndOfAudioStream>());
+	    eos = false;
+	}
+    }
+}
 
 extern std::ostream& operator<<(std::ostream& strm, AVRational r);
 
@@ -311,5 +328,13 @@ void AudioDecoder::decode()
 
             DEBUG(<< "W empty packet");
         }
+    }
+
+    if (eos && packetQueue.empty())
+    {
+	// Decoded everything in this stream.
+	DEBUG(<< "forwarding EndOfAudioStream");
+	audioOutput->queue_event(boost::make_shared<EndOfAudioStream>());
+	eos = false;
     }
 }

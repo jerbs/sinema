@@ -231,6 +231,16 @@ inline bool operator<(const timespec_t& t1, const timespec_t& t2)
     return t2 > t1;
 }
 
+inline bool operator==(const timespec_t& t1, const timespec_t& t2)
+{
+    return (t1.tv_sec == t2.tv_sec) && (t1.tv_nsec == t2.tv_nsec);
+}
+
+inline bool operator!=(const timespec_t& t1, const timespec_t& t2)
+{
+    return ! (t1 == t2);
+}
+
 inline std::ostream& operator<<(std::ostream& strm, timespec_t t)
 {
     strm << "(" << t.tv_sec << "," << t.tv_nsec << ")";

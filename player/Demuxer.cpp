@@ -394,7 +394,14 @@ void Demuxer::operator()()
 	    {
 		ERROR(<< "av_read_frame failed: " << ret);
 		systemStreamStatus = SystemStreamFailed;
-		queue_event(boost::make_shared<CloseFileEvent>());
+
+		// FFmpeg returns AVERROR_IO in case of EOF
+		if (ret == AVERROR_EOF || ret == AVERROR_IO)
+		{
+		    mediaPlayer->queue_event(boost::make_shared<EndOfSystemStream>());
+		    audioDecoder->queue_event(boost::make_shared<EndOfAudioStream>());
+		    videoDecoder->queue_event(boost::make_shared<EndOfVideoStream>());
+		}
 	    }
 	}
 	else

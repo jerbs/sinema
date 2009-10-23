@@ -43,7 +43,9 @@ MediaPlayer::MediaPlayer(boost::shared_ptr<PlayList> playList)
     : base_type(boost::make_shared<event_processor<
 		concurrent_queue<receive_fct_t,
 		MediaPlayerThreadNotification> > >()),
-      playList(playList)
+      playList(playList),
+      endOfAudioStream(false),
+      endOfVideoStream(false)
 {
     av_log_set_callback(logfunc);
 
@@ -190,4 +192,32 @@ void MediaPlayer::setPlaybackVolume(double volume)
 void MediaPlayer::setPlaybackSwitch(bool enabled)
 {
     audioOutput->queue_event(boost::make_shared<CommandSetPlaybackSwitch>(enabled));
+}
+
+void MediaPlayer::process(boost::shared_ptr<EndOfSystemStream> event)
+{
+    endOfAudioStream = false;
+    endOfVideoStream = false;
+}
+
+void MediaPlayer::process(boost::shared_ptr<EndOfAudioStream> event)
+{
+    DEBUG();
+    endOfAudioStream = true;
+    if (endOfVideoStream)
+    {
+	close();
+	skipForward();
+    }
+}
+
+void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream> event)
+{
+    DEBUG();
+    endOfVideoStream = true;
+    if (endOfAudioStream)
+    {
+	close();
+	skipForward();
+    }
 }

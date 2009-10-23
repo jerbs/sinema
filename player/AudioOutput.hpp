@@ -41,6 +41,8 @@ private:
     boost::shared_ptr<AFMixer> alsaMixer;
     std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
 
+    bool eos;
+
     typedef enum {
 	IDLE,
 	INIT,
@@ -64,6 +66,7 @@ private:
     void process(boost::shared_ptr<AFAudioFrame> event);
     void process(boost::shared_ptr<PlayNextChunk> event);
     void process(boost::shared_ptr<FlushReq> event);
+    void process(boost::shared_ptr<EndOfAudioStream> event);
     void process(boost::shared_ptr<AlsaMixerElemEvent> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
@@ -74,6 +77,7 @@ private:
     void createAudioFrame();
     void playNextChunk();
     void startChunkTimer();
+    bool startEosTimer();
 
     void sendAudioSyncInfo(double nextPTS);
 };

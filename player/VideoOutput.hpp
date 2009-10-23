@@ -33,6 +33,7 @@ class VideoOutput : public event_receiver<VideoOutput>
 public:
     VideoOutput(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc),
+	  eos(false),
 	  state(IDLE),
 	  audioSync(false),
 	  audioSnapshotPTS(0),
@@ -60,6 +61,8 @@ private:
 
     boost::shared_ptr<XFVideo> xfVideo;
     std::queue<boost::shared_ptr<XFVideoImage> > frameQueue;
+
+    bool eos;
 
     typedef enum {
 	IDLE,
@@ -97,6 +100,7 @@ private:
     void process(boost::shared_ptr<FlushReq> event);
     void process(boost::shared_ptr<AudioFlushedInd> event);
     void process(boost::shared_ptr<SeekRelativeReq> event);
+    void process(boost::shared_ptr<EndOfVideoStream> event);		 
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);
