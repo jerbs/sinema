@@ -76,7 +76,7 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer)
     m_AdjustmentPosition.set_lower(0);
     m_AdjustmentPosition.set_upper(0);
     m_AdjustmentPosition.set_page_increment(60);  
-    m_AdjustmentPosition.set_page_size(60);
+    m_AdjustmentPosition.set_page_size(1);
     m_AdjustmentPosition.set_step_increment(10);
     m_AdjustmentPosition.signal_changed().connect(sigc::mem_fun(*this, &ControlWindow::on_position_changed));
     m_AdjustmentPosition.signal_value_changed().connect(sigc::mem_fun(*this, &ControlWindow::on_position_value_changed));
@@ -225,7 +225,6 @@ void ControlWindow::set_volume(NotificationCurrentVolume vol)
     m_AdjustmentVolume.set_lower(vol.minVolume);
     m_AdjustmentVolume.set_upper(vol.maxVolume);
     m_AdjustmentVolume.set_page_increment(pageIncrement);
-    m_AdjustmentVolume.set_page_size(pageIncrement);
     m_AdjustmentVolume.set_step_increment(stepIncrement);
     m_AdjustmentVolume.set_value(vol.volume);
     m_Mute.set_active(vol.enabled);
