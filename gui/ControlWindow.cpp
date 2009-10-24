@@ -128,7 +128,14 @@ void ControlWindow::on_button_stop()
 
 void ControlWindow::on_button_prev()
 {
-    m_MediaPlayer.skipBack();
+    if (m_AdjustmentPosition.get_value() < 1)
+    {
+	m_MediaPlayer.skipBack();
+    }
+    else
+    {
+	m_MediaPlayer.seekAbsolute(0);
+    }
 }
 
 void ControlWindow::on_button_next()
