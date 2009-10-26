@@ -151,8 +151,7 @@ void MediaPlayer::pause()
 
 void MediaPlayer::skipBack()
 {
-    std::string file = playList->getPrevious();
-    if (!file.empty())
+    if (playList->selectPrevious())
     {
 	close();
 	open();
@@ -161,8 +160,7 @@ void MediaPlayer::skipBack()
 
 void MediaPlayer::skipForward()
 {
-    std::string file = playList->getNext();
-    if (!file.empty())
+    if (playList->selectNext())
     {
 	close();
 	open();

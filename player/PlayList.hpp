@@ -20,9 +20,9 @@ public:
 
     void append(std::string file);
 
-    std::string getPrevious();
     std::string getCurrent();
-    std::string getNext();
+    bool selectNext();
+    bool selectPrevious();
 
 private:
     typedef std::list<std::string> List_t;

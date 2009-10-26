@@ -17,20 +17,6 @@ void PlayList::append(std::string file)
     }
 }
 
-std::string PlayList::getPrevious()
-{
-    if (m_current != m_list.begin())
-    {
-	// Current element is not the first element
-	m_current --;
-	return getCurrent();
-    }
-    else
-    {
-	return std::string();
-    }
-}
-
 std::string PlayList::getCurrent()
 {
     if (m_current != m_list.end())
@@ -43,16 +29,35 @@ std::string PlayList::getCurrent()
     }
 }
 
-std::string PlayList::getNext()
+bool PlayList::selectNext()
 {
-    if (m_current != m_list.end())
+    ListIter_t tmp = m_current;
+    // end() is the position after the last element
+    if (++tmp != m_list.end())
     {
 	// Current element is not the last element
-	m_current ++;
-	return getCurrent();
+	m_current = tmp;
+	return true;
     }
     else
     {
-	return std::string();
+	// No next element
+	return false;
+    }
+}
+
+bool PlayList::selectPrevious()
+{
+    // begin() is the first element
+    if (m_current != m_list.begin())
+    {
+	// Current element is not the first element
+	m_current --;
+	return true;
+    }
+    else
+    {
+	// No previous element
+	return false;
     }
 }
