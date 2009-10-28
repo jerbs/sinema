@@ -435,6 +435,11 @@ void Demuxer::operator()()
 		audioDecoder->queue_event(boost::make_shared<EndOfAudioStream>());
 		videoDecoder->queue_event(boost::make_shared<EndOfVideoStream>());
 	    }
+
+	    if (!m_event_processor->empty())
+	    {
+		m_event_processor->dequeue_and_process();
+	    }
 	}
 	else
 	{
