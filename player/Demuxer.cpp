@@ -20,6 +20,7 @@ Demuxer::Demuxer(event_processor_ptr_type evt_proc)
       m_event_processor(evt_proc),
       avFormatContext(0),
       systemStreamStatus(SystemStreamClosed),
+      systemStreamFailed(false),
       audioStreamIndex(-1),
       videoStreamIndex(-1),
       audioStreamStatus(StreamClosed),
@@ -56,7 +57,7 @@ void Demuxer::process(boost::shared_ptr<StopEvent> event)
     DEBUG();
 }
 
-void Demuxer::process(boost::shared_ptr<OpenFileEvent> event)
+void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 {
     if (systemStreamStatus != SystemStreamClosed)
     {
@@ -85,7 +86,8 @@ void Demuxer::process(boost::shared_ptr<OpenFileEvent> event)
     if (ret != 0)
     {
 	ERROR(<< "av_open_input_file failed: " << ret);
-	exit(-1);
+	mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
+	return;
     }
 
     // Read packets of a media file to get stream information
@@ -94,6 +96,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileEvent> event)
     {
 	ERROR(<< "av_find_stream_info failed: " << ret);
 	av_close_input_file(avFormatContext);
+	mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
 	return;
     }
 
@@ -148,7 +151,9 @@ void Demuxer::process(boost::shared_ptr<OpenAudioStreamFail> event)
     if (audioStreamStatus == StreamOpening)
     {
 	DEBUG();
+	mediaPlayer->queue_event(boost::make_shared<OpenAudioStreamFailed>());
 	audioStreamStatus = StreamClosed;
+	audioStreamIndex = -1;
 	updateSystemStreamStatusOpening();
     }
 }
@@ -168,7 +173,9 @@ void Demuxer::process(boost::shared_ptr<OpenVideoStreamFail> event)
     if (videoStreamStatus == StreamOpening)
     {
 	DEBUG();
+	mediaPlayer->queue_event(boost::make_shared<OpenVideoStreamFailed>());
 	videoStreamStatus = StreamClosed;
+	videoStreamIndex = -1;
 	updateSystemStreamStatusOpening();
     }
 }
@@ -185,35 +192,50 @@ void Demuxer::updateSystemStreamStatusOpening()
 	    return;
 	}
 
-	if ( audioStreamStatus == StreamOpened &&
-	     videoStreamStatus == StreamOpened )
+	if ( audioStreamStatus == StreamClosed &&
+	     videoStreamStatus == StreamClosed )
 	{
-	    // Successfully opened audio and video stream.
-	    systemStreamStatus = SystemStreamOpened;
+	    // Opening audio and video stream failed.
+	    av_close_input_file(avFormatContext);
+	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
+	    return;
+	}
 
-	    boost::shared_ptr<NotificationFileInfo> nfi(new NotificationFileInfo());
-	    const double INV_AV_TIME_BASE = double(1)/AV_TIME_BASE;
-	    nfi->fileName = fileName;
-	    nfi->duration = double(avFormatContext->duration) * INV_AV_TIME_BASE;
-	    nfi->file_size = avFormatContext->file_size;
-	    mediaPlayer->queue_event(nfi);
-	}
-	else
+	if (videoStreamIndex == -1)
 	{
-	    // Opening at least one stream failed.
-	    // Close everything again.
-	    queue_event(boost::make_shared<CloseFileEvent>());
+	    // Opening video stream failed or system stream has no video.
+	    mediaPlayer->queue_event(boost::make_shared<NoVideoStream>());
 	}
+
+	if (audioStreamIndex == -1)
+	{
+	    // Opening audio stream failed or system stream has no audio.
+	    mediaPlayer->queue_event(boost::make_shared<NoAudioStream>());
+	}
+
+	// At least one stream is successfully opened.
+	systemStreamStatus = SystemStreamOpened;
+	mediaPlayer->queue_event(boost::make_shared<OpenFileResp>());
+
+	boost::shared_ptr<NotificationFileInfo> nfi(new NotificationFileInfo());
+	const double INV_AV_TIME_BASE = double(1)/AV_TIME_BASE;
+	nfi->fileName = fileName;
+	nfi->duration = double(avFormatContext->duration) * INV_AV_TIME_BASE;
+	nfi->file_size = avFormatContext->file_size;
+	mediaPlayer->queue_event(nfi);
+
+	mediaPlayer->queue_event(boost::make_shared<OpenFileResp>());
     }
 }
 
-void Demuxer::process(boost::shared_ptr<CloseFileEvent> event)
+void Demuxer::process(boost::shared_ptr<CloseFileReq> event)
 {
     if (systemStreamStatus != SystemStreamClosed)
     {
 	DEBUG();
 
 	systemStreamStatus = SystemStreamClosing;
+	systemStreamFailed = false;
 
 	if (audioStreamStatus != StreamClosed)
 	{
@@ -278,8 +300,8 @@ void Demuxer::updateSystemStreamStatusClosing()
 
 void Demuxer::process(boost::shared_ptr<SeekRelativeReq> event)
 {   
-    if (systemStreamStatus==SystemStreamOpened ||
-	systemStreamStatus==SystemStreamOpening)
+    if ( systemStreamStatus==SystemStreamOpened ||
+	 systemStreamStatus==SystemStreamOpening )
     {
 	DEBUG();
 
@@ -295,20 +317,31 @@ void Demuxer::process(boost::shared_ptr<SeekRelativeReq> event)
 
 void Demuxer::process(boost::shared_ptr<SeekAbsoluteReq> event)
 {
-    if (systemStreamStatus==SystemStreamOpened ||
-	systemStreamStatus==SystemStreamOpening)
+    DEBUG(<< "systemStreamStatus=" << systemStreamStatus);
+
+    if ( systemStreamStatus==SystemStreamOpened ||
+	 systemStreamStatus==SystemStreamOpening )
     {
 	DEBUG();
-	AVRational time_base = avFormatContext->streams[videoStreamIndex]->time_base;
+
+	int streamIndex = videoStreamIndex;
+	if (streamIndex == -1) streamIndex = audioStreamIndex;
+	if (streamIndex == -1) return;
+
+	AVRational time_base = avFormatContext->streams[streamIndex]->time_base;
 	int64_t targetTimestamp = av_rescale_q(event->seekTarget, AV_TIME_BASE_Q, time_base);
 
 	int seekFlags = 0;  // AVSEEK_FLAG_BACKWARD
 
-	int ret = av_seek_frame(avFormatContext, videoStreamIndex,
+	int ret = av_seek_frame(avFormatContext, streamIndex,
 				targetTimestamp, seekFlags);
 	if (ret >= 0)
 	{
 	    // success
+
+	    // systemStreamFailed includes EOF.
+	    systemStreamFailed = false;
+
 	    boost::shared_ptr<FlushReq> flushReq(new FlushReq());
 	    process(flushReq);
 	}
@@ -364,10 +397,11 @@ void Demuxer::operator()()
 	DEBUG();
 
 	if ( systemStreamStatus == SystemStreamOpened &&
-	     audioStreamStatus == StreamOpened &&
-	     videoStreamStatus == StreamOpened &&
-	     ( queuedAudioPackets < targetQueuedAudioPackets ||
-	       queuedVideoPackets < targetQueuedVideoPackets ) )
+	     !systemStreamFailed &&
+	     ( ( audioStreamStatus == StreamOpened &&
+		 queuedAudioPackets < targetQueuedAudioPackets ) ||
+	       ( videoStreamStatus == StreamOpened &&
+		 queuedVideoPackets < targetQueuedVideoPackets ) ) )
 	{
 	    int ret = av_read_frame(avFormatContext, avPacket);
 	    if (ret == 0)
@@ -393,15 +427,13 @@ void Demuxer::operator()()
 	    else
 	    {
 		ERROR(<< "av_read_frame failed: " << ret);
-		systemStreamStatus = SystemStreamFailed;
 
-		// FFmpeg returns AVERROR_IO in case of EOF
-		if (ret == AVERROR_EOF || ret == AVERROR_IO)
-		{
-		    mediaPlayer->queue_event(boost::make_shared<EndOfSystemStream>());
-		    audioDecoder->queue_event(boost::make_shared<EndOfAudioStream>());
-		    videoDecoder->queue_event(boost::make_shared<EndOfVideoStream>());
-		}
+		systemStreamFailed = true;
+
+		// Initiate closing the file by sending end of stream indications:
+		mediaPlayer->queue_event(boost::make_shared<EndOfSystemStream>());
+		audioDecoder->queue_event(boost::make_shared<EndOfAudioStream>());
+		videoDecoder->queue_event(boost::make_shared<EndOfVideoStream>());
 	    }
 	}
 	else

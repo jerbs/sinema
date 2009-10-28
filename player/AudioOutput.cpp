@@ -17,7 +17,9 @@
 AudioOutput::AudioOutput(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
       state(IDLE),
-      eos(false)
+      eos(false),
+      audioStreamOnly(false),
+      lastNotifiedTime(-1)
 {
 }
 
@@ -85,6 +87,9 @@ void AudioOutput::process(boost::shared_ptr<CloseAudioOutputReq> event)
 	alsa.reset();
 
 	state = INIT;
+
+	audioStreamOnly = false;
+	lastNotifiedTime = -1;
 
 	audioDecoder->queue_event(boost::make_shared<CloseAudioOutputResp>());
     }
@@ -168,6 +173,12 @@ void AudioOutput::process(boost::shared_ptr<EndOfAudioStream> event)
 	    }
 	}
     }
+}
+
+void AudioOutput::process(boost::shared_ptr<NoVideoStream> event)
+{
+    audioStreamOnly = true;
+    // No timer has to be started here. Audio plays without video by default.
 }
 
 void AudioOutput::process(boost::shared_ptr<AlsaMixerElemEvent> event)
@@ -340,6 +351,15 @@ void AudioOutput::sendAudioSyncInfo(double nextPTS)
 
 	boost::shared_ptr<AudioSyncInfo> audioSyncInfo(new AudioSyncInfo(currentPTS, currentTime));
 	videoOutput->queue_event(audioSyncInfo);
+
+	// For audio only files send an event to the GUI to update the displayed time.
+	// This solition isn't perfect, since sendAudioSyncInfo is not called on second boundaries.
+	int currentTime = currentPTS;
+	if (audioStreamOnly && currentTime != lastNotifiedTime)
+	{
+	    mediaPlayer->queue_event(audioSyncInfo);
+	    lastNotifiedTime = currentTime;
+	}
     }
     else
     {

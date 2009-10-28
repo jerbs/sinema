@@ -47,7 +47,7 @@ void FileReader::process(boost::shared_ptr<InitEvent> event)
     m_demuxer = event->demuxer;
 }
 
-void FileReader::process(boost::shared_ptr<OpenFileEvent> event)
+void FileReader::process(boost::shared_ptr<OpenFileReq> event)
 {
     DEBUG(<< event->fileName);
 
@@ -61,7 +61,7 @@ void FileReader::process(boost::shared_ptr<OpenFileEvent> event)
     m_offset = 0;
 }
 
-void FileReader::process(boost::shared_ptr<CloseFileEvent> event)
+void FileReader::process(boost::shared_ptr<CloseFileReq> event)
 {
     DEBUG();
     close(m_fd);

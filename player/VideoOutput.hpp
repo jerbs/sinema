@@ -38,6 +38,7 @@ public:
 	  audioSync(false),
 	  audioSnapshotPTS(0),
 	  ignoreAudioSync(0),
+	  videoStreamOnly(false),
 	  lastNotifiedTime(-1),
 	  displayedFramePTS(0)
     {
@@ -85,6 +86,8 @@ private:
 
     boost::shared_ptr<AudioSyncInfo> audioSyncInfo;
 
+    bool videoStreamOnly;
+
     int lastNotifiedTime;
 
     double displayedFramePTS;
@@ -101,6 +104,7 @@ private:
     void process(boost::shared_ptr<AudioFlushedInd> event);
     void process(boost::shared_ptr<SeekRelativeReq> event);
     void process(boost::shared_ptr<EndOfVideoStream> event);		 
+    void process(boost::shared_ptr<NoAudioStream> event);		 
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);

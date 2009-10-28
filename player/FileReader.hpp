@@ -34,8 +34,8 @@ private:
     boost::shared_ptr<Demuxer> m_demuxer;
 
     void process(boost::shared_ptr<InitEvent> event);
-    void process(boost::shared_ptr<OpenFileEvent> event);
-    void process(boost::shared_ptr<CloseFileEvent> event);
+    void process(boost::shared_ptr<OpenFileReq> event);
+    void process(boost::shared_ptr<CloseFileReq> event);
     void process(boost::shared_ptr<SystemStreamGetMoreDataEvent> event);
 
     static void aioCompletionHandler(sigval_t sigval);

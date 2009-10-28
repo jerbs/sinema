@@ -78,6 +78,8 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
 
 	audioSyncInfo.reset();
 
+	videoStreamOnly = false;
+
 	videoDecoder->queue_event(boost::make_shared<CloseVideoOutputResp>());
     }
 }
@@ -144,6 +146,7 @@ void VideoOutput::process(boost::shared_ptr<ShowNextFrame> event)
 void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
 {
     audioSyncInfo.reset();
+    videoStreamOnly = false;
 
     if (isOpen())
     {
@@ -233,6 +236,15 @@ void VideoOutput::process(boost::shared_ptr<EndOfVideoStream> event)
 	{
 	    mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
 	}
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<NoAudioStream> event)
+{
+    videoStreamOnly = true;
+    if (state == STILL)
+    {
+	startFrameTimer();
     }
 }
 
@@ -328,14 +340,25 @@ void VideoOutput::startFrameTimer()
 {
     if (frameQueue.empty() || !audioSync)
     {
-	// To calculate the timer the next frame and audio synchronization 
-	// information must be available.
-	state = STILL;
-	if (eos)
+	if ( !frameQueue.empty() &&
+	     videoStreamOnly )
 	{
-	    mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
+	    // No audio stream available, simulate audioSync
+	    audioSync = true;
+	    audioSnapshotPTS = displayedFramePTS;
+	    audioSnapshotTime = frameTimer.get_current_time();
 	}
-	return;
+	else
+	{
+	    // To calculate the timer the next frame and audio synchronization 
+	    // information must be available.
+	    state = STILL;
+	    if (eos)
+	    {
+		mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
+	    }
+	    return;
+	}
     }
 
     DEBUG();

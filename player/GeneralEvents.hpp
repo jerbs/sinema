@@ -64,15 +64,20 @@ struct StopEvent
 // ===================================================================
 // 
 
-struct OpenFileEvent
+struct OpenFileReq
 {
-    OpenFileEvent(std::string fn) : fileName(fn) {}
+    OpenFileReq(std::string fn) : fileName(fn) {}
     std::string fileName;
 };
 
-struct CloseFileEvent
-{
-};
+struct OpenFileResp {};
+struct OpenFileFail {};
+
+struct CloseFileReq {};
+struct CloseFileResp {};
+
+struct OpenAudioStreamFailed {};
+struct OpenVideoStreamFailed {};
 
 // ===================================================================
 
@@ -242,6 +247,9 @@ struct AudioSyncInfo
     double pts;
     struct timespec abstime;
 };
+
+struct NoAudioStream {};
+struct NoVideoStream {};
 
 // ===================================================================
 

@@ -60,6 +60,9 @@ private:
     unsigned int channels;
     unsigned int frameSize;
 
+    bool audioStreamOnly;
+    int lastNotifiedTime;
+
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<OpenAudioOutputReq> event);
     void process(boost::shared_ptr<CloseAudioOutputReq> event);
@@ -67,6 +70,7 @@ private:
     void process(boost::shared_ptr<PlayNextChunk> event);
     void process(boost::shared_ptr<FlushReq> event);
     void process(boost::shared_ptr<EndOfAudioStream> event);
+    void process(boost::shared_ptr<NoVideoStream> event);
     void process(boost::shared_ptr<AlsaMixerElemEvent> event);
 
     void process(boost::shared_ptr<CommandPlay> event);

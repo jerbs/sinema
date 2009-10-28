@@ -92,9 +92,19 @@ private:
 
     void sendInitEvents();
 
+    void process(boost::shared_ptr<OpenFileResp> event);
+    void process(boost::shared_ptr<OpenFileFail> event);
+    void process(boost::shared_ptr<CloseFileReq> event);
+    void process(boost::shared_ptr<CloseFileResp> event);
+
+    void process(boost::shared_ptr<NoAudioStream> event);
+    void process(boost::shared_ptr<NoVideoStream> event);
+
     void process(boost::shared_ptr<EndOfSystemStream> event);
     void process(boost::shared_ptr<EndOfAudioStream> event);
     void process(boost::shared_ptr<EndOfVideoStream> event);
+
+    void process(boost::shared_ptr<AudioSyncInfo> event);
 
     bool endOfAudioStream;
     bool endOfVideoStream;
@@ -102,6 +112,9 @@ private:
     virtual void process(boost::shared_ptr<NotificationFileInfo> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentVolume> event) = 0;
+
+    virtual void process(boost::shared_ptr<OpenAudioStreamFailed> event) {};
+    virtual void process(boost::shared_ptr<OpenVideoStreamFailed> event) {};
 };
 
 #endif

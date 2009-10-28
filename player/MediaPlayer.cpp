@@ -127,12 +127,12 @@ void MediaPlayer::processEventQueue()
 void MediaPlayer::open()
 {
     std::string file = playList->getCurrent();
-    demuxer->queue_event(boost::make_shared<OpenFileEvent>(file));
+    demuxer->queue_event(boost::make_shared<OpenFileReq>(file));
 }
 
 void MediaPlayer::close()
 {
-    demuxer->queue_event(boost::make_shared<CloseFileEvent>());
+    demuxer->queue_event(boost::make_shared<CloseFileReq>());
 }
 
 void MediaPlayer::play()
@@ -192,6 +192,33 @@ void MediaPlayer::setPlaybackSwitch(bool enabled)
     audioOutput->queue_event(boost::make_shared<CommandSetPlaybackSwitch>(enabled));
 }
 
+void MediaPlayer::process(boost::shared_ptr<OpenFileResp> event)
+{
+}
+
+void MediaPlayer::process(boost::shared_ptr<OpenFileFail> event)
+{
+    skipForward();
+}
+
+void MediaPlayer::process(boost::shared_ptr<CloseFileReq> event)
+{
+}
+
+void MediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
+{
+}
+
+void MediaPlayer::process(boost::shared_ptr<NoAudioStream> event)
+{
+    videoOutput->queue_event(event);
+}
+
+void MediaPlayer::process(boost::shared_ptr<NoVideoStream> event)
+{
+    audioOutput->queue_event(event);
+}
+
 void MediaPlayer::process(boost::shared_ptr<EndOfSystemStream> event)
 {
     endOfAudioStream = false;
@@ -218,4 +245,10 @@ void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream> event)
 	close();
 	skipForward();
     }
+}
+
+void MediaPlayer::process(boost::shared_ptr<AudioSyncInfo> event)
+{
+    // This messeage is only received for files having an audio stream only.
+    process(boost::make_shared<NotificationCurrentTime>(event->pts));
 }

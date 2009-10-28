@@ -26,10 +26,11 @@ class Demuxer : public event_receiver<Demuxer>
 	SystemStreamClosed,
 	SystemStreamOpening,
 	SystemStreamOpened,
-	SystemStreamFailed,
 	SystemStreamClosing
     };
     SystemStreamStatus systemStreamStatus;
+
+    bool systemStreamFailed;
 
     int audioStreamIndex;
     int videoStreamIndex;
@@ -72,13 +73,13 @@ private:
 
     void process(boost::shared_ptr<SystemStreamChunkEvent> event);
 
-    void process(boost::shared_ptr<OpenFileEvent> event);
+    void process(boost::shared_ptr<OpenFileReq> event);
     void process(boost::shared_ptr<OpenAudioStreamResp> event);
     void process(boost::shared_ptr<OpenAudioStreamFail> event);
     void process(boost::shared_ptr<OpenVideoStreamResp> event);
     void process(boost::shared_ptr<OpenVideoStreamFail> event);
 
-    void process(boost::shared_ptr<CloseFileEvent> event);
+    void process(boost::shared_ptr<CloseFileReq> event);
     void process(boost::shared_ptr<CloseAudioStreamResp> event);
     void process(boost::shared_ptr<CloseVideoStreamResp> event);
 
