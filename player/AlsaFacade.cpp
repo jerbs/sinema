@@ -376,6 +376,13 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
     return finished;
 }
 
+void AFPCMDigitalAudioInterface::skip(boost::shared_ptr<AFAudioFrame> frame, double seconds)
+{
+    snd_pcm_uframes_t frames = seconds * double(sampleRate);
+    int bytes = frames * channels * 2;
+    frame->consume(bytes);
+}
+
 bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> frame)
 {
     DEBUG();
@@ -406,6 +413,8 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
     }
     bool finished = copyFrame(my_areas, offset, frames, frame);
     nextPTS += double(frames)/double(sampleRate);
+
+    frame->setNextPTS(nextPTS);
 
     commitres = snd_pcm_mmap_commit(handle, offset, frames);
     if (commitres < 0 || (snd_pcm_uframes_t)commitres != frames)
@@ -516,10 +525,21 @@ double AFPCMDigitalAudioInterface::getNextPTS()
     return nextPTS;
 }
 
-void AFPCMDigitalAudioInterface::pause(bool enable)
+bool AFPCMDigitalAudioInterface::pause(bool enable)
 {
-    // Pause is not supported by all hardware: snd_pcm_hw_params_can_pause()
-    snd_pcm_pause(handle, enable ? 1 : 0);
+    if (snd_pcm_hw_params_can_pause(hwparams))
+    {
+	// Audio device supports pause.
+	snd_pcm_pause(handle, enable ? 1 : 0);
+	return true;
+    }
+    else if (enable)
+    {
+	// Pause is not supported by the audio device.
+	// Immediately stop playback.
+	snd_pcm_drop(handle);
+    }
+    return false;
 }
 
 void AFPCMDigitalAudioInterface::stop()

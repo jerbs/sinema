@@ -12,7 +12,7 @@
 #include "player/AlsaFacade.hpp"
 #include "player/AlsaMixer.hpp"
 
-#include <queue>
+#include <list>
 
 #include <boost/shared_ptr.hpp>
 
@@ -39,7 +39,9 @@ private:
 
     boost::shared_ptr<AFPCMDigitalAudioInterface> alsa;
     boost::shared_ptr<AFMixer> alsaMixer;
-    std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
+    typedef std::list<boost::shared_ptr<AFAudioFrame> > FrameQueue_t;
+    FrameQueue_t frameQueue;
+    FrameQueue_t::iterator currentFrame;
 
     bool eos;
 
@@ -62,6 +64,10 @@ private:
 
     bool audioStreamOnly;
     int lastNotifiedTime;
+
+    double audiblePTS;
+    int numAudioFrames;
+    int numPostBuffered;
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<OpenAudioOutputReq> event);

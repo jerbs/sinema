@@ -16,10 +16,15 @@
 
 AudioOutput::AudioOutput(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
+      mediaPlayer(0),
+      currentFrame(frameQueue.end()),
       state(IDLE),
       eos(false),
       audioStreamOnly(false),
-      lastNotifiedTime(-1)
+      lastNotifiedTime(-1),
+      audiblePTS(-1),
+      numAudioFrames(0),
+      numPostBuffered(0)
 {
 }
 
@@ -79,10 +84,10 @@ void AudioOutput::process(boost::shared_ptr<CloseAudioOutputReq> event)
 	alsa->stop();
 
 	// Throw away all queued frames:
-	while ( !frameQueue.empty() )
-	{
-	    frameQueue.pop();
-	}
+	frameQueue.clear();
+	currentFrame = frameQueue.end();
+	numAudioFrames = 0;
+	numPostBuffered = 0;
 
 	alsa.reset();
 
@@ -102,7 +107,11 @@ void AudioOutput::process(boost::shared_ptr<AFAudioFrame> event)
 	DEBUG();
 
 	eos = false;
-	frameQueue.push(event);
+	frameQueue.push_back(event);
+	if (currentFrame == frameQueue.end())
+	{
+	    currentFrame--;
+	}
 
 	switch (state)
 	{
@@ -137,14 +146,16 @@ void AudioOutput::process(boost::shared_ptr<FlushReq> event)
 	// Flush audio output buffer in driver:
 	alsa->stop();
 
-	// Send received frames back to VideoDecoder without showing them:
+	// Send received frames back to VideoDecoder without playing them:
 	while (!frameQueue.empty())
 	{
 	    boost::shared_ptr<AFAudioFrame> frame(frameQueue.front());
-	    frameQueue.pop();
+	    frameQueue.pop_front();
 	    frame->reset();
 	    audioDecoder->queue_event(frame);
 	}
+	currentFrame = frameQueue.end();
+	numPostBuffered = 0;
 
 	// Timeout event PlayNextChunk may be received after the timer is
 	// stopped. In this case the frameQueue is empty and the event will
@@ -193,7 +204,35 @@ void AudioOutput::process(boost::shared_ptr<CommandPlay> event)
     {
 	DEBUG();
 
-	alsa->pause(false);
+	if (state == PAUSE)
+	{
+	    if (!alsa->pause(false))
+	    {
+		// Audio device does not support pause.
+		// Go back in frame queue, to refill the buffer in the 
+		// audio device with the dropped frames.
+		while(currentFrame != frameQueue.begin())
+		{
+		    boost::shared_ptr<AFAudioFrame> frame(*currentFrame);
+		    if (frame->getPTS() > audiblePTS)
+		    {
+			// Complete frame has to be replayed.
+			frame->restore();
+			currentFrame--;
+		    }
+		    else
+		    {
+			// Partial frame has to be replayed.
+			boost::shared_ptr<AFAudioFrame> frame(*currentFrame);
+			frame->restore();
+			double seconds = audiblePTS - frame->getPTS();
+			alsa->skip(frame, seconds);
+			break;
+		    }
+		}
+	    }
+	}
+
 	playNextChunk();
     }
 }
@@ -203,6 +242,13 @@ void AudioOutput::process(boost::shared_ptr<CommandPause> event)
     if (isOpen())
     {
 	DEBUG();
+
+	snd_pcm_sframes_t overallLatencyInFrames;
+	if (alsa->getOverallLatency(overallLatencyInFrames))
+	{
+	    double latencyInSeconds = double(overallLatencyInFrames) / double(sampleRate);
+	    audiblePTS = alsa->getNextPTS() - latencyInSeconds;
+	}
 
 	state = PAUSE;
 	alsa->pause(true);
@@ -224,6 +270,7 @@ void AudioOutput::process(boost::shared_ptr<CommandSetPlaybackSwitch> event)
 void AudioOutput::createAudioFrame()
 {
     DEBUG();
+    numAudioFrames++;
 #ifdef SYNCTEST
     syncTest->queue_event(boost::make_shared<AFAudioFrame>(frameSize));
 #else
@@ -237,7 +284,7 @@ void AudioOutput::playNextChunk()
     {
     while(1)
     {
-	if (frameQueue.empty())
+	if (currentFrame == frameQueue.end())
 	{
 	    // No frame available to play.
 	    state = STILL;
@@ -255,7 +302,7 @@ void AudioOutput::playNextChunk()
 
 	DEBUG(<< "time=" << chunkTimer.get_current_time());
 
-	boost::shared_ptr<AFAudioFrame> frame(frameQueue.front());
+	boost::shared_ptr<AFAudioFrame> frame(*currentFrame);
 
 	bool nextAudioFrame = frame->atBegin();
 
@@ -274,17 +321,44 @@ void AudioOutput::playNextChunk()
 
 	if (finished)
 	{
-	    frameQueue.pop();
-	    frame->reset();
-#ifdef SYNCTEST
-	    syncTest->queue_event(frame);
-#else
-	    audioDecoder->queue_event(frame);
-#endif
+	    // Proceed to next frame in list:
+	    currentFrame++;
+	    numPostBuffered++;
+	    if (numPostBuffered + 10 > numAudioFrames)
+	    {
+		// Create additional frames.
+		createAudioFrame();
+	    }
 	}
 	else
 	{
 	    // buffer is full
+	    break;
+	}
+    }
+
+    // Remove obsolete frames from bufferedFrameQueue and send them back to
+    // the AudioDecoder.
+    FrameQueue_t::iterator it(frameQueue.begin());
+    while(it != currentFrame)
+    {
+	boost::shared_ptr<AFAudioFrame> firstFrame(*it);
+	double nextPTS = firstFrame->getNextPTS();
+	if (audiblePTS > nextPTS)
+	{
+	    // Frame not necessary for an restart after pause anymore.
+	    it = frameQueue.erase(it);
+	    numPostBuffered--;
+
+	    firstFrame->reset();
+#ifdef SYNCTEST
+	    syncTest->queue_event(firstFrame);
+#else
+	    audioDecoder->queue_event(firstFrame);
+#endif
+	}
+	else
+	{
 	    break;
 	}
     }
@@ -344,6 +418,7 @@ void AudioOutput::sendAudioSyncInfo(double nextPTS)
 	DEBUG();
 	double latencyInSeconds = double(overallLatencyInFrames) / double(sampleRate);
 	double currentPTS = nextPTS - latencyInSeconds;
+	audiblePTS = currentPTS;
 
 	INFO( << "AOUT: currentTime=" << currentTime
 	      << ", currentPTS=" << currentPTS

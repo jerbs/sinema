@@ -51,10 +51,18 @@ public:
     void setPTS(double pts_) {pts = pts_;}
     double getPTS() {return pts;}
 
+    void setNextPTS(double pts_) {nextPts = pts_;}
+    double getNextPTS() {return nextPts;}
+
     void reset()
     {
 	frameByteSize = 0;
 	pts = 0;
+	offset = 0;
+    }
+
+    void restore()
+    {
 	offset = 0;
     }
 
@@ -77,6 +85,7 @@ private:
     int frameByteSize;
     char* buf;
     double pts;
+    double nextPts;
     int offset;
 };
 
@@ -91,8 +100,10 @@ public:
     snd_pcm_sframes_t getBufferFillLevel();
     double getNextPTS();
 
-    void pause(bool enable);
+    bool pause(bool enable);
     void stop();
+
+    void skip(boost::shared_ptr<AFAudioFrame> frame, double seconds);
 
 private:
     AFPCMDigitalAudioInterface();
