@@ -4,16 +4,19 @@
 // Copyright (C) Joachim Erbs, 2009
 //
 
+#include <iostream>
+#include <boost/make_shared.hpp>
 #include <gtkmm/main.h>
+
 #include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
+#include "gui/MainWindow.hpp"
+#include "gui/SignalDispatcher.hpp"
 
 #ifdef SYNCTEST
 #include "player/SyncTest.hpp"
 #endif
 
-#include <iostream>
-#include <boost/make_shared.hpp>
  
 int main(int argc, char *argv[])
 {
@@ -35,8 +38,13 @@ int main(int argc, char *argv[])
     mediaPlayer.init();
     mediaPlayer.open();
 
-    ControlWindow controlWindow(mediaPlayer);
-    Gtk::Main::run(controlWindow);
+    SignalDispatcher signalDispatcher(mediaPlayer);
+
+    ControlWindow controlWindow(mediaPlayer, signalDispatcher);
+    controlWindow.show();
+
+    MainWindow mainWindow(signalDispatcher);
+    Gtk::Main::run(mainWindow);
 
 #else
 

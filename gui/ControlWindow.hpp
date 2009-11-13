@@ -13,43 +13,26 @@
 #include <gtkmm/checkbutton.h>
 #include <gtkmm/box.h>
 #include <gtkmm/label.h>
-#include <gtkmm/adjustment.h>
 #include <gtkmm/scrollbar.h>
 #include <gtkmm/scale.h>
-#include <glibmm/dispatcher.h>
 #include <glibmm/ustring.h>
 
-#include "gui/GtkmmMediaPlayer.hpp"
+class GtkmmMediaPlayer;
+class SignalDispatcher;
+class NotificationCurrentVolume;
 
 class ControlWindow : public Gtk::Window
 {
 public:
-    ControlWindow(GtkmmMediaPlayer& mediaPlayer);
+    ControlWindow(GtkmmMediaPlayer& mediaPlayer, SignalDispatcher& signalDispatcher);
     virtual ~ControlWindow();
 
-protected:
-    // Signal handlers:
-    virtual void on_button_play();
-    virtual void on_button_pause();
-    virtual void on_button_stop();
-    virtual void on_button_prev();
-    virtual void on_button_next();
-    virtual void on_button_rewind();
-    virtual void on_button_forward();
-    virtual void on_position_changed();
-    virtual void on_position_value_changed();
-    virtual void on_volume_changed();
-    virtual void on_volume_value_changed();
-    virtual void on_mute_toggled();
+private:
+    virtual void on_show_control_window(bool show);
 
     void set_title(Glib::ustring title);
     void set_duration(double seconds);
     void set_time(double seconds);
-    void set_volume(NotificationCurrentVolume vol);
-
-    GtkmmMediaPlayer& m_MediaPlayer;
-    bool acceptAdjustmentPositionValueChanged;
-    bool acceptAdjustmentVolumeValueChanged;
 
     // Child widgets:
     Gtk::HBox m_HBox_Level0;
@@ -67,10 +50,8 @@ protected:
     Gtk::Label m_LabelTime;
     Gtk::Label m_LabelDuration;
 
-    Gtk::Adjustment m_AdjustmentPosition;
     Gtk::HScrollbar m_ScrollbarPosition;
 
-    Gtk::Adjustment m_AdjustmentVolume;
     Gtk::VScale m_VScaleVolume;
     Gtk::CheckButton m_Mute;
 };
