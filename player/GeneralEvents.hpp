@@ -322,4 +322,49 @@ struct NotificationCurrentVolume
 
 // ===================================================================
 
+struct WindowRealizeEvent
+{
+    WindowRealizeEvent(void* display, unsigned long window)
+	: display(display),
+	  window(window)
+    {}
+    void* display;
+    unsigned long window;
+};
+
+struct WindowConfigureEvent
+{
+    WindowConfigureEvent(int x, int y, int width, int height)
+	: x(x), y(y), width(width), height(height)
+    {}
+    int x;
+    int y;
+    int width;
+    int height;
+};
+
+struct WindowExposeEvent
+{
+    // GdkRectangle area;
+    //    GdkRegion *region;
+    //    gint count;
+};
+
+
+// ===================================================================
+
+class MediaPlayerThreadNotification
+{
+public:
+    typedef void (*fct_t)();
+
+    MediaPlayerThreadNotification();
+    static void setCallback(fct_t fct);
+
+private:
+    static fct_t m_fct;
+};
+
+// ===================================================================
+
 #endif

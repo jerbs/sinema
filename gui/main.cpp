@@ -24,9 +24,9 @@ int main(int argc, char *argv[])
 
 #ifndef SYNCTEST
 
-    if (argc < 2)
+    if (argc < 1)
     {
-	std::cout << "Usage: " << argv[0] << " <file1> [<file2> ... <filen>]" << std::endl;
+	std::cout << "Usage: " << argv[0] << " [<file1> <file2> ... <filen>]" << std::endl;
 	exit(-1);
     }
 
@@ -36,14 +36,13 @@ int main(int argc, char *argv[])
 
     GtkmmMediaPlayer mediaPlayer(playList);
     mediaPlayer.init();
-    mediaPlayer.open();
 
     SignalDispatcher signalDispatcher(mediaPlayer);
 
     ControlWindow controlWindow(mediaPlayer, signalDispatcher);
     controlWindow.show();
 
-    MainWindow mainWindow(signalDispatcher);
+    MainWindow mainWindow(mediaPlayer, signalDispatcher);
     Gtk::Main::run(mainWindow);
 
 #else

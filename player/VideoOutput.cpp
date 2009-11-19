@@ -39,8 +39,6 @@ void VideoOutput::process(boost::shared_ptr<OpenVideoOutputReq> event)
     {
 	DEBUG();
 
-	xfVideo = boost::make_shared<XFVideo>(event->width, event->height);
-
 	for (int i=0; i<10; i++)
 	{
 	    createVideoImage();
@@ -58,17 +56,13 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
     {
 	DEBUG();
 
-	// Xv Window is closed.
-	// Alternative is showing a black frame or a logo.
-	// xfVideo->stop();
+	showBlackFrame();
 
 	// Throw away all queued frames:
 	while ( !frameQueue.empty() )
 	{
 	    frameQueue.pop();
 	}
-
-	xfVideo.reset();
 
 	state = INIT;
 	audioSync = false;
@@ -248,6 +242,43 @@ void VideoOutput::process(boost::shared_ptr<NoAudioStream> event)
     }
 }
 
+void VideoOutput::process(boost::shared_ptr<WindowRealizeEvent> event)
+{
+    if (!xfVideo)
+    {
+	DEBUG();
+	xfVideo = boost::make_shared<XFVideo>(static_cast<Display*>(event->display),
+					      event->window, 720, 576);
+	showBlackFrame();
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<WindowConfigureEvent> event)
+{
+    DEBUG();
+    if (xfVideo)
+    {
+	xfVideo->handleConfigureEvent();
+	if (!isOpen())
+	{
+	    showBlackFrame();
+	}
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<WindowExposeEvent> event)
+{
+    DEBUG();
+    if (xfVideo)
+    {
+	xfVideo->handleExposeEvent();
+	if (!isOpen())
+	{
+	    showBlackFrame();
+	}
+    }
+}
+
 void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
@@ -391,4 +422,11 @@ void VideoOutput::startFrameTimer()
     }
 
     state = PLAYING;
+}
+
+void VideoOutput::showBlackFrame()
+{
+    boost::shared_ptr<XFVideoImage> yuvImage(new XFVideoImage(xfVideo));
+    yuvImage->createBlackImage();
+    xfVideo->show(yuvImage);
 }

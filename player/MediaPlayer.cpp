@@ -59,7 +59,8 @@ MediaPlayer::MediaPlayer(boost::shared_ptr<PlayList> playList)
     demuxer = boost::make_shared<Demuxer>(demuxerEventProcessor);
     videoDecoder = boost::make_shared<VideoDecoder>(decoderEventProcessor);
     audioDecoder = boost::make_shared<AudioDecoder>(decoderEventProcessor);
-    videoOutput = boost::make_shared<VideoOutput>(outputEventProcessor);
+    // Execute VideoOutput in GUI thread:
+    videoOutput = boost::make_shared<VideoOutput>(get_event_processor());
     audioOutput = boost::make_shared<AudioOutput>(outputEventProcessor);
 
     // Start all event_processor instance except the own one in an separate thread.
@@ -127,7 +128,10 @@ void MediaPlayer::processEventQueue()
 void MediaPlayer::open()
 {
     std::string file = playList->getCurrent();
-    demuxer->queue_event(boost::make_shared<OpenFileReq>(file));
+    if (!file.empty())
+    {
+	demuxer->queue_event(boost::make_shared<OpenFileReq>(file));
+    }
 }
 
 void MediaPlayer::close()

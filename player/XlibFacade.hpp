@@ -22,41 +22,6 @@ struct XFException
     std::string s;
 };
 
-class XFDisplay
-{
-public:
-    XFDisplay();
-    ~XFDisplay();
-
-    Display* display() {return m_display;}
-
-private:
-    Display* m_display;
-};
-
-class XFWindow
-{
-public:
-    XFWindow(unsigned int width, unsigned int height);
-    ~XFWindow();
-
-    Display* display() {return m_display;}
-    Window window() {return m_window;}
-    //unsigned int width() {return m_width;}
-    //unsigned int height() {return m_height;}
-
-private:
-    XFWindow();
-    XFWindow(const XFWindow&);
-
-    boost::shared_ptr<XFDisplay> m_xfDisplay;
-    Display* m_display;
-    Window m_window;
-
-    unsigned int m_width;
-    unsigned int m_height;
-};
-
 class XFVideoImage;
 
 class XFVideo
@@ -64,12 +29,16 @@ class XFVideo
     friend class XFVideoImage;
 
 public:
-    XFVideo(unsigned int width, unsigned int height);
+    XFVideo(Display* display, Window window,
+	    unsigned int width, unsigned int height);
     ~XFVideo();
 
     void selectEvents();
     void resize(unsigned int width, unsigned int height);
     boost::shared_ptr<XFVideoImage> show(boost::shared_ptr<XFVideoImage> xfVideoImage);
+    void show();
+    void handleConfigureEvent();
+    void handleExposeEvent();
     Display* display() {return m_display;}
     Window window() {return m_window;}
     
@@ -78,9 +47,9 @@ private:
     XFVideo(const XFVideo&);
 
     void calculateDestinationArea();
+    void paintBorder();
 
     boost::shared_ptr<XFVideoImage> m_displayedImage;
-    boost::shared_ptr<XFWindow> m_xfWindow;
     Display* m_display;
     Window m_window;
     
@@ -93,9 +62,13 @@ private:
     double ratio;   //  yuvWidth / yuvHeight
     double iratio;  //  yuvHeight / yuvWidth
 
+    // window size:
+    unsigned int width;
+    unsigned int height;
+
     // sub area of window displaying the video:
-    unsigned int topDest;
     unsigned int leftDest;
+    unsigned int topDest;
     unsigned int widthDest;
     unsigned int heightDest;
 };
@@ -108,6 +81,7 @@ public:
     XFVideoImage(boost::shared_ptr<XFVideo> xfVideo);
     ~XFVideoImage();
 
+    void createBlackImage();
     void createDemoImage();
 
     unsigned int width() {return yuvImage->width;}

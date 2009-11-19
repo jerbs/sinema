@@ -9,9 +9,10 @@
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
-MainWindow::MainWindow(SignalDispatcher& signalDispatcher)
+MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
+		       SignalDispatcher& signalDispatcher)
     : Gtk::Window(),
-      m_Label("Right-click to see the popup menu."),
+      m_GtkmmMediaPlayer(gtkmmMediaPlayer),
       m_pMenuPopup(0)
 {
     set_title("player");
@@ -43,10 +44,11 @@ MainWindow::MainWindow(SignalDispatcher& signalDispatcher)
     }
 
     // Main Area:
-    m_EventBox.add(m_Label);
-    m_EventBox.signal_button_press_event().connect(sigc::mem_fun(*this,
+    m_GtkmmMediaPlayer.signal_button_press_event().connect(sigc::mem_fun(*this,
 				   &MainWindow::on_button_press_event) );
-    m_Box.pack_start(m_EventBox, Gtk::PACK_EXPAND_WIDGET);
+    m_GtkmmMediaPlayer.notificationResizeOutput.connect(sigc::mem_fun(*this,
+				   &MainWindow::on_resize_video_output) );
+    m_Box.pack_start(m_GtkmmMediaPlayer, Gtk::PACK_EXPAND_WIDGET);
 
     // Status Bar:
     m_Box.pack_end(signalDispatcher.getStatusBar(), Gtk::PACK_SHRINK);
@@ -64,6 +66,7 @@ MainWindow::~MainWindow()
 
 bool MainWindow::on_button_press_event(GdkEventButton* event)
 {
+    INFO();
     if( (event->type == GDK_BUTTON_PRESS) && (event->button == 3) )
     {
 	if(m_pMenuPopup)
@@ -82,4 +85,13 @@ bool MainWindow::on_button_press_event(GdkEventButton* event)
 void MainWindow::on_hide_window()
 {
     hide();
+}
+
+void MainWindow::on_resize_video_output(const ResizeVideoOutputReq& size)
+{
+    // MainWindow displays Video and optionally some control elements.
+    int width  = size.width  + get_width()  - m_GtkmmMediaPlayer.get_width();
+    int height = size.height + get_height() - m_GtkmmMediaPlayer.get_height();
+
+    resize(width, height);
 }

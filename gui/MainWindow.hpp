@@ -13,25 +13,27 @@
 #include <gtkmm/label.h>
 #include <gtkmm/menu.h>
 #include <gtkmm/toggleaction.h>
-#include "player/MediaPlayer.hpp"
+#include "gui/GtkmmMediaPlayer.hpp"
 
 class SignalDispatcher;
 
 class MainWindow : public Gtk::Window
 {
 public:
-    MainWindow(SignalDispatcher& signalDispatcher);
+    MainWindow(GtkmmMediaPlayer& m_GtkmmMediaPlayer,
+	       SignalDispatcher& signalDispatcher);
     virtual ~MainWindow();
 
 private:
     virtual bool on_button_press_event(GdkEventButton* event);
     virtual void on_hide_window();
+    virtual void on_resize_video_output(const ResizeVideoOutputReq& size);
 
     //Child widgets:
     Gtk::VBox m_Box;
-    Gtk::EventBox m_EventBox;
     Gtk::Label m_Label;
     Gtk::Menu* m_pMenuPopup;
+    GtkmmMediaPlayer& m_GtkmmMediaPlayer;
 };
 
 #endif

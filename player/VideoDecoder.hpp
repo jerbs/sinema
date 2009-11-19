@@ -74,6 +74,7 @@ public:
     }
 
 private:
+    MediaPlayer* mediaPlayer;
     boost::shared_ptr<Demuxer> demuxer;
     boost::shared_ptr<VideoOutput> videoOutput;
 

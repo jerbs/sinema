@@ -7,6 +7,7 @@
 #include "player/VideoDecoder.hpp"
 #include "player/VideoOutput.hpp"
 #include "player/Demuxer.hpp"
+#include "player/MediaPlayer.hpp"
 
 #include <boost/make_shared.hpp>
 #include <iomanip>
@@ -16,6 +17,7 @@ using namespace std;
 void VideoDecoder::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG();
+    mediaPlayer = event->mediaPlayer;
     demuxer = event->demuxer;
     videoOutput = event->videoOutput;
 }
@@ -60,6 +62,11 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 			req->width = avCodecContext->width;
 			req->height = avCodecContext->height;
 			videoOutput->queue_event(req);
+
+			boost::shared_ptr<ResizeVideoOutputReq> ind(new ResizeVideoOutputReq());
+			ind->width = avCodecContext->width;
+			ind->height = avCodecContext->height;
+			mediaPlayer->queue_event(ind);
 
 			state = Opening;
 

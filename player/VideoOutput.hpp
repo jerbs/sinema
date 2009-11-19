@@ -14,21 +14,16 @@
 #include <sys/ipc.h>  // to allocate shared memory
 #include <sys/shm.h>  // to allocate shared memory
 
-#include <X11/Xlib.h>
-#include <X11/Xutil.h>
-#include <X11/extensions/Xv.h>
-#include <X11/extensions/XShm.h>  // has to be included before Xvlib.h
-#include <X11/extensions/Xvlib.h>
-
 #include <queue>
 
 #include <boost/shared_ptr.hpp>
 
 struct ShowNextFrame {};
 
-class VideoOutput : public event_receiver<VideoOutput>
+class VideoOutput : public event_receiver<VideoOutput,
+					  concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >
 {
-    friend class event_processor<>;
+    friend class event_processor<concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >;
 
 public:
     VideoOutput(event_processor_ptr_type evt_proc)
@@ -105,6 +100,9 @@ private:
     void process(boost::shared_ptr<SeekRelativeReq> event);
     void process(boost::shared_ptr<EndOfVideoStream> event);		 
     void process(boost::shared_ptr<NoAudioStream> event);		 
+    void process(boost::shared_ptr<WindowRealizeEvent> event);
+    void process(boost::shared_ptr<WindowConfigureEvent> event);
+    void process(boost::shared_ptr<WindowExposeEvent> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);
@@ -112,6 +110,8 @@ private:
     void createVideoImage();
     void displayNextFrame();
     void startFrameTimer();
+
+    void showBlackFrame();
 };
 
 #endif

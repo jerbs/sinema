@@ -20,135 +20,10 @@ using namespace std;
 
 // -------------------------------------------------------------------
 
-XFDisplay::XFDisplay()
-{
-    m_display = XOpenDisplay( NULL );
-    if (!m_display)
-    {
-	THROW(XFException, << "Cannot open Display");
-    }
-}
-
-XFDisplay::~XFDisplay()
-{
-    XCloseDisplay( m_display );
-}
-
-// -------------------------------------------------------------------
-
-XFWindow::XFWindow(unsigned int width, unsigned int height)
-    : m_xfDisplay(new XFDisplay()),
-      m_display(m_xfDisplay->display()),
-      m_window(0),
-      m_width(width),
-      m_height(height)
-{
-    int screen = DefaultScreen(m_display);
-
-    struct VisualInfo
-    {
-	int depth;
-	int c_class;
-	const char* className;
-    };
-
-    XVisualInfo xVisualInfo;
-
-    VisualInfo visualInfo[] = {
-	{24, TrueColor,  "TrueColor"},
-	{16, TrueColor,  "TrueColor"},
-	{15, TrueColor,  "TrueColor"},
-	{ 8, PseudoColor,"PseudoColor"},
-	{ 8, GrayScale,  "GrayScale"},
-	{ 8, StaticGray, "StaticGray"},
-	{ 1, StaticGray, "StaticGray"}
-    };
-
-    const int numVisualInfo = sizeof(visualInfo)/sizeof(VisualInfo);
-    for (int i=0; i<numVisualInfo; i++)
-    {
-	if (XMatchVisualInfo(display(),
-			     screen,
-			     visualInfo[i].depth,
-			     visualInfo[i].c_class,
-			     &xVisualInfo))
-	{
-	    DEBUG( << "Found " << visualInfo[i].depth << " bit "
-		   << visualInfo[i].className );
-	    DEBUG( << xVisualInfo );
-	    break;
-	}
-
-	if (i == numVisualInfo)
-	{
-	    THROW(XFException, << "XMatchVisualInfo: Nothing found");
-	}
-    }
-
-    Colormap colormap = XCreateColormap(m_display,
-					DefaultRootWindow(m_display),
-					xVisualInfo.visual,
-					AllocNone);
-
-    XSetWindowAttributes xswa;
-    xswa.colormap = colormap;
-    xswa.event_mask = StructureNotifyMask | ExposureMask | KeyPressMask;
-    xswa.background_pixel = 0;
-    xswa.border_pixel = 0;
-
-    // mask specifies attributes defined in xswa:
-    unsigned long mask = CWColormap | CWEventMask | CWBackPixel | CWBorderPixel;
-
-    m_window = XCreateWindow(m_display,
-			     DefaultRootWindow(m_display),
-			     0, 0,        // x,y position
-			     m_width,
-			     m_height,
-			     0,           // Border width
-			     xVisualInfo.depth,
-			     InputOutput,
-			     xVisualInfo.visual,
-			     mask, &xswa);
-
-    // Set window title used by window manager:
-    XStoreName(m_display, m_window, "Xv Demo Application");
-
-    // Set title used for icon:
-    XSetIconName(m_display, m_window, "Xv Demo");
-
-    // Request events from server (This overwrites the event mask):
-    XSelectInput(m_display, m_window, StructureNotifyMask);
-
-    // Requst the server to show the window:
-    XMapWindow(m_display, m_window);
-
-    // Wait until the server has processed the request:
-    XEvent evt;
-    do
-    {
-	// Wait until a requested event occurs (XClush is called by XNextEvent):
-	XNextEvent( m_display, &evt );
-    }
-    // Wait until the XMapWindow request is processed by the X server.
-    while( evt.type != MapNotify );
-
-    // Now the window is visible on the screen.
-
-    // Setting previous event mask again:
-    XSelectInput(m_display, m_window, xswa.event_mask);
-}
-
-XFWindow::~XFWindow()
-{
-    XDestroyWindow(m_display, m_window);
-}
-
-// -------------------------------------------------------------------
-
-XFVideo::XFVideo(unsigned int width, unsigned int height)
-    : m_xfWindow(new XFWindow(width, height)),
-      m_display(m_xfWindow->display()),
-      m_window(m_xfWindow->window()),
+XFVideo::XFVideo(Display* display, Window window,
+		 unsigned int width, unsigned int height)
+    : m_display(display),
+      m_window(window),
       yuvWidth(width),
       yuvHeight(height),
       ratio(double(width)/double(height)),
@@ -285,9 +160,10 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
     }
 
     // Create a graphics context
-    gc = XCreateGC(display(), window(), 0, 0);
+    gc = XCreateGC(display, window, 0, 0);
 
     calculateDestinationArea();
+    paintBorder();
 }
 
 XFVideo::~XFVideo()
@@ -302,8 +178,10 @@ void XFVideo::selectEvents()
     XSelectInput(m_display, m_window, StructureNotifyMask | ExposureMask | KeyPressMask);
 }
 
-void XFVideo::resize(unsigned int width, unsigned int height)
+void XFVideo::resize(unsigned int width_, unsigned int height_)
 {
+    width  = width_;
+    height = height_;
     yuvWidth = width;
     yuvHeight = height;
     ratio = double(width)/double(height);
@@ -319,7 +197,6 @@ void XFVideo::calculateDestinationArea()
 {
     Window root;
     int x, y;
-    unsigned int width, height;
     unsigned int border_width, depth;
 
     XGetGeometry(m_display, m_window, &root,
@@ -352,61 +229,80 @@ void XFVideo::calculateDestinationArea()
 
 boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yuvImage)
 {    
-    bool update = true;
-
-    while (update)
-    {
-	update = false;
-
-	// Display srcArea of yuvImage on destArea of Drawable window:
-	XvShmPutImage(m_display, xvPortId, m_window, gc, yuvImage->xvImage(),
-		      0, 0, yuvImage->width(), yuvImage->height(), // srcArea  (x,y,w,h)
-		      leftDest, topDest, widthDest, heightDest,    // destArea (x,y,w,h)
-		      True);
-
-	// Explicitly calling XFlush to ensure that the image is visible:
-	XFlush(m_display);
-
-	XEvent xevent;
-	while (XCheckMaskEvent(m_display,
-			       KeyPressMask | ExposureMask | StructureNotifyMask,
-			       &xevent))
-	{
-	    // See 'man XEvent' for a list of events.
-	    // Wait until an event occurs is possible with:
-	    // XNextEvent( m_display, &xevent );
-
-	    DEBUG(<< "xevent.type = " << xevent.type);
-
-	    switch ( xevent.type )
-	    {
-	    case MapNotify:
-	    case ConfigureNotify:
-		calculateDestinationArea();
-		break;
-	    case Expose:
-		// Window is damaged. X server may send several Expose events.
-		if (xevent.xexpose.count == 0)  // The last Expose event.
-		    update = true;
-		break;
-	    case KeyPress:
-		DEBUG( << "KeyPress = " << xevent.xkey.keycode );
-		// exit(0);
-		if ( xevent.xkey.keycode == 0x09 )
-		    // quit = true;   FIXME
-		    break;
-	    default:
-		break;
-	    }
-	}
-    }
- 
     boost::shared_ptr<XFVideoImage> previousImage = m_displayedImage;
     m_displayedImage = yuvImage;
+
+    show();
 
     return previousImage;
 }
 
+void XFVideo::show()
+{
+    if (m_displayedImage)
+    {
+	// Display srcArea of yuvImage on destArea of Drawable window:
+	XvShmPutImage(m_display, xvPortId, m_window, gc, m_displayedImage->xvImage(),
+		      0, 0, m_displayedImage->width(), m_displayedImage->height(), // srcArea  (x,y,w,h)
+		      leftDest, topDest, widthDest, heightDest,    // destArea (x,y,w,h)
+		      True);
+    
+	// Explicitly calling XFlush to ensure that the image is visible:
+	XFlush(m_display);
+    }
+}
+
+void XFVideo::handleConfigureEvent()
+{
+    calculateDestinationArea();
+}
+
+void XFVideo::handleExposeEvent()
+{
+    paintBorder();
+    show();
+}
+
+void XFVideo::paintBorder()
+{
+    //     x1   x2   x3
+    //  y1 +----+----+----+
+    //     | R1 | R2 | R3 | h1
+    //  y2 +----+----+----+
+    //     | R4 |    | R5 | h2
+    //  y3 +----+----+----+
+    //     | R6 | R7 | R8 | h3
+    //     +----+----+----+
+    //       w1   w2   w3
+
+    const short x1 = 0;
+    const short x2 = leftDest;
+    const short x3 = leftDest+widthDest;
+
+    const short y1 = 0;
+    const short y2 = topDest;
+    const short y3 = topDest+heightDest;
+
+    const unsigned short w1 = leftDest;
+    const unsigned short w2 = widthDest;
+    const unsigned short w3 = width-leftDest-widthDest;
+
+    const unsigned short h1 = topDest;
+    const unsigned short h2 = heightDest;
+    const unsigned short h3 = height-topDest-heightDest;
+
+    XRectangle rec[8] = { {x1, y1, w1, h1},   // R1
+			  {x2, y1, w2, h1},   // R2
+			  {x3, y1, w3, h1},   // R3
+			  {x1, y2, w1, h2},   // R4
+			  {x3, y2, w3, h2},   // R5
+			  {x1, y3, w1, h3},   // R6
+			  {x2, y3, w2, h3},   // R7
+			  {x3, y3, w3, h3} }; // R8
+
+    XFillRectangles(m_display, m_window, gc, rec, 8);
+}
+ 
 // -------------------------------------------------------------------
 
 XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
@@ -469,6 +365,57 @@ XFVideoImage::~XFVideoImage()
     shmctl(yuvShmInfo.shmid, IPC_RMID, 0);
 
     XFree(yuvImage);
+}
+
+void XFVideoImage::createBlackImage()
+{
+    // YUV in fact is YCbCr.
+    // http://en.wikipedia.org/wiki/YCbCr
+
+    // Y'CbCr (601) from R'G'B'
+    // ========================================================
+    // Y' =  16 + ( 65.481 * R' + 128.553 * G' +  24.966 * B')
+    // Cb = 128 + (-37.797 * R' -  74.203 * G' + 112.0   * B')
+    // Cr = 128 + (112.0   * R' -  93.786 * G' -  18.214 * B')
+    // ........................................................
+    // R', G', B' in [0; 1]
+    // Y'        in {16, 17, ..., 235}
+    //    with footroom in {1, 2, ..., 15}
+    //    headroom in {236, 237, ..., 254}
+    //    sync.  in {0, 255}
+    // Cb, Cr      in {16, 17, ..., 240}
+
+    int w = width();
+    int h = height();
+
+    char* Y = data();
+    char* V = Y + w * h;
+    char* U = V + w/2 * h/2;
+
+    // Y = 16 isn't really black.
+    memset(Y, 0,   w   * h);
+    memset(V, 128, w/2 * h/2);
+    memset(U, 128, w/2 * h/2);
+}
+
+void XFVideoImage::createDemoImage()
+{
+    int w = width();
+    int h = height();
+
+    char* Y = data();
+    char* V = Y + w * h;
+    char* U = V + w/2 * h/2;
+
+    memset(Y, 0, w * h);
+    memset(V, 0, w/2 * h/2);
+    memset(U, 0, w/2 * h/2);
+
+    for (int x=0; x<w; x++)
+	for (int y=0; y<h; y++)
+	{
+	    Y[x + y*w] = x-y;
+	}
 }
 
 // -------------------------------------------------------------------

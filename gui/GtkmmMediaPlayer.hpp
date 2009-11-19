@@ -7,12 +7,14 @@
 #ifndef GTKMM_MEDIA_PLAYER_HPP
 #define GTKMM_MEDIA_PLAYER_HPP
 
-#include "player/MediaPlayer.hpp"
-
+#include <gtkmm/drawingarea.h>
 #include <glibmm/dispatcher.h>
 #include <sigc++/signal.h>
 
-class GtkmmMediaPlayer : public MediaPlayer
+#include "player/MediaPlayer.hpp"  // indirectly include X11/Xlib.h
+
+class GtkmmMediaPlayer : public MediaPlayer,
+			 public Gtk::DrawingArea
 {
     static Glib::Dispatcher m_dispatcher;
 
@@ -21,6 +23,7 @@ public:
     sigc::signal<void, double> notificationDuration;
     sigc::signal<void, double> notificationCurrentTime;
     sigc::signal<void, NotificationCurrentVolume> notificationCurrentVolume;
+    sigc::signal<void, ResizeVideoOutputReq> notificationResizeOutput;
 
     GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList);
 
@@ -29,6 +32,12 @@ public:
     virtual void process(boost::shared_ptr<NotificationFileInfo> event);
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event);
     virtual void process(boost::shared_ptr<NotificationCurrentVolume> event);
+    virtual void process(boost::shared_ptr<ResizeVideoOutputReq> event);
+
+protected:
+    virtual void on_realize();
+    virtual bool on_configure_event(GdkEventConfigure* event);
+    virtual bool on_expose_event(GdkEventExpose* event);
 };
 
 #endif

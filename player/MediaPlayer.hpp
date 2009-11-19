@@ -7,6 +7,10 @@
 #ifndef MEDIA_PLAYER_HPP
 #define MEDIA_PLAYER_HPP
 
+#include <boost/thread/thread.hpp>
+#include <boost/shared_ptr.hpp>
+#include <string>
+
 #include "player/FileReader.hpp"
 #include "player/Demuxer.hpp"
 #include "player/VideoDecoder.hpp"
@@ -16,22 +20,6 @@
 #include "player/PlayList.hpp"
 
 #include "platform/event_receiver.hpp"
-
-#include <boost/thread/thread.hpp>
-#include <boost/shared_ptr.hpp>
-#include <string>
-
-class MediaPlayerThreadNotification
-{
-public:
-    typedef void (*fct_t)();
-
-    MediaPlayerThreadNotification();
-    static void setCallback(fct_t fct);
-
-private:
-    static fct_t m_fct;
-};
 
 class MediaPlayer : public event_receiver<MediaPlayer,
 					  concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >
@@ -64,7 +52,7 @@ public:
     // protected:
     void processEventQueue();
 
-private:
+protected:
     // EventReceiver
     boost::shared_ptr<FileReader> fileReader;
     boost::shared_ptr<Demuxer> demuxer;
@@ -73,6 +61,7 @@ private:
     boost::shared_ptr<VideoOutput> videoOutput;
     boost::shared_ptr<AudioOutput> audioOutput;
 
+private:
     // Boost threads:
     boost::thread demuxerThread;
     boost::thread decoderThread;
@@ -115,6 +104,8 @@ private:
 
     virtual void process(boost::shared_ptr<OpenAudioStreamFailed> event) {};
     virtual void process(boost::shared_ptr<OpenVideoStreamFailed> event) {};
+
+    virtual void process(boost::shared_ptr<ResizeVideoOutputReq> event) = 0;
 };
 
 #endif
