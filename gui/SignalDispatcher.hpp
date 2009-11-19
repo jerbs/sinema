@@ -86,6 +86,8 @@ private:
     Gtk::Adjustment m_AdjustmentVolume;
 
     Gtk::Statusbar m_StatusBar;
+
+    timespec_t timeTitlePlaybackStarted;
 };
 
 #endif

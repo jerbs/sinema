@@ -8,6 +8,8 @@
 #include <gtkmm/menu.h>
 #include <gtkmm/stock.h>
 
+#include "platform/timer.hpp"
+
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/SignalDispatcher.hpp"
 
@@ -19,7 +21,8 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
       acceptAdjustmentPositionValueChanged(true),
       acceptAdjustmentVolumeValueChanged(true),
       m_AdjustmentPosition(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
-      m_AdjustmentVolume(0.0, 0.0, 101.0, 0.1, 1.0, 1.0)
+      m_AdjustmentVolume(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
+      timeTitlePlaybackStarted(getTimespec(0))
 {
     // Create actions for menus and toolbars:
     m_refActionGroup = Gtk::ActionGroup::create();
@@ -337,6 +340,7 @@ void SignalDispatcher::on_media_play()
 {
     m_MediaPlayer.open();
     m_MediaPlayer.play();
+    timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_media_pause()
@@ -352,11 +356,12 @@ void SignalDispatcher::on_media_stop()
 void SignalDispatcher::on_media_next()
 {
     m_MediaPlayer.skipForward();
+    timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_media_previous()
 {
-    if (m_AdjustmentPosition.get_value() < 1)
+    if ((timer::get_current_time() - timeTitlePlaybackStarted) < getTimespec(1))
     {
 	m_MediaPlayer.skipBack();
     }
@@ -364,6 +369,7 @@ void SignalDispatcher::on_media_previous()
     {
 	m_MediaPlayer.seekAbsolute(0);
     }
+    timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_media_forward()

@@ -8,6 +8,7 @@
 #define TIMER_HPP
 
 #include <boost/function.hpp>
+#include <boost/noncopyable.hpp>
 #include <strings.h>
 #include <stdlib.h>
 #include <signal.h>
@@ -30,8 +31,7 @@ class timer : private boost::noncopyable
 
 public:
     timer()
-	: m_clockid(CLOCK_REALTIME),
-	  m_timeout_fct()
+	: m_timeout_fct()
     {
 	sigevent_t event;
 	bzero((char*)&event, sizeof(event));
@@ -107,7 +107,7 @@ public:
     }
 
     // Retrieves absolute time of clock used by timer:
-    timespec_t get_current_time()
+    static timespec_t get_current_time()
     {
 	struct timespec res;
 	int ret = clock_gettime(m_clockid, &res);
@@ -120,7 +120,7 @@ public:
     }
 
 private:
-    clockid_t m_clockid;
+    static const clockid_t m_clockid = CLOCK_REALTIME;
     timer_t m_timerid;
     int m_flags;
     itimerspec_t m_timerspec;
