@@ -10,6 +10,7 @@
 
 #include "platform/timer.hpp"
 
+#include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
@@ -56,7 +57,7 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
     m_refActionGroup->add(m_refMute, sigc::mem_fun(*this, &SignalDispatcher::on_mute_toggled));
 
     m_refControlWindowVisible = Gtk::ToggleAction::create("ViewControlWindow", "Control Window");
-    m_refControlWindowVisible->set_active(true);
+    m_refControlWindowVisible->set_active(false);
     m_refActionGroup->add(m_refControlWindowVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_controlwindow) );
 
     m_refMenuBarVisible = Gtk::ToggleAction::create("ViewMenuBar", "Menu Bar");
@@ -268,8 +269,35 @@ Gtk::Adjustment& SignalDispatcher::getVolumeAdjustment()
 void SignalDispatcher::setMainWindow(MainWindow* mainWindow)
 {
     m_MainWindow = mainWindow;
-    m_MainWindow->signal_window_state_event().connect(sigc::mem_fun(*this,
-				  &SignalDispatcher::on_window_state_event));
+}
+
+bool SignalDispatcher::on_button_press_event(GdkEventButton* event)
+{
+    if(event->type == GDK_BUTTON_PRESS)
+    {
+	if (event->button == 2)
+	{
+	    // Change visibility of ControlWindow:
+	    m_refControlWindowVisible->set_active(!m_refControlWindowVisible->get_active());
+
+	    // Event has been handled:
+	    return true;
+	}
+	else if (event->button == 3)
+	{
+	    Gtk::Menu* popup = getPopupMenuWidget();
+	    if (popup)
+	    {
+		popup->popup(event->button, event->time);
+	    }
+	    return true;
+	}
+    }
+    else
+    {
+	// Event has not been handled:
+	return false;
+    }
 }
 
 void SignalDispatcher::on_file_open()
@@ -304,7 +332,11 @@ void SignalDispatcher::on_view_leave_fullscreen()
     }
 }
 
-bool SignalDispatcher::on_window_state_event(GdkEventWindowState* event)
+bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)
+{
+}
+
+bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
 {
     // This method is called when fullscreen mode is entered or left. This
     // may be triggered by the application itself or by the window manager.

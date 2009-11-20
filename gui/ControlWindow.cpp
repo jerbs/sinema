@@ -28,7 +28,10 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer, SignalDispatcher& si
       m_Forward("FF"),
       m_ScrollbarPosition(signalDispatcher.getPositionAdjustment()),
       m_VScaleVolume(signalDispatcher.getVolumeAdjustment()),
-      m_Mute()
+      m_Mute(),
+      m_shown(false),
+      m_pos_x(0),
+      m_pos_y(0)
 {
     set_title("Control Window");
 
@@ -98,7 +101,25 @@ ControlWindow::~ControlWindow()
 
 void ControlWindow::on_show_control_window(bool pshow)
 {
-    if (pshow) show(); else hide();
+
+    if (pshow)
+    {
+	// Let the window manager decide where to place the window when shown
+	// for the first time. Use previous position when shown again.
+	if (m_shown)
+	{
+	    // The window manager may ignore or modify the move request.
+	    // Partially visible windows are for example replaced by KDE.
+	    move(m_pos_x, m_pos_y);
+	}
+	show();
+	m_shown = true;
+    }
+    else
+    {
+	get_position(m_pos_x, m_pos_y);
+	hide();
+    }
 }
 
 void ControlWindow::set_title(Glib::ustring title)

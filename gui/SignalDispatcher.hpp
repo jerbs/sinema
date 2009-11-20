@@ -17,6 +17,7 @@
 
 class GtkmmMediaPlayer;
 class MainWindow;
+class ControlWindow;
 
 class SignalDispatcher
 {
@@ -40,8 +41,13 @@ public:
 
     void setMainWindow(MainWindow* mainWindow);
 
+    // Slots:
+    bool on_button_press_event(GdkEventButton* event);
+    bool on_control_window_state_event(GdkEventWindowState* event);
+    bool on_main_window_state_event(GdkEventWindowState* event);
+
 private:
-    //Signal handlers:();
+    // Slots:
     virtual void on_file_open();
     virtual void on_file_close();
     virtual void on_file_quit();
@@ -66,8 +72,6 @@ private:
     virtual void on_volume_changed();
     virtual void on_volume_value_changed();
     virtual void on_mute_toggled();
-
-    virtual bool on_window_state_event(GdkEventWindowState* event);
 
     void set_title(Glib::ustring title);
     void set_duration(double seconds);

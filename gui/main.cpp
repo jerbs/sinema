@@ -36,13 +36,18 @@ int main(int argc, char *argv[])
 
     GtkmmMediaPlayer mediaPlayer(playList);
     mediaPlayer.init();
-
     SignalDispatcher signalDispatcher(mediaPlayer);
-
     ControlWindow controlWindow(mediaPlayer, signalDispatcher);
-    controlWindow.show();
-
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
+
+    controlWindow.set_transient_for(mainWindow);
+    controlWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher,
+				    &SignalDispatcher::on_control_window_state_event));
+
+    mainWindow.signal_button_press_event().connect(sigc::mem_fun(signalDispatcher,
+				    &SignalDispatcher::on_button_press_event));
+    mainWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher,
+				    &SignalDispatcher::on_main_window_state_event));
 
     signalDispatcher.setMainWindow(&mainWindow);
 

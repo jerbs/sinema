@@ -54,6 +54,10 @@ private:
 
     Gtk::VScale m_VScaleVolume;
     Gtk::CheckButton m_Mute;
+
+    bool m_shown;
+    int m_pos_x;
+    int m_pos_y;
 };
 
 #endif

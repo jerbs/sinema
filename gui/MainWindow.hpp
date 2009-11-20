@@ -25,7 +25,6 @@ public:
     virtual ~MainWindow();
 
 private:
-    virtual bool on_button_press_event(GdkEventButton* event);
     virtual void on_hide_window();
     virtual void on_resize_video_output(const ResizeVideoOutputReq& size);
 
