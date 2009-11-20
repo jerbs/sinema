@@ -11,18 +11,24 @@
 #include "platform/timer.hpp"
 
 #include "gui/GtkmmMediaPlayer.hpp"
+#include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
 #undef INFO
 #define INFO(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
-    : m_MediaPlayer(mediaPlayer),
+    : m_MainWindow(0),
+      m_MediaPlayer(mediaPlayer),
       acceptAdjustmentPositionValueChanged(true),
       acceptAdjustmentVolumeValueChanged(true),
       m_AdjustmentPosition(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
       m_AdjustmentVolume(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
-      timeTitlePlaybackStarted(getTimespec(0))
+      timeTitlePlaybackStarted(getTimespec(0)),
+      m_visibleFullscreen(false,false,false),
+      m_visibleWindow(true,true,true),
+      m_visible(&m_visibleWindow),
+      m_fullscreen(false)
 {
     // Create actions for menus and toolbars:
     m_refActionGroup = Gtk::ActionGroup::create();
@@ -259,6 +265,13 @@ Gtk::Adjustment& SignalDispatcher::getVolumeAdjustment()
     return m_AdjustmentVolume;
 }
 
+void SignalDispatcher::setMainWindow(MainWindow* mainWindow)
+{
+    m_MainWindow = mainWindow;
+    m_MainWindow->signal_window_state_event().connect(sigc::mem_fun(*this,
+				  &SignalDispatcher::on_window_state_event));
+}
+
 void SignalDispatcher::on_file_open()
 {
     INFO();
@@ -277,12 +290,37 @@ void SignalDispatcher::on_file_quit()
 
 void SignalDispatcher::on_view_fullscreen()
 {
-    INFO();
+    if (m_MainWindow)
+    {
+	m_MainWindow->fullscreen();
+    }
 }
 
 void SignalDispatcher::on_view_leave_fullscreen()
 {
-    INFO();
+    if (m_MainWindow)
+    {
+	m_MainWindow->unfullscreen();
+    }
+}
+
+bool SignalDispatcher::on_window_state_event(GdkEventWindowState* event)
+{
+    // This method is called when fullscreen mode is entered or left. This
+    // may be triggered by the application itself or by the window manager.
+
+    if (m_fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN)
+    {
+	m_visible = &m_visibleFullscreen;
+    }
+    else
+    {
+	m_visible = &m_visibleWindow;
+    }
+
+    m_refMenuBarVisible->set_active(m_visible->menuBar);
+    m_refToolBarVisible->set_active(m_visible->toolBar);
+    m_refStatusBarVisible->set_active(m_visible->statusBar);
 }
 
 void SignalDispatcher::on_view_controlwindow()
@@ -295,7 +333,7 @@ void SignalDispatcher::on_view_menubar()
     Gtk::Widget* pMenubar = getMenuBarWidget();
     if(pMenubar)
     {
-	if (m_refMenuBarVisible->get_active())
+	if (m_visible->menuBar = m_refMenuBarVisible->get_active())
 	{
 	    pMenubar->show();
 	}
@@ -311,7 +349,7 @@ void SignalDispatcher::on_view_toolbar()
     Gtk::Widget* pToolbar = getToolBarWidget();
     if (pToolbar)
     {
-	if (m_refToolBarVisible->get_active())
+	if (m_visible->toolBar = m_refToolBarVisible->get_active())
 	{
 	    pToolbar->show();
 	}
@@ -324,14 +362,12 @@ void SignalDispatcher::on_view_toolbar()
 
 void SignalDispatcher::on_view_statusbar()
 {
-    if (m_refStatusBarVisible->get_active())
+    if (m_visible->statusBar = m_refStatusBarVisible->get_active())
     {
-	INFO(<< "show");
 	m_StatusBar.show();
     }
     else
     {
-	INFO(<< "hide");
 	m_StatusBar.hide();
     }
 }

@@ -43,6 +43,9 @@ int main(int argc, char *argv[])
     controlWindow.show();
 
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
+
+    signalDispatcher.setMainWindow(&mainWindow);
+
     Gtk::Main::run(mainWindow);
 
 #else

@@ -16,6 +16,7 @@
 #include <gtkmm/uimanager.h>
 
 class GtkmmMediaPlayer;
+class MainWindow;
 
 class SignalDispatcher
 {
@@ -36,6 +37,8 @@ public:
     Glib::RefPtr<Gtk::ActionGroup> getActionGroup();
     Gtk::Adjustment& getPositionAdjustment();
     Gtk::Adjustment& getVolumeAdjustment();
+
+    void setMainWindow(MainWindow* mainWindow);
 
 private:
     //Signal handlers:();
@@ -64,11 +67,14 @@ private:
     virtual void on_volume_value_changed();
     virtual void on_mute_toggled();
 
+    virtual bool on_window_state_event(GdkEventWindowState* event);
+
     void set_title(Glib::ustring title);
     void set_duration(double seconds);
     void set_time(double seconds);
     void set_volume(const NotificationCurrentVolume& vol);
 
+    MainWindow* m_MainWindow;
     GtkmmMediaPlayer& m_MediaPlayer;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
@@ -88,6 +94,22 @@ private:
     Gtk::Statusbar m_StatusBar;
 
     timespec_t timeTitlePlaybackStarted;
+
+    struct Visible {
+	Visible(bool menuBar, bool toolBar, bool statusBar)
+	    : menuBar(menuBar),
+	      toolBar(toolBar),
+	      statusBar(statusBar)
+	{}
+	bool menuBar;
+	bool toolBar;
+	bool statusBar;
+    };
+
+    Visible m_visibleFullscreen;
+    Visible m_visibleWindow;
+    Visible* m_visible;
+    bool m_fullscreen;
 };
 
 #endif
