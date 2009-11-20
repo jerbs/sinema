@@ -53,6 +53,12 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
     m_refActionGroup->add(Gtk::Action::create("ViewLeaveFullscreen", Gtk::Stock::LEAVE_FULLSCREEN,
 					      "Leave Fullscreen", "Leave fullscrean mode"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_leave_fullscreen));
+    m_refActionGroup->add(Gtk::Action::create("ViewZoom200", "Zoom 200%"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_zoom_200));
+    m_refActionGroup->add(Gtk::Action::create("ViewZoom100", "Zoom 100%"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_zoom_100));
+    m_refActionGroup->add(Gtk::Action::create("ViewZoom50", "Zoom 50%"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_zoom_50));
     m_refMute = Gtk::ToggleAction::create("ViewMute", "Mute");
     m_refActionGroup->add(m_refMute, sigc::mem_fun(*this, &SignalDispatcher::on_mute_toggled));
 
@@ -125,6 +131,12 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
         "      <menuitem action='ViewFullscreen'/>"
         "      <menuitem action='ViewLeaveFullscreen'/>"
         "      <separator/>"
+        "      <menuitem action='ViewZoom200'/>"
+        "      <menuitem action='ViewZoom100'/>"
+        "      <menuitem action='ViewZoom50'/>"
+        "      <menuitem action='ViewLeaveFullscreen'/>"
+        "      <menuitem action='ViewLeaveFullscreen'/>"
+        "      <separator/>"
         "      <menuitem action='ViewControlWindow'/>"
         "      <separator/>"
         "      <menuitem action='ViewMenuBar'/>"
@@ -169,6 +181,10 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
         "    <separator/>"
         "    <menuitem action='ViewFullscreen'/>"
         "    <menuitem action='ViewLeaveFullscreen'/>"
+        "    <separator/>"
+        "    <menuitem action='ViewZoom200'/>"
+        "    <menuitem action='ViewZoom100'/>"
+        "    <menuitem action='ViewZoom50'/>"
         "    <separator/>"
         "    <menuitem action='ViewControlWindow'/>"
         "    <separator/>"
@@ -330,6 +346,21 @@ void SignalDispatcher::on_view_leave_fullscreen()
     {
 	m_MainWindow->unfullscreen();
     }
+}
+
+void SignalDispatcher::on_view_zoom_200()
+{
+    zoomMainWindow(200);
+}
+
+void SignalDispatcher::on_view_zoom_100()
+{
+    zoomMainWindow(100);
+}
+
+void SignalDispatcher::on_view_zoom_50()
+{
+    zoomMainWindow(50);
 }
 
 bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)

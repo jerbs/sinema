@@ -24,6 +24,8 @@ public:
 	       SignalDispatcher& signalDispatcher);
     virtual ~MainWindow();
 
+    void zoom(int percent);
+
 private:
     virtual void on_hide_window();
     virtual void on_resize_video_output(const ResizeVideoOutputReq& size);
@@ -33,6 +35,10 @@ private:
     Gtk::Label m_Label;
     Gtk::Menu* m_pMenuPopup;
     GtkmmMediaPlayer& m_GtkmmMediaPlayer;
+
+    int m_video_width;
+    int m_video_height;
+    int m_video_zoom;
 };
 
 #endif

@@ -12,7 +12,10 @@
 MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
 		       SignalDispatcher& signalDispatcher)
     : Gtk::Window(),
-      m_GtkmmMediaPlayer(gtkmmMediaPlayer)
+      m_GtkmmMediaPlayer(gtkmmMediaPlayer),
+      m_video_width(0),
+      m_video_height(0),
+      m_video_zoom(100)
 {
     set_title("player");
     set_default_size(400, 300);
@@ -61,9 +64,21 @@ void MainWindow::on_hide_window()
 
 void MainWindow::on_resize_video_output(const ResizeVideoOutputReq& size)
 {
-    // MainWindow displays Video and optionally some control elements.
-    int width  = size.width  + get_width()  - m_GtkmmMediaPlayer.get_width();
-    int height = size.height + get_height() - m_GtkmmMediaPlayer.get_height();
+    m_video_width = size.width;
+    m_video_height = size.height;
+    zoom(m_video_zoom);
+}
 
-    resize(width, height);
+void MainWindow::zoom(int percent)
+{
+    m_video_zoom = percent;
+
+    int video_width_zoomed  = double(m_video_width  * m_video_zoom) / 100;
+    int video_height_zoomed = double(m_video_height * m_video_zoom) / 100;
+
+    // MainWindow displays Video and optionally some control elements.
+    int window_width  = video_width_zoomed  + get_width()  - m_GtkmmMediaPlayer.get_width();
+    int window_height = video_height_zoomed + get_height() - m_GtkmmMediaPlayer.get_height();
+
+    resize(window_width, window_height);
 }

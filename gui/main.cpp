@@ -49,6 +49,8 @@ int main(int argc, char *argv[])
     mainWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher,
 				    &SignalDispatcher::on_main_window_state_event));
 
+    signalDispatcher.zoomMainWindow.connect(sigc::mem_fun(mainWindow,
+				    &MainWindow::zoom));
     signalDispatcher.setMainWindow(&mainWindow);
 
     Gtk::Main::run(mainWindow);
