@@ -309,11 +309,9 @@ bool SignalDispatcher::on_button_press_event(GdkEventButton* event)
 	    return true;
 	}
     }
-    else
-    {
-	// Event has not been handled:
-	return false;
-    }
+
+    // Event has not been handled:
+    return false;
 }
 
 void SignalDispatcher::on_file_open()

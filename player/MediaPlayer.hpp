@@ -106,6 +106,7 @@ private:
     virtual void process(boost::shared_ptr<OpenVideoStreamFailed> event) {};
 
     virtual void process(boost::shared_ptr<ResizeVideoOutputReq> event) = 0;
+    virtual void process(boost::shared_ptr<HideCursorEvent> event) = 0;
 };
 
 #endif

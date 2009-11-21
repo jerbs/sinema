@@ -322,6 +322,8 @@ struct NotificationCurrentVolume
 
 // ===================================================================
 
+struct HideCursorEvent {};
+
 struct WindowRealizeEvent
 {
     WindowRealizeEvent(void* display, unsigned long window)

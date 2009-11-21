@@ -5,6 +5,7 @@
 //
 
 #include "gui/GtkmmMediaPlayer.hpp"
+#include "platform/timer.hpp"
 
 #include <gdk/gdkx.h>
 
@@ -39,16 +40,28 @@ Window get_x_window(Gtk::Widget & widget)
 Glib::Dispatcher GtkmmMediaPlayer::m_dispatcher;
 
 GtkmmMediaPlayer::GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList)
-    : MediaPlayer(playList)
+    : MediaPlayer(playList),
+      m_blankGdkCursor(gdk_cursor_new(GDK_BLANK_CURSOR)),
+      m_blankCursor(Gdk::Cursor(m_blankGdkCursor))
 {
     MediaPlayerThreadNotification::setCallback(&notifyGuiThread);
     m_dispatcher.connect(sigc::mem_fun(this, &MediaPlayer::processEventQueue));
 
-    // Emit signal_button_press_event for popup menu:
+    add_events(Gdk::POINTER_MOTION_MASK);
     add_events(Gdk::BUTTON_PRESS_MASK);
 
     set_app_paintable(true);
     set_double_buffered(false);
+
+    m_hideCursorTimer.relative(getTimespec(2));
+}
+
+GtkmmMediaPlayer::~GtkmmMediaPlayer()
+{
+    if (m_blankGdkCursor)
+    {
+	gdk_cursor_unref(m_blankGdkCursor);
+    }
 }
 
 void GtkmmMediaPlayer::notifyGuiThread()
@@ -91,6 +104,13 @@ void GtkmmMediaPlayer::on_realize()
     videoOutput->queue_event(boost::make_shared<WindowRealizeEvent>(xdisplay, xid));
 
     open();
+
+    // Mouse cursor:
+    Glib::RefPtr <Gdk::Window> gdkWindow = get_window();
+    if (gdkWindow)
+    {
+	gdkWindow->set_cursor(m_blankCursor);
+    }
 }
 
 bool GtkmmMediaPlayer::on_configure_event(GdkEventConfigure* event)
@@ -119,3 +139,21 @@ bool GtkmmMediaPlayer::on_expose_event(GdkEventExpose* event)
     return Gtk::DrawingArea::on_expose_event(event);
 }
 
+bool GtkmmMediaPlayer::on_motion_notify_event(GdkEventMotion* event)
+{
+    Glib::RefPtr <Gdk::Window> gdkWindow = get_window();
+    if (gdkWindow)
+    {
+	gdkWindow->set_cursor();
+	start_timer(boost::make_shared<HideCursorEvent>(), m_hideCursorTimer);
+    }
+}
+    
+void GtkmmMediaPlayer::process(boost::shared_ptr<HideCursorEvent> event)
+{
+    Glib::RefPtr <Gdk::Window> gdkWindow = get_window();
+    if (gdkWindow)
+    {
+	gdkWindow->set_cursor(m_blankCursor);
+    }
+}
