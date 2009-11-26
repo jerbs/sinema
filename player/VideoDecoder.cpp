@@ -384,20 +384,25 @@ void VideoDecoder::queue()
 	return;
     }
 
-    char* data = xfVideoImage->data();
+    XvImage* yuvImage = xfVideoImage->xvImage();
+    char* data = yuvImage->data;
 
-    char* Y = data;
-    char* V = data + width * height;
-    char* U = V + width/2 * height/2;
+    char* Y = data + yuvImage->offsets[0];
+    char* V = data + yuvImage->offsets[1];
+    char* U = data + yuvImage->offsets[2];
+
+    int Yp = yuvImage->pitches[0];
+    int Vp = yuvImage->pitches[1];
+    int Up = yuvImage->pitches[2];
 
     AVPicture avPicture;
     avPicture.data[0] = (uint8_t*)Y;
     avPicture.data[1] = (uint8_t*)U;
     avPicture.data[2] = (uint8_t*)V;
     avPicture.data[3] = 0;
-    avPicture.linesize[0] = width;
-    avPicture.linesize[1] = width/2;
-    avPicture.linesize[2] = width/2;
+    avPicture.linesize[0] = Yp;
+    avPicture.linesize[1] = Up;
+    avPicture.linesize[2] = Vp;
     avPicture.linesize[3] = 0;
 
     // Convert image into YUV format:

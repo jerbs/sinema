@@ -103,6 +103,7 @@ private:
     void process(boost::shared_ptr<WindowRealizeEvent> event);
     void process(boost::shared_ptr<WindowConfigureEvent> event);
     void process(boost::shared_ptr<WindowExposeEvent> event);
+    void process(boost::shared_ptr<ClipVideoEvent> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);

@@ -279,6 +279,14 @@ void VideoOutput::process(boost::shared_ptr<WindowExposeEvent> event)
     }
 }
 
+void VideoOutput::process(boost::shared_ptr<ClipVideoEvent> event)
+{
+    if (xfVideo)
+    {
+	xfVideo->clip(event->left, event->right, event->top, event->buttom);
+    }
+}
+
 void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())

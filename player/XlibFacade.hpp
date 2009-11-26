@@ -39,6 +39,7 @@ public:
     void show();
     void handleConfigureEvent();
     void handleExposeEvent();
+    void clip(int winLeft, int winRight, int winTop, int winButtom);
     Display* display() {return m_display;}
     Window window() {return m_window;}
     
@@ -49,7 +50,16 @@ private:
     void calculateDestinationArea();
     void paintBorder();
 
+    void clip(boost::shared_ptr<XFVideoImage> in,
+	      boost::shared_ptr<XFVideoImage> out);
+
+    int xWindow(int xVideo);
+    int yWindow(int yVideo);
+    int xVideo(int xWindow);
+    int yVideo(int yWindow);
+
     boost::shared_ptr<XFVideoImage> m_displayedImage;
+    boost::shared_ptr<XFVideoImage> m_displayedImageClipped;
     Display* m_display;
     Window m_window;
     
@@ -71,6 +81,12 @@ private:
     unsigned int topDest;
     unsigned int widthDest;
     unsigned int heightDest;
+
+    // sub area of video shown on display:
+    unsigned int leftSrc;
+    unsigned int topSrc;
+    unsigned int widthSrc;
+    unsigned int heightSrc;
 };
 
 class XFVideoImage
@@ -79,8 +95,11 @@ class XFVideoImage
 
 public:
     XFVideoImage(boost::shared_ptr<XFVideo> xfVideo);
+    XFVideoImage(XFVideo* xfVideo, int width, int height);
+    void init(XFVideo* xfVideo, int width, int height);
     ~XFVideoImage();
 
+    void createPatternImage();
     void createBlackImage();
     void createDemoImage();
 
@@ -97,6 +116,7 @@ private:
     XvImage* yuvImage;
     void* shmAddr;
     double pts;
+    Display* m_display;
 };
 
 #endif

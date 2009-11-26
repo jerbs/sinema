@@ -352,6 +352,43 @@ struct WindowExposeEvent
     //    gint count;
 };
 
+struct ClipVideoEvent
+{
+    // Values are window pixels, i.e. values after zooming.
+    // except the special values:
+    // -1: keep clipping as it is at this edge
+    // -2: no clipping at this edge
+
+    ClipVideoEvent(int val)
+	: left(val),
+	  right(val),
+	  top(val),
+	  buttom(val)
+    {}
+
+    ClipVideoEvent(int left, int right, int top, int buttom)
+	: left(left),
+	  right(right),
+	  top(top),
+	  buttom(buttom)
+    {}
+
+    int left;
+    int right;
+    int top;
+    int buttom;
+
+    inline static ClipVideoEvent* createKeepIt()
+    {
+	return new ClipVideoEvent(-1);
+    }
+
+    inline static ClipVideoEvent* createDisable()
+    {
+	return new ClipVideoEvent(-2);
+    }
+};
+
 
 // ===================================================================
 

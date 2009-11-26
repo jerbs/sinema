@@ -47,8 +47,13 @@ GtkmmMediaPlayer::GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList)
     MediaPlayerThreadNotification::setCallback(&notifyGuiThread);
     m_dispatcher.connect(sigc::mem_fun(this, &MediaPlayer::processEventQueue));
 
+    // Get X event signals for mouse motion, mouse button press and 
+    // release events. For mouse button release events no event_handler 
+    // is implemented, but without adding this event the mouse pointer 
+    // isn't set back to default, when leaving the GtkmmMediaPlayer 
+    // widget after a mouse button press event.
     add_events(Gdk::POINTER_MOTION_MASK);
-    add_events(Gdk::BUTTON_PRESS_MASK);
+    add_events(Gdk::BUTTON_PRESS_MASK|Gdk::BUTTON_RELEASE_MASK);
 
     set_app_paintable(true);
     set_double_buffered(false);
@@ -139,14 +144,69 @@ bool GtkmmMediaPlayer::on_expose_event(GdkEventExpose* event)
     return Gtk::DrawingArea::on_expose_event(event);
 }
 
+template<class EVENT>
+void GtkmmMediaPlayer::getQuadrant(EVENT* event, int&x, int&y)
+{
+    x = 1;
+    y = 1;
+    if (3 * event->x <     get_width()) x = 0;
+    if (3 * event->x > 2 * get_width()) x = 2;
+    if (3 * event->y <     get_height()) y = 0;
+    if (3 * event->y > 2 * get_height()) y = 2;
+}
+
 bool GtkmmMediaPlayer::on_motion_notify_event(GdkEventMotion* event)
 {
+    const Gdk::CursorType cursorType[3][3] =
+	{ {Gdk::TOP_LEFT_CORNER,    Gdk::TOP_SIDE,    Gdk::TOP_RIGHT_CORNER},
+	  {Gdk::LEFT_SIDE,          Gdk::TCROSS,      Gdk::RIGHT_SIDE},
+	  {Gdk::BOTTOM_LEFT_CORNER, Gdk::BOTTOM_SIDE, Gdk::BOTTOM_RIGHT_CORNER} };
     Glib::RefPtr <Gdk::Window> gdkWindow = get_window();
     if (gdkWindow)
     {
-	gdkWindow->set_cursor();
+	int x, y;
+	getQuadrant(event, x, y);
+	m_cursor = Gdk::Cursor(cursorType[y][x]);
+	gdkWindow->set_cursor(m_cursor);
+
 	start_timer(boost::make_shared<HideCursorEvent>(), m_hideCursorTimer);
     }
+
+    // Event has been handled:
+    return true;
+}
+
+bool GtkmmMediaPlayer::on_button_press_event(GdkEventButton* event)
+{
+    if(event->type == GDK_BUTTON_PRESS)
+    {
+	if (event->button == 1)
+	{
+	    ClipVideoEvent* clipVideoEventPtr;
+	    int x, y;
+	    getQuadrant(event, x, y);
+	    if (x == 1 && y == 1)
+	    {
+		clipVideoEventPtr = ClipVideoEvent::createDisable();
+	    }
+	    else
+	    {
+		clipVideoEventPtr = ClipVideoEvent::createKeepIt();
+		if (x == 0) clipVideoEventPtr->left = event->x;
+		if (x == 2) clipVideoEventPtr->right = event->x;
+		if (y == 0) clipVideoEventPtr->top = event->y;
+		if (y == 2) clipVideoEventPtr->buttom = event->y;
+	    }
+	    boost::shared_ptr<ClipVideoEvent> clipVideoEvent(clipVideoEventPtr);
+	    videoOutput->queue_event(clipVideoEvent);
+
+	    // Event has been handled:
+	    return true;
+	}
+    }
+
+    // Event has not been handled:
+    return false;
 }
     
 void GtkmmMediaPlayer::process(boost::shared_ptr<HideCursorEvent> event)

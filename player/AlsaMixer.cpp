@@ -239,7 +239,7 @@ void AFMixer::sendCurrentPlaybackValues()
     std::stringstream ss;
     ss << playbackVolumeElem;
     event->name = ss.str();
-    event->volume = volume / count;
+    event->volume = count ? volume / count : 0;
     event->enabled = enabled;
     event->minVolume = pmin;
     event->maxVolume = pmax;

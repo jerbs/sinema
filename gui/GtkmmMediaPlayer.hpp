@@ -41,7 +41,9 @@ private:
     virtual bool on_configure_event(GdkEventConfigure* event);
     virtual bool on_expose_event(GdkEventExpose* event);
     virtual bool on_motion_notify_event(GdkEventMotion* event);
+    virtual bool on_button_press_event(GdkEventButton* event);
     virtual void process(boost::shared_ptr<HideCursorEvent> event);
+    template<class EVENT> void getQuadrant(EVENT* event, int&x, int&y);
     Gdk::Cursor m_cursor;
     timer m_hideCursorTimer;
     GdkCursor* m_blankGdkCursor;
