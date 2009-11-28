@@ -15,6 +15,8 @@ extern "C"
 }
 
 #include <string>
+#include <boost/bind.hpp>
+#include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
 class AFAudioFrame
@@ -92,14 +94,19 @@ private:
 class AFPCMDigitalAudioInterface
 {
 public:
+    typedef boost::function<void ()> send_audio_sync_info_fct_t;
+
     AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAudioOutputReq> req);
     ~AFPCMDigitalAudioInterface();
+
+    void setSendAudioSyncInfo(send_audio_sync_info_fct_t fct);
 
     bool play(boost::shared_ptr<AFAudioFrame> frame);
     bool getOverallLatency(snd_pcm_sframes_t& delay);
     snd_pcm_sframes_t getBufferFillLevel();
     double getNextPTS();
 
+    void start();
     bool pause(bool enable);
     void stop();
 
@@ -130,12 +137,10 @@ private:
     unsigned int buffer_time;        // ring buffer length in us
     unsigned int period_time;        // period time in us
 
+    send_audio_sync_info_fct_t sendAudioSyncInfo;
     double nextPTS;  // PTS of the next frame written to playback buffer
 
     int xrun_recovery(int err);
-
-    bool first;
-
     bool directWrite(boost::shared_ptr<AFAudioFrame> frame);
     bool copyFrame(const snd_pcm_channel_area_t *areas,
 		   snd_pcm_uframes_t offset,

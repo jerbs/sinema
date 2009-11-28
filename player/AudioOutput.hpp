@@ -86,10 +86,11 @@ private:
 
     void createAudioFrame();
     void playNextChunk();
+    void recycleObsoleteFrames();
     void startChunkTimer();
     bool startEosTimer();
 
-    void sendAudioSyncInfo(double nextPTS);
+    void sendAudioSyncInfo();
 };
 
 #endif

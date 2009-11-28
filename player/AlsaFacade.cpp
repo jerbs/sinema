@@ -30,8 +30,7 @@ AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAud
       period_size(4096),
       buffer_time(500000), // ring buffer length in us
       period_time(100000), // period time in us
-      nextPTS(0),
-      first(true)
+      nextPTS(0)
 {
     int ret;
 
@@ -83,6 +82,11 @@ AFPCMDigitalAudioInterface::~AFPCMDigitalAudioInterface()
     snd_pcm_close(handle);
     snd_pcm_sw_params_free(swparams);
     snd_pcm_hw_params_free(hwparams);
+}
+
+void AFPCMDigitalAudioInterface::setSendAudioSyncInfo(send_audio_sync_info_fct_t fct)
+{
+    sendAudioSyncInfo = fct;
 }
 
 void AFPCMDigitalAudioInterface::setPcmHwParams()
@@ -256,7 +260,7 @@ void AFPCMDigitalAudioInterface::dump()
 
 int AFPCMDigitalAudioInterface::xrun_recovery(int err)
 {
-    std::cout << "xrun_recovery" << std::endl;
+    std::cout << "xrun_recovery err=" << snd_strerror(err) << std::endl;
     DEBUG(<< "err=" << snd_strerror(err));
 
     if (err == -EPIPE)
@@ -308,7 +312,6 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 		ERROR(<< "XRUN recovery failed: " << snd_strerror(err));
 		exit(EXIT_FAILURE);
 	    }
-	    first = true;
 	}
 	else if (state == SND_PCM_STATE_SUSPENDED)
 	{
@@ -329,10 +332,10 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 		ERROR(<< "snd_pcm_prepare failed: " << snd_strerror(err));
 		exit(EXIT_FAILURE);
 	    }
-
-	    first = true;
        	}
 
+	// Get number of free samples in playback buffer. This call is
+	// mandatory for updating the actual write pointer.
 	snd_pcm_sframes_t avail = snd_pcm_avail_update(handle);
 
 	if (avail < 0)
@@ -343,7 +346,6 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 		printf("avail update recovery failed: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	    }
-	    first = true;
 	    continue;
 	}
 
@@ -351,29 +353,46 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 
 	finished = directWrite(frame);
 
-	// if (0 && avail > 0)
+	if (state == SND_PCM_STATE_PREPARED)
 	{
-	    if (first)
+	    // Playback not yet started.
+
+	    snd_pcm_sframes_t filled = buffer_size-avail;
+	    if (2*filled > buffer_size)
 	    {
-		first = false;
-		DEBUG(<< "snd_pcm_start");
-		int err = snd_pcm_start(handle);
-		if (err < 0)
-		{
-		    ERROR(<< "snd_pcm_start failed: " << snd_strerror(err));
-		    exit(EXIT_FAILURE);
-		}
+		// Now starting playback should be possible
+		// without getting a buffer underrun.
+		start();
+
+		// Now it is possible to determine the overall latency.
+		// Send an AudioSyncInfo to VideoOutput as soon as possible:
+		sendAudioSyncInfo();
 	    }
-	    else
-	    {
-		break;
-	    }
-	    continue;
 	}
+
 	break;
     }
 
     return finished;
+}
+
+void AFPCMDigitalAudioInterface::start()
+{
+    // This method is called by the play method when the buffer is half-filled.
+    // If this condition would never become true, i.e. short file, this method
+    // has to be called explicitly.
+
+    snd_pcm_state_t state = snd_pcm_state(handle);
+    if (state == SND_PCM_STATE_PREPARED)
+    {
+	DEBUG(<< "snd_pcm_start");
+	int err = snd_pcm_start(handle);
+	if (err < 0)
+	{
+	    ERROR(<< "snd_pcm_start failed: " << snd_strerror(err));
+	    exit(EXIT_FAILURE);
+	}
+    }
 }
 
 void AFPCMDigitalAudioInterface::skip(boost::shared_ptr<AFAudioFrame> frame, double seconds)
@@ -403,7 +422,6 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
 	    ERROR(<< "snd_pcm_mmap_begin recovery failed: " << snd_strerror(err));
 	    exit(-1);
 	}
-	first = 1;
     }
 
     DEBUG(<<" frames=" << frames);
@@ -424,7 +442,6 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
 	    ERROR( << "snd_pcm_mmap_commit recovery failed: " << snd_strerror(err));
 	    exit(-1);
 	}
-	first = 1;
     }
 
     return finished;
@@ -486,8 +503,6 @@ bool AFPCMDigitalAudioInterface::copyFrame(const snd_pcm_channel_area_t *areas,
 
 bool AFPCMDigitalAudioInterface::getOverallLatency(snd_pcm_sframes_t& latency)
 {
-    DEBUG();
-
     snd_pcm_state_t state = snd_pcm_state(handle);
 
     if (state == SND_PCM_STATE_RUNNING)
@@ -504,7 +519,6 @@ bool AFPCMDigitalAudioInterface::getOverallLatency(snd_pcm_sframes_t& latency)
 	return false;
     }
 
-    ERROR(<< "Playback not running: " << snd_pcm_state_name(state));
     return false;
 }
 

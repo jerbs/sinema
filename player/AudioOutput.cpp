@@ -64,6 +64,11 @@ void AudioOutput::process(boost::shared_ptr<OpenAudioOutputReq> event)
 
 	alsa = boost::make_shared<AFPCMDigitalAudioInterface>(event);
 
+	// Make AudioOutput::sendAudioSyncInfo accessable for AFPCMDigitalAudioInterface: 
+	typedef void (AudioOutput::*fct_t)();
+	fct_t tmp = &AudioOutput::sendAudioSyncInfo;
+	alsa->setSendAudioSyncInfo(boost::bind(tmp, this));
+
 	for (int i=0; i<10; i++)
 	{
 	    createAudioFrame();
@@ -290,6 +295,10 @@ void AudioOutput::playNextChunk()
 	    state = STILL;
 	    if (eos)
 	    {
+		// In case of a very short file, playback may not have been started
+		// automatically here by AFPCMDigitalAudioInterface.
+		alsa->start();
+
 		if (!startEosTimer())
 		{
 		    // Timer is not started again.
@@ -297,6 +306,8 @@ void AudioOutput::playNextChunk()
 		    mediaPlayer->queue_event(boost::make_shared<EndOfAudioStream>());
 		}
 	    }
+
+	    recycleObsoleteFrames();
 	    return;
 	}
 
@@ -304,20 +315,14 @@ void AudioOutput::playNextChunk()
 
 	boost::shared_ptr<AFAudioFrame> frame(*currentFrame);
 
-	bool nextAudioFrame = frame->atBegin();
+	if (frame->atBegin())
+	{
+	    // Send periodic AudioSyncInfo event to ensure AV-Sync:
+	    DEBUG(<< "calling sendAudioSyncInfo");
+	    sendAudioSyncInfo();
+	}
 
 	bool finished = alsa->play(frame);
-
-	// Here audio is playing and latency can be determined, i.e. sending
-	// AudioSyncInfo is possible. VideoOutput needs an AudioSyncInfo when 
-	// restarting after pause. Periodic AudioSyncInfo events are necessary
-	// to ensure AV-Sync.
-
-	if (state != PLAYING ||   // Restarting after pause.
-	    nextAudioFrame)       // Periodic AudioSyncInfo events.
-	{
-	    sendAudioSyncInfo(alsa->getNextPTS());
-	}
 
 	if (finished)
 	{
@@ -337,6 +342,14 @@ void AudioOutput::playNextChunk()
 	}
     }
 
+    startChunkTimer();
+    }
+
+    recycleObsoleteFrames();
+}
+
+void AudioOutput::recycleObsoleteFrames()
+{
     // Remove obsolete frames from bufferedFrameQueue and send them back to
     // the AudioDecoder.
     FrameQueue_t::iterator it(frameQueue.begin());
@@ -362,9 +375,6 @@ void AudioOutput::playNextChunk()
 	    break;
 	}
     }
-
-    startChunkTimer();
-    }
 }
 
 void AudioOutput::startChunkTimer()
@@ -381,7 +391,7 @@ void AudioOutput::startChunkTimer()
     }
 
     chunkTimer.relative(dt);
-    DEBUG(<< "time=" << getSeconds(chunkTimer.get_current_time()) << ", sec=" << getSeconds(dt));
+    DEBUG(<< "time=" << chunkTimer.get_current_time() << ", sec=" << getSeconds(dt));
     start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
 
     state = PLAYING;
@@ -408,8 +418,9 @@ bool AudioOutput::startEosTimer()
     return false;
 }
 
-void AudioOutput::sendAudioSyncInfo(double nextPTS)
+void AudioOutput::sendAudioSyncInfo()
 {
+    double nextPTS = alsa->getNextPTS();
     // Do I have to use the frameTimer of class VideoOutput here?
     struct timespec currentTime = chunkTimer.get_current_time();
     snd_pcm_sframes_t overallLatencyInFrames;
