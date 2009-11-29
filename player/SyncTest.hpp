@@ -10,10 +10,11 @@
 #ifdef SYNCTEST
 #include "player/GeneralEvents.hpp"
 #include "platform/event_receiver.hpp"
-#include "player/XlibFacade.hpp"
-#include "player/AlsaFacade.hpp"
 
 #include <boost/shared_ptr.hpp>
+
+class AFAudioFrame;
+class XFVideoImage;
 
 struct StartTest
 {

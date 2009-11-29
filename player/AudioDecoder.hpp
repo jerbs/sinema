@@ -9,7 +9,8 @@
 
 #include "player/GeneralEvents.hpp"
 #include "platform/event_receiver.hpp"
-#include "player/AlsaFacade.hpp"
+
+class AFAudioFrame;
 
 class AudioDecoder : public event_receiver<AudioDecoder>
 {

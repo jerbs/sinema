@@ -7,6 +7,7 @@
 #include "player/VideoOutput.hpp"
 #include "player/VideoDecoder.hpp"
 #include "player/MediaPlayer.hpp"
+#include "player/XlibFacade.hpp"
 
 #ifdef SYNCTEST
 #include "SyncTest.hpp"

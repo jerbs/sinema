@@ -9,6 +9,7 @@
 #include "player/VideoOutput.hpp"
 #include "player/MediaPlayer.hpp"
 #include "player/AlsaFacade.hpp"
+#include "player/AlsaMixer.hpp"
 #include "player/SyncTest.hpp"
 #include "platform/timer.hpp"
 

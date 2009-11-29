@@ -9,12 +9,15 @@
 
 #include "player/GeneralEvents.hpp"
 #include "platform/event_receiver.hpp"
-#include "player/AlsaFacade.hpp"
-#include "player/AlsaMixer.hpp"
 
 #include <list>
 
 #include <boost/shared_ptr.hpp>
+
+class AFPCMDigitalAudioInterface;
+class AFAudioFrame;
+class AFMixer;
+class AlsaMixerElemEvent;
 
 struct PlayNextChunk{};
 

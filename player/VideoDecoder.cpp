@@ -8,6 +8,7 @@
 #include "player/VideoOutput.hpp"
 #include "player/Demuxer.hpp"
 #include "player/MediaPlayer.hpp"
+#include "player/XlibFacade.hpp"
 
 #include <boost/make_shared.hpp>
 #include <iomanip>

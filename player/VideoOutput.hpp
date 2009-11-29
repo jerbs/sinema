@@ -9,7 +9,6 @@
 
 #include "player/GeneralEvents.hpp"
 #include "platform/event_receiver.hpp"
-#include "player/XlibFacade.hpp"
 
 #include <sys/ipc.h>  // to allocate shared memory
 #include <sys/shm.h>  // to allocate shared memory
@@ -19,6 +18,9 @@
 #include <boost/shared_ptr.hpp>
 
 struct ShowNextFrame {};
+
+class XFVideo;
+class XFVideoImage;
 
 class VideoOutput : public event_receiver<VideoOutput,
 					  concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >

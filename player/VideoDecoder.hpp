@@ -9,9 +9,10 @@
 
 #include "player/GeneralEvents.hpp"
 #include "platform/event_receiver.hpp"
-#include "player/XlibFacade.hpp"
 
 #include <boost/shared_ptr.hpp>
+
+class XFVideoImage;
 
 class VideoDecoder : public event_receiver<VideoDecoder>
 {

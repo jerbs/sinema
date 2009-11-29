@@ -6,6 +6,7 @@
 
 #include "player/AudioDecoder.hpp"
 #include "player/AudioOutput.hpp"
+#include "player/AlsaFacade.hpp"
 #include "player/Demuxer.hpp"
 
 #include <boost/make_shared.hpp>

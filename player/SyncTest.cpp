@@ -9,6 +9,8 @@
 #include "player/SyncTest.hpp"
 #include "player/AudioOutput.hpp"
 #include "player/VideoOutput.hpp"
+#include "player/AlsaFacade.hpp"
+#include "player/XlibFacade.hpp"
 
 #include <string.h>
 #include <math.h>
