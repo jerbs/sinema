@@ -115,6 +115,8 @@ private:
     void startFrameTimer();
 
     void showBlackFrame();
+
+    void sendNotificationVideoSize(boost::shared_ptr<NotificationVideoSize> event);
 };
 
 #endif

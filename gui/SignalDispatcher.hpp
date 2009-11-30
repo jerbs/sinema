@@ -24,7 +24,7 @@ class SignalDispatcher
 public:
     sigc::signal<void, bool> showControlWindow;
     sigc::signal<void> hideMainWindow;
-    sigc::signal<void, int> zoomMainWindow;
+    sigc::signal<void, double> zoomMainWindow;
 
     SignalDispatcher(GtkmmMediaPlayer& mediaPlayer);
     ~SignalDispatcher();

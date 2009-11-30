@@ -91,9 +91,9 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationCurrentVolume> even
     notificationCurrentVolume(*event);
 }
 
-void GtkmmMediaPlayer::process(boost::shared_ptr<ResizeVideoOutputReq> event)
+void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationVideoSize> event)
 {
-    notificationResizeOutput(*event);
+    notificationVideoSize(*event);
 }
 
 void GtkmmMediaPlayer::on_realize()

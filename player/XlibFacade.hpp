@@ -14,7 +14,10 @@
 #include <X11/extensions/Xvlib.h>
 
 #include <boost/shared_ptr.hpp>
+#include <boost/function.hpp>
 #include <string>
+
+#include <player/GeneralEvents.hpp>
 
 struct XFException
 {
@@ -29,8 +32,11 @@ class XFVideo
     friend class XFVideoImage;
 
 public:
+    typedef boost::function<void (boost::shared_ptr<NotificationVideoSize>)> send_notification_video_size_fct_t;
+
     XFVideo(Display* display, Window window,
-	    unsigned int width, unsigned int height);
+	    unsigned int width, unsigned int height,
+	    send_notification_video_size_fct_t fct);
     ~XFVideo();
 
     void selectEvents();
@@ -42,7 +48,7 @@ public:
     void clip(int winLeft, int winRight, int winTop, int winButtom);
     Display* display() {return m_display;}
     Window window() {return m_window;}
-    
+
 private:
     XFVideo();
     XFVideo(const XFVideo&);
@@ -67,14 +73,13 @@ private:
     int imageFormat;
     GC gc;
 
-    unsigned int yuvWidth;
-    unsigned int yuvHeight;
-    double ratio;   //  yuvWidth / yuvHeight
-    double iratio;  //  yuvHeight / yuvWidth
+    // video size:
+    unsigned int widthVid;
+    unsigned int heightVid;
 
     // window size:
-    unsigned int width;
-    unsigned int height;
+    unsigned int widthWin;
+    unsigned int heightWin;
 
     // sub area of window displaying the video:
     unsigned int leftDest;
@@ -87,6 +92,8 @@ private:
     unsigned int topSrc;
     unsigned int widthSrc;
     unsigned int heightSrc;
+
+    send_notification_video_size_fct_t sendNotificationVideoSize;
 };
 
 class XFVideoImage

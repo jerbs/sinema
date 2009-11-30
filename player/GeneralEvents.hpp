@@ -219,6 +219,10 @@ struct CloseAudioOutputResp{};
 
 struct OpenVideoOutputReq
 {
+    OpenVideoOutputReq(int width, int height)
+	: width(width),
+	  height(height)
+    {}
     int width;
     int height;
 };
@@ -231,6 +235,10 @@ struct CloseVideoOutputResp{};
 
 struct ResizeVideoOutputReq
 {
+    ResizeVideoOutputReq(int width, int height)
+	: width(width),
+	  height(height)
+    {}
     int width;
     int height;
 };
@@ -318,6 +326,29 @@ struct NotificationCurrentVolume
     bool enabled;
     long minVolume;
     long maxVolume;
+};
+
+struct NotificationVideoSize
+{
+    // size of the video
+    unsigned int widthVid;
+    unsigned int heightVid;
+
+    // window size:
+    unsigned int widthWin;
+    unsigned int heightWin;
+
+    // sub area of window displaying the video:
+    unsigned int leftDst;
+    unsigned int topDst;
+    unsigned int widthDst;
+    unsigned int heightDst;
+
+    // sub area of video shown on display:
+    unsigned int leftSrc;
+    unsigned int topSrc;
+    unsigned int widthSrc;
+    unsigned int heightSrc;
 };
 
 // ===================================================================

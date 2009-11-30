@@ -348,17 +348,17 @@ void SignalDispatcher::on_view_leave_fullscreen()
 
 void SignalDispatcher::on_view_zoom_200()
 {
-    zoomMainWindow(200);
+    zoomMainWindow(2);
 }
 
 void SignalDispatcher::on_view_zoom_100()
 {
-    zoomMainWindow(100);
+    zoomMainWindow(1);
 }
 
 void SignalDispatcher::on_view_zoom_50()
 {
-    zoomMainWindow(50);
+    zoomMainWindow(0.5);
 }
 
 bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)

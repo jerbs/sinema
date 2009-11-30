@@ -24,7 +24,7 @@ public:
     sigc::signal<void, double> notificationDuration;
     sigc::signal<void, double> notificationCurrentTime;
     sigc::signal<void, NotificationCurrentVolume> notificationCurrentVolume;
-    sigc::signal<void, ResizeVideoOutputReq> notificationResizeOutput;
+    sigc::signal<void, NotificationVideoSize> notificationVideoSize;
 
     GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList);
     virtual ~GtkmmMediaPlayer();
@@ -34,7 +34,7 @@ public:
     virtual void process(boost::shared_ptr<NotificationFileInfo> event);
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event);
     virtual void process(boost::shared_ptr<NotificationCurrentVolume> event);
-    virtual void process(boost::shared_ptr<ResizeVideoOutputReq> event);
+    virtual void process(boost::shared_ptr<NotificationVideoSize> event);
 
 private:
     virtual void on_realize();

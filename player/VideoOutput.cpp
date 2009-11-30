@@ -14,6 +14,7 @@
 #endif
 
 #include <boost/make_shared.hpp>
+#include <boost/bind.hpp>
 
 using namespace std;
 
@@ -248,8 +249,16 @@ void VideoOutput::process(boost::shared_ptr<WindowRealizeEvent> event)
     if (!xfVideo)
     {
 	DEBUG();
+
+	// Make VideoOutput::sendNotificationVideoSize accessable for XFVideo: 
+	typedef void (VideoOutput::*fct_t)(boost::shared_ptr<NotificationVideoSize>);
+	fct_t tmp = &VideoOutput::sendNotificationVideoSize;
+	boost::function<void (boost::shared_ptr<NotificationVideoSize>)> fct = boost::bind(tmp, this, _1);
+
 	xfVideo = boost::make_shared<XFVideo>(static_cast<Display*>(event->display),
-					      event->window, 720, 576);
+					      event->window, 720, 576, fct);
+
+
 	showBlackFrame();
     }
 }
@@ -438,4 +447,9 @@ void VideoOutput::showBlackFrame()
     boost::shared_ptr<XFVideoImage> yuvImage(new XFVideoImage(xfVideo));
     yuvImage->createBlackImage();
     xfVideo->show(yuvImage);
+}
+
+void VideoOutput::sendNotificationVideoSize(boost::shared_ptr<NotificationVideoSize> event)
+{
+    mediaPlayer->queue_event(event);
 }

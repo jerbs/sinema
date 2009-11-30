@@ -13,6 +13,7 @@
 #include <gtkmm/label.h>
 #include <gtkmm/menu.h>
 #include <gtkmm/toggleaction.h>
+#include <gtkmm/statusbar.h>
 #include "gui/GtkmmMediaPlayer.hpp"
 
 class SignalDispatcher;
@@ -24,21 +25,25 @@ public:
 	       SignalDispatcher& signalDispatcher);
     virtual ~MainWindow();
 
-    void zoom(int percent);
+    virtual void on_notification_video_size(const NotificationVideoSize& event);
+
+    void zoom(double percent);
 
 private:
     virtual void on_hide_window();
-    virtual void on_resize_video_output(const ResizeVideoOutputReq& size);
 
     //Child widgets:
     Gtk::VBox m_Box;
     Gtk::Label m_Label;
     Gtk::Menu* m_pMenuPopup;
     GtkmmMediaPlayer& m_GtkmmMediaPlayer;
+    Gtk::Statusbar& m_StatusBar;
+
+    NotificationVideoSize m_VideoSize;
 
     int m_video_width;
     int m_video_height;
-    int m_video_zoom;
+    double m_video_zoom;
 };
 
 #endif

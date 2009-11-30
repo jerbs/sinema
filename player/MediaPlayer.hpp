@@ -101,11 +101,11 @@ private:
     virtual void process(boost::shared_ptr<NotificationFileInfo> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentVolume> event) = 0;
+    virtual void process(boost::shared_ptr<NotificationVideoSize> event) = 0;
 
     virtual void process(boost::shared_ptr<OpenAudioStreamFailed> event) {};
     virtual void process(boost::shared_ptr<OpenVideoStreamFailed> event) {};
 
-    virtual void process(boost::shared_ptr<ResizeVideoOutputReq> event) = 0;
     virtual void process(boost::shared_ptr<HideCursorEvent> event) = 0;
 };
 

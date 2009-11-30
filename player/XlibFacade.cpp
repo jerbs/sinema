@@ -12,6 +12,7 @@
 #include <sys/shm.h>  // to allocate shared memory
 #include <errno.h>
 #include <string.h>   // memcpy, strerror
+#include <math.h>
 
 #undef DEBUG
 #define DEBUG(s)
@@ -26,17 +27,17 @@ bool useXvClipping = false;
 // -------------------------------------------------------------------
 
 XFVideo::XFVideo(Display* display, Window window,
-		 unsigned int width, unsigned int height)
+		 unsigned int width, unsigned int height,
+		 send_notification_video_size_fct_t fct)
     : m_display(display),
       m_window(window),
-      yuvWidth(width),
-      yuvHeight(height),
-      ratio(double(width)/double(height)),
-      iratio(double(height)/double(width)),
+      widthVid(width),
+      heightVid(height),
       leftSrc(0),
       topSrc(0),
       widthSrc(width),
-      heightSrc(height)
+      heightSrc(height),
+      sendNotificationVideoSize(fct)
 {
     // Check to see if the shared memory extension is available:
     bool shmExtAvailable = XShmQueryExtension(m_display);
@@ -187,24 +188,17 @@ void XFVideo::selectEvents()
     XSelectInput(m_display, m_window, StructureNotifyMask | ExposureMask | KeyPressMask);
 }
 
-void XFVideo::resize(unsigned int width_, unsigned int height_)
+void XFVideo::resize(unsigned int width, unsigned int height)
 {
     // This method is called when the video size changes.
     // It is not called when the widget is resized.
-    INFO(<< width_ << "," << height_);
+    INFO(<< width << "," << height);
+
+    // Display the full image:
     leftSrc = 0;
     topSrc = 0;
-    widthSrc = width_;
-    heightSrc = height_;
-    width  = width_;
-    height = height_;
-    yuvWidth = width;
-    yuvHeight = height;
-    ratio = double(widthSrc)/double(heightSrc);
-    iratio = double(heightSrc)/double(widthSrc);
-
-    XResizeWindow(m_display, m_window, width, height);  // ???
-    // XMoveResizeWindow(m_display, m_window, left, top, width, height);
+    widthVid  = widthSrc  = widthWin  = width;
+    heightVid = heightSrc = heightWin = height;
 
     calculateDestinationArea();
 }
@@ -216,31 +210,49 @@ void XFVideo::calculateDestinationArea()
     unsigned int border_width, depth;
 
     XGetGeometry(m_display, m_window, &root,
-		 &x, &y, &width, &height,
+		 &x, &y, &widthWin, &heightWin,
 		 &border_width, &depth);
 
     topDest = 0;
     leftDest = 0;
 
     // Keep aspect ratio:
-    widthDest = ratio * double(height);
-    heightDest = iratio * double(width);
+    double ratio = double(widthSrc)/double(heightSrc);
+    double iratio = double(heightSrc)/double(widthSrc);
+    widthDest = round(ratio * double(heightWin));
+    heightDest = round(iratio * double(widthWin));
 
-    if (widthDest<=width)
+    if (widthDest<=widthWin)
     {
-	heightDest = height;
-	leftDest = (width-widthDest)>>1;
+	heightDest = heightWin;
+	leftDest = (widthWin-widthDest)>>1;
     }
-    else if (heightDest<=height)
+    else if (heightDest<=heightWin)
     {
-	widthDest = width;
-	topDest = (height-heightDest)>>1;
+	widthDest = widthWin;
+	topDest = (heightWin-heightDest)>>1;
     }
     else
     {
-	heightDest = height;
-	widthDest = width;
+	heightDest = heightWin;
+	widthDest = widthWin;
     }
+
+    // Send notification with size information to GUI:
+    boost::shared_ptr<NotificationVideoSize> nvs(new NotificationVideoSize());
+    nvs->widthVid = widthVid;
+    nvs->heightVid = heightVid;
+    nvs->widthWin = widthWin;
+    nvs->heightWin = heightWin;
+    nvs->leftDst = leftDest;
+    nvs->topDst = topDest;
+    nvs->widthDst = widthDest;
+    nvs->heightDst = heightDest;
+    nvs->leftSrc = leftSrc;
+    nvs->topSrc = topSrc;
+    nvs->widthSrc = widthSrc;
+    nvs->heightSrc = heightSrc;
+    sendNotificationVideoSize(nvs);
 }
 
 boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yuvImage)
@@ -294,6 +306,7 @@ void XFVideo::show()
 
 void XFVideo::handleConfigureEvent()
 {
+    INFO();
     // This method is called when the widget is resized.
     calculateDestinationArea();
 }
@@ -304,10 +317,10 @@ void XFVideo::handleExposeEvent()
     show();
 }
 
-int XFVideo::xWindow(int xVideo) {return leftDest + (double(widthDest) /double(widthSrc))  * int(xVideo  - leftSrc);}
-int XFVideo::yWindow(int yVideo) {return topDest  + (double(heightDest)/double(heightSrc)) * int(yVideo  - topSrc);}
-int XFVideo::xVideo(int xWindow) {return leftSrc  + (double(widthSrc)  /double(widthDest)) * int(xWindow - leftDest);}
-int XFVideo::yVideo(int yWindow) {return topSrc   + (double(heightSrc) /double(heightDest))* int(yWindow - topDest);}
+int XFVideo::xWindow(int xVideo) {return round(leftDest + (double(widthDest) /double(widthSrc))  * (xVideo  - int(leftSrc)));}
+int XFVideo::yWindow(int yVideo) {return round(topDest  + (double(heightDest)/double(heightSrc)) * (yVideo  - int(topSrc)));}
+int XFVideo::xVideo(int xWindow) {return round(leftSrc  + (double(widthSrc)  /double(widthDest)) * (xWindow - int(leftDest)));}
+int XFVideo::yVideo(int yWindow) {return round(topSrc   + (double(heightSrc) /double(heightDest))* (yWindow - int(topDest)));}
 
 typedef int (XFVideo::* Convert_t)(int);
 
@@ -353,9 +366,6 @@ void XFVideo::clip(int winLeft, int winRight, int winTop, int winButtom)
 	heightSrc = 0xfffffffe & (videoButtom - videoTop);
 
 	// std::cout << "src:" << leftSrc << ", " << widthSrc << ", " << topSrc << ", " << heightSrc << std::endl;
-
-	ratio = double(widthSrc)/double(heightSrc);
-	iratio = double(heightSrc)/double(widthSrc);
 
 	// Update widget:
 	calculateDestinationArea();
@@ -426,11 +436,11 @@ void XFVideo::paintBorder()
 
     const unsigned short w1 = leftDest;
     const unsigned short w2 = widthDest;
-    const unsigned short w3 = width-leftDest-widthDest;
+    const unsigned short w3 = widthWin-leftDest-widthDest;
 
     const unsigned short h1 = topDest;
     const unsigned short h2 = heightDest;
-    const unsigned short h3 = height-topDest-heightDest;
+    const unsigned short h3 = heightWin-topDest-heightDest;
 
     XRectangle rec[8] = { {x1, y1, w1, h1},   // R1
 			  {x2, y1, w2, h1},   // R2
@@ -449,7 +459,7 @@ void XFVideo::paintBorder()
 XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
     : pts(0)
 {
-    init(xfVideo.get(), xfVideo->yuvWidth, xfVideo->yuvHeight);
+    init(xfVideo.get(), xfVideo->widthVid, xfVideo->heightVid);
 }
 
 XFVideoImage::XFVideoImage(XFVideo* xfVideo, int width, int height)

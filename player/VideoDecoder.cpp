@@ -59,15 +59,9 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 						NULL, NULL, NULL);        // SwsFilter*
 		    if (swsContext)
 		    {
-			boost::shared_ptr<OpenVideoOutputReq> req(new OpenVideoOutputReq());
-			req->width = avCodecContext->width;
-			req->height = avCodecContext->height;
-			videoOutput->queue_event(req);
-
-			boost::shared_ptr<ResizeVideoOutputReq> ind(new ResizeVideoOutputReq());
-			ind->width = avCodecContext->width;
-			ind->height = avCodecContext->height;
-			mediaPlayer->queue_event(ind);
+			int w = avCodecContext->width;
+			int h = avCodecContext->height;
+			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h));
 
 			state = Opening;
 
@@ -377,10 +371,9 @@ void VideoDecoder::queue()
 
 	videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
 
-	boost::shared_ptr<ResizeVideoOutputReq> req(new ResizeVideoOutputReq());
-	req->width = avCodecContext->width;
-	req->height = avCodecContext->height;
-	videoOutput->queue_event(req);
+	int w = avCodecContext->width;
+	int h = avCodecContext->height;
+	videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(w,h));
 
 	return;
     }

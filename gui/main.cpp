@@ -53,6 +53,9 @@ int main(int argc, char *argv[])
 				    &MainWindow::zoom));
     signalDispatcher.setMainWindow(&mainWindow);
 
+    mediaPlayer.notificationVideoSize.connect( sigc::mem_fun(&mainWindow, &MainWindow::on_notification_video_size) );
+
+
     Gtk::Main::run(mainWindow);
 
 #else
