@@ -43,7 +43,7 @@ public:
     void resize(unsigned int width, unsigned int height);
     boost::shared_ptr<XFVideoImage> show(boost::shared_ptr<XFVideoImage> xfVideoImage);
     void show();
-    void handleConfigureEvent();
+    void handleConfigureEvent(boost::shared_ptr<WindowConfigureEvent> event);
     void handleExposeEvent();
     void clip(int winLeft, int winRight, int winTop, int winButtom);
     Display* display() {return m_display;}

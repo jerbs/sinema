@@ -33,6 +33,8 @@ XFVideo::XFVideo(Display* display, Window window,
       m_window(window),
       widthVid(width),
       heightVid(height),
+      widthWin(width),
+      heightWin(height),
       leftSrc(0),
       topSrc(0),
       widthSrc(width),
@@ -205,14 +207,6 @@ void XFVideo::resize(unsigned int width, unsigned int height)
 
 void XFVideo::calculateDestinationArea()
 {
-    Window root;
-    int x, y;
-    unsigned int border_width, depth;
-
-    XGetGeometry(m_display, m_window, &root,
-		 &x, &y, &widthWin, &heightWin,
-		 &border_width, &depth);
-
     topDest = 0;
     leftDest = 0;
 
@@ -304,10 +298,12 @@ void XFVideo::show()
     }
 }
 
-void XFVideo::handleConfigureEvent()
+void XFVideo::handleConfigureEvent(boost::shared_ptr<WindowConfigureEvent> event)
 {
     INFO();
     // This method is called when the widget is resized.
+    widthWin  = event->width;
+    heightWin = event->height;
     calculateDestinationArea();
 }
 
@@ -546,7 +542,7 @@ void XFVideoImage::createBlackImage()
     int pVin = yuvImage->pitches[1];
     int pUin = yuvImage->pitches[2];
 
-    memset(Y, 128, pYin*h);
+    memset(Y,   0, pYin*h);
     memset(U, 128, pUin*h2);
     memset(V, 128, pVin*h2);
 }

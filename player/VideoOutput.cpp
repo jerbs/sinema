@@ -268,7 +268,7 @@ void VideoOutput::process(boost::shared_ptr<WindowConfigureEvent> event)
     DEBUG();
     if (xfVideo)
     {
-	xfVideo->handleConfigureEvent();
+	xfVideo->handleConfigureEvent(event);
 	if (!isOpen())
 	{
 	    showBlackFrame();
