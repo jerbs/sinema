@@ -41,6 +41,7 @@ void VideoOutput::process(boost::shared_ptr<OpenVideoOutputReq> event)
     {
 	DEBUG();
 
+	xfVideo->resize(event->width, event->height);
 	for (int i=0; i<10; i++)
 	{
 	    createVideoImage();
@@ -82,6 +83,13 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
 
 void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
 {
+    // VideoDecoder sends this event for every XFVideoImage received with wrong size.
+    // This case occurs when:
+    // 1) Starting to play a video with a differnt resolution and the VideoDecoder 
+    //    gets the XFVideoImage created in VideoOutput::showBlackFrame while closing
+    //    the previous video.
+    // 2) The video resolution changes within one video.
+
     if (isOpen())
     {
 	DEBUG();
@@ -257,7 +265,6 @@ void VideoOutput::process(boost::shared_ptr<WindowRealizeEvent> event)
 
 	xfVideo = boost::make_shared<XFVideo>(static_cast<Display*>(event->display),
 					      event->window, 720, 576, fct);
-
 
 	showBlackFrame();
     }

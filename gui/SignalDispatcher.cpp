@@ -382,6 +382,8 @@ bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
     m_refMenuBarVisible->set_active(m_visible->menuBar);
     m_refToolBarVisible->set_active(m_visible->toolBar);
     m_refStatusBarVisible->set_active(m_visible->statusBar);
+
+    return false;
 }
 
 void SignalDispatcher::on_view_controlwindow()

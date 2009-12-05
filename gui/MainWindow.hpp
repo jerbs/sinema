@@ -26,11 +26,11 @@ public:
     virtual ~MainWindow();
 
     virtual void on_notification_video_size(const NotificationVideoSize& event);
-
     void zoom(double percent);
 
 private:
     virtual void on_hide_window();
+    bool on_main_window_state_event(GdkEventWindowState* event);
 
     //Child widgets:
     Gtk::VBox m_Box;
@@ -44,6 +44,8 @@ private:
     int m_video_width;
     int m_video_height;
     double m_video_zoom;
+    bool m_fullscreen;
+    timespec_t m_ignore_window_size_change;
 };
 
 #endif

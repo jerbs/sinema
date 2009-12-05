@@ -6,11 +6,13 @@
 
 #include <iostream>
 
+#include "platform/timer.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
 #undef DEBUG
-#define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+#define DEBUG(s)
+// #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
 		       SignalDispatcher& signalDispatcher)
@@ -19,6 +21,8 @@ MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
       m_video_width(0),
       m_video_height(0),
       m_video_zoom(1),
+      m_fullscreen(false),
+      m_ignore_window_size_change(getTimespec(0)),
       m_StatusBar(signalDispatcher.getStatusBar())
 {
     set_title("player");
@@ -51,6 +55,7 @@ MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
     add(m_Box);
 
     signalDispatcher.hideMainWindow.connect( sigc::mem_fun(*this, &MainWindow::on_hide_window) );
+    signal_window_state_event().connect(sigc::mem_fun(*this, &MainWindow::on_main_window_state_event));
 
     show_all_children();
 }
@@ -64,12 +69,51 @@ void MainWindow::on_hide_window()
     hide();
 }
 
+bool MainWindow::on_main_window_state_event(GdkEventWindowState* event)
+{
+    // This method is called when fullscreen mode is entered or left. This
+    // may be triggered by the application itself or by the window manager.
+
+    bool fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN;
+    if (fullscreen != m_fullscreen)
+    {
+	// Ignore NotificationVideoSize(WindowSizeChanged) events received 
+	// in the next 0.1 seconds:
+	m_ignore_window_size_change = timer::get_current_time() + getTimespec(0.1);
+    }
+    m_fullscreen = fullscreen;
+    DEBUG("m_fullscreen = " << m_fullscreen);
+
+    return false;
+}
+
+std::ostream& operator<<(std::ostream& strm, const NotificationVideoSize::Reason& reason)
+{
+    switch (reason)
+    {
+    case NotificationVideoSize::VideoSizeChanged:
+	strm << "VidSizeChanged";
+	break;
+    case NotificationVideoSize::WindowSizeChanged:
+	strm << "WinSizeChanged";
+	break;
+    case NotificationVideoSize::ClippingChanged:
+	strm << "ClippingModified";
+	break;
+    default:
+	strm << int(reason);
+	break;
+    }
+
+    return strm;
+}
+
 void MainWindow::on_notification_video_size(const NotificationVideoSize& event)
 {
     NotificationVideoSize oldVideoSize = m_VideoSize;
     m_VideoSize = event;
 
-    DEBUG( << std::dec
+    DEBUG( << std::dec << event.reason << ","
 	   << "vid(" << m_VideoSize.widthVid << "," << m_VideoSize.heightVid << ")"
 	   << "win(" << m_VideoSize.widthWin << "," << m_VideoSize.heightWin << ")"
 	   << "dst(" << m_VideoSize.widthDst << "," << m_VideoSize.heightDst << ")"
@@ -90,22 +134,31 @@ void MainWindow::on_notification_video_size(const NotificationVideoSize& event)
     }
     m_StatusBar.push(ss.str(), 0);
 
-    // Trying to resize window as expected by user.
-    if ( ( (oldVideoSize.widthDst != m_VideoSize.widthDst) ||
-	   (oldVideoSize.heightDst != m_VideoSize.heightDst) ) &&
-	 (oldVideoSize.widthSrc == m_VideoSize.widthSrc) &&
-	 (oldVideoSize.heightSrc == m_VideoSize.heightSrc) )
+    switch(event.reason)
     {
-	// User resized the window. Update zoom factor:
-	m_video_zoom = xzoom;
-    }
-    else
-    {
-	// New video or clipping modified.
-	// Keep zoom factor and resize window.
-    }
+    case NotificationVideoSize::VideoSizeChanged:
+	m_video_zoom = 1;
+	zoom(m_video_zoom);
+	break;
 
-    zoom(m_video_zoom);
+    case NotificationVideoSize::WindowSizeChanged:
+	if (timer::get_current_time() < m_ignore_window_size_change)
+	{
+	    // Don't use the first NotificationVideoSize(WindowSizeChanged) events
+	    // after leaving the fullscreen mode to change the zoom factor.
+	    zoom(m_video_zoom);
+	}
+	else
+	{
+	    m_video_zoom = xzoom;
+	    zoom(m_video_zoom);
+	}
+	break;
+
+    case NotificationVideoSize::ClippingChanged:
+	zoom(m_video_zoom);
+	break;
+    }
 }
     
 void MainWindow::zoom(double percent)
@@ -119,8 +172,8 @@ void MainWindow::zoom(double percent)
     int window_width  = video_width_zoomed  + get_width()  - m_GtkmmMediaPlayer.get_width();
     int window_height = video_height_zoomed + get_height() - m_GtkmmMediaPlayer.get_height();
 
-    DEBUG( << std::dec 
-	   << window_width << " = " << video_width_zoomed << " + " << get_width() << " - " << m_GtkmmMediaPlayer.get_width() );
+    DEBUG( << std::dec << 100 * m_video_zoom << "%" );
+    DEBUG( << window_width << " = " << video_width_zoomed << " + " << get_width() << " - " << m_GtkmmMediaPlayer.get_width() );
     DEBUG( << window_height << " = " << video_height_zoomed << " + " << get_height()<< " - " << m_GtkmmMediaPlayer.get_height());
 
     resize(window_width, window_height);

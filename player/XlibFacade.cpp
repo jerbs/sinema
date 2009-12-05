@@ -174,7 +174,7 @@ XFVideo::XFVideo(Display* display, Window window,
     // Create a graphics context
     gc = XCreateGC(display, window, 0, 0);
 
-    calculateDestinationArea();
+    calculateDestinationArea(NotificationVideoSize::VideoSizeChanged);
     paintBorder();
 }
 
@@ -194,18 +194,21 @@ void XFVideo::resize(unsigned int width, unsigned int height)
 {
     // This method is called when the video size changes.
     // It is not called when the widget is resized.
-    INFO(<< width << "," << height);
+
+    // The new video size:
+    widthVid  = width;
+    heightVid = height;
 
     // Display the full image:
     leftSrc = 0;
     topSrc = 0;
-    widthVid  = widthSrc  = widthWin  = width;
-    heightVid = heightSrc = heightWin = height;
+    widthSrc  = width;
+    heightSrc = height;
 
-    calculateDestinationArea();
+    calculateDestinationArea(NotificationVideoSize::VideoSizeChanged);
 }
 
-void XFVideo::calculateDestinationArea()
+void XFVideo::calculateDestinationArea(NotificationVideoSize::Reason reason)
 {
     topDest = 0;
     leftDest = 0;
@@ -234,6 +237,7 @@ void XFVideo::calculateDestinationArea()
 
     // Send notification with size information to GUI:
     boost::shared_ptr<NotificationVideoSize> nvs(new NotificationVideoSize());
+    nvs->reason = reason;
     nvs->widthVid = widthVid;
     nvs->heightVid = heightVid;
     nvs->widthWin = widthWin;
@@ -300,11 +304,10 @@ void XFVideo::show()
 
 void XFVideo::handleConfigureEvent(boost::shared_ptr<WindowConfigureEvent> event)
 {
-    INFO();
     // This method is called when the widget is resized.
     widthWin  = event->width;
     heightWin = event->height;
-    calculateDestinationArea();
+    calculateDestinationArea(NotificationVideoSize::WindowSizeChanged);
 }
 
 void XFVideo::handleExposeEvent()
@@ -364,7 +367,7 @@ void XFVideo::clip(int winLeft, int winRight, int winTop, int winButtom)
 	// std::cout << "src:" << leftSrc << ", " << widthSrc << ", " << topSrc << ", " << heightSrc << std::endl;
 
 	// Update widget:
-	calculateDestinationArea();
+	calculateDestinationArea(NotificationVideoSize::ClippingChanged);
 	paintBorder();
 	show(m_displayedImage);
     }

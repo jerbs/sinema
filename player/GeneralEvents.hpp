@@ -330,6 +330,13 @@ struct NotificationCurrentVolume
 
 struct NotificationVideoSize
 {
+    enum Reason {
+	VideoSizeChanged,
+	WindowSizeChanged,
+	ClippingChanged
+    };
+    Reason reason;
+
     // size of the video
     unsigned int widthVid;
     unsigned int heightVid;

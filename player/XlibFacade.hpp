@@ -53,7 +53,7 @@ private:
     XFVideo();
     XFVideo(const XFVideo&);
 
-    void calculateDestinationArea();
+    void calculateDestinationArea(NotificationVideoSize::Reason reason);
     void paintBorder();
 
     void clip(boost::shared_ptr<XFVideoImage> in,
