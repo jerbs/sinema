@@ -51,6 +51,8 @@ int main(int argc, char *argv[])
 
     signalDispatcher.zoomMainWindow.connect(sigc::mem_fun(mainWindow,
 				    &MainWindow::zoom));
+    signalDispatcher.ignoreWindowResize.connect(sigc::mem_fun(mainWindow,
+				    &MainWindow::ignoreWindowResize));
     signalDispatcher.setMainWindow(&mainWindow);
 
     mediaPlayer.notificationVideoSize.connect( sigc::mem_fun(&mainWindow, &MainWindow::on_notification_video_size) );

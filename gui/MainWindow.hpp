@@ -27,6 +27,7 @@ public:
 
     virtual void on_notification_video_size(const NotificationVideoSize& event);
     void zoom(double percent);
+    void ignoreWindowResize();
 
 private:
     virtual void on_hide_window();

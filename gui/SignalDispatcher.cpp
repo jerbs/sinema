@@ -53,6 +53,14 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
     m_refActionGroup->add(Gtk::Action::create("ViewLeaveFullscreen", Gtk::Stock::LEAVE_FULLSCREEN,
 					      "Leave Fullscreen", "Leave fullscrean mode"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_leave_fullscreen));
+
+    m_refActionGroup->add(Gtk::Action::create("ViewNormalMode",
+					      "Normal Mode", "Show all "),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_normal_mode));
+    m_refActionGroup->add(Gtk::Action::create("ViewTvMode",
+					      "TV Mode", "Leave fullscrean mode"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_tv_mode));
+
     m_refActionGroup->add(Gtk::Action::create("ViewZoom200", "Zoom 200%"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_zoom_200));
     m_refActionGroup->add(Gtk::Action::create("ViewZoom100", "Zoom 100%"),
@@ -130,12 +138,12 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
         "    <menu action='ViewMenu'>"
         "      <menuitem action='ViewFullscreen'/>"
         "      <menuitem action='ViewLeaveFullscreen'/>"
+        "      <menuitem action='ViewNormalMode'/>"
+        "      <menuitem action='ViewTvMode'/>"
         "      <separator/>"
         "      <menuitem action='ViewZoom200'/>"
         "      <menuitem action='ViewZoom100'/>"
         "      <menuitem action='ViewZoom50'/>"
-        "      <menuitem action='ViewLeaveFullscreen'/>"
-        "      <menuitem action='ViewLeaveFullscreen'/>"
         "      <separator/>"
         "      <menuitem action='ViewControlWindow'/>"
         "      <separator/>"
@@ -181,6 +189,8 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
         "    <separator/>"
         "    <menuitem action='ViewFullscreen'/>"
         "    <menuitem action='ViewLeaveFullscreen'/>"
+        "    <menuitem action='ViewNormalMode'/>"
+        "    <menuitem action='ViewTvMode'/>"
         "    <separator/>"
         "    <menuitem action='ViewZoom200'/>"
         "    <menuitem action='ViewZoom100'/>"
@@ -346,6 +356,42 @@ void SignalDispatcher::on_view_leave_fullscreen()
     }
 }
 
+void SignalDispatcher::on_view_normal_mode()
+{
+    on_view_leave_fullscreen();
+
+    ignoreWindowResize();
+
+    m_visibleWindow.menuBar = true;
+    m_visibleWindow.toolBar = true;
+    m_visibleWindow.statusBar = true;
+
+    if (!m_fullscreen)
+    {
+	m_refMenuBarVisible->set_active(true);
+	m_refToolBarVisible->set_active(true);
+	m_refStatusBarVisible->set_active(true);
+    }
+}
+
+void SignalDispatcher::on_view_tv_mode()
+{
+    on_view_leave_fullscreen();
+
+    ignoreWindowResize();
+
+    m_visibleWindow.menuBar = false;
+    m_visibleWindow.toolBar = false;
+    m_visibleWindow.statusBar = false;
+
+    if (!m_fullscreen)
+    {
+	m_refMenuBarVisible->set_active(false);
+	m_refToolBarVisible->set_active(false);
+	m_refStatusBarVisible->set_active(false);    
+    }
+}
+
 void SignalDispatcher::on_view_zoom_200()
 {
     zoomMainWindow(2);
@@ -396,6 +442,8 @@ void SignalDispatcher::on_view_menubar()
     Gtk::Widget* pMenubar = getMenuBarWidget();
     if(pMenubar)
     {
+	ignoreWindowResize();
+
 	if (m_visible->menuBar = m_refMenuBarVisible->get_active())
 	{
 	    pMenubar->show();
@@ -412,6 +460,8 @@ void SignalDispatcher::on_view_toolbar()
     Gtk::Widget* pToolbar = getToolBarWidget();
     if (pToolbar)
     {
+	ignoreWindowResize();
+
 	if (m_visible->toolBar = m_refToolBarVisible->get_active())
 	{
 	    pToolbar->show();
@@ -420,11 +470,14 @@ void SignalDispatcher::on_view_toolbar()
 	{
 	    pToolbar->hide();
 	}
+
     }
 }
 
 void SignalDispatcher::on_view_statusbar()
 {
+    ignoreWindowResize();
+
     if (m_visible->statusBar = m_refStatusBarVisible->get_active())
     {
 	m_StatusBar.show();

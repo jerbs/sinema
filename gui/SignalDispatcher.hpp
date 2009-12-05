@@ -25,6 +25,7 @@ public:
     sigc::signal<void, bool> showControlWindow;
     sigc::signal<void> hideMainWindow;
     sigc::signal<void, double> zoomMainWindow;
+    sigc::signal<void> ignoreWindowResize;
 
     SignalDispatcher(GtkmmMediaPlayer& mediaPlayer);
     ~SignalDispatcher();
@@ -54,6 +55,8 @@ private:
     virtual void on_file_quit();
     virtual void on_view_fullscreen();
     virtual void on_view_leave_fullscreen();
+    virtual void on_view_normal_mode();
+    virtual void on_view_tv_mode();
     virtual void on_view_zoom_200();
     virtual void on_view_zoom_100();
     virtual void on_view_zoom_50();

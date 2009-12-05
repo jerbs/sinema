@@ -69,6 +69,13 @@ void MainWindow::on_hide_window()
     hide();
 }
 
+void MainWindow::ignoreWindowResize()
+{
+    // Ignore NotificationVideoSize(WindowSizeChanged) events received 
+    // in the next 0.1 seconds:
+    m_ignore_window_size_change = timer::get_current_time() + getTimespec(0.1);
+}
+
 bool MainWindow::on_main_window_state_event(GdkEventWindowState* event)
 {
     // This method is called when fullscreen mode is entered or left. This
@@ -77,9 +84,7 @@ bool MainWindow::on_main_window_state_event(GdkEventWindowState* event)
     bool fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN;
     if (fullscreen != m_fullscreen)
     {
-	// Ignore NotificationVideoSize(WindowSizeChanged) events received 
-	// in the next 0.1 seconds:
-	m_ignore_window_size_change = timer::get_current_time() + getTimespec(0.1);
+	ignoreWindowResize();
     }
     m_fullscreen = fullscreen;
     DEBUG("m_fullscreen = " << m_fullscreen);
