@@ -22,8 +22,6 @@
 
 using namespace std;
 
-bool useXvClipping = false;
-
 // -------------------------------------------------------------------
 
 XFVideo::XFVideo(Display* display, Window window,
@@ -40,6 +38,7 @@ XFVideo::XFVideo(Display* display, Window window,
       topSrc(0),
       widthSrc(width),
       heightSrc(height),
+      useXvClipping(true),
       sendNotificationVideoSize(fct),
       sendNotificationClipping(fct2)
 {
@@ -206,6 +205,7 @@ void XFVideo::resize(unsigned int width, unsigned int height)
     topSrc = 0;
     widthSrc  = width;
     heightSrc = height;
+    useXvClipping = true;
 
     calculateDestinationArea(NotificationVideoSize::VideoSizeChanged);
 }
@@ -377,6 +377,18 @@ void XFVideo::clipSrc(int videoLeft, int videoRight, int videoTop, int videoBott
 	widthSrc  = 0xfffffffe & (videoRight  - videoLeft);
 	topSrc    = 0xfffffffe & (videoTop);
 	heightSrc = 0xfffffffe & (videoBottom - videoTop);
+
+	if (leftSrc == 0 &&
+	    widthSrc == widthVid &&
+	    topSrc == 0 &&
+	    heightSrc == heightVid)
+	{
+	    useXvClipping = true;
+	}
+	else
+	{
+	    useXvClipping = false;
+	}
 
 	sendNotificationClipping(boost::make_shared<NotificationClipping>
 				 (leftSrc, leftSrc+widthSrc, topSrc, topSrc+heightSrc));

@@ -96,6 +96,8 @@ private:
     unsigned int widthSrc;
     unsigned int heightSrc;
 
+    bool useXvClipping;
+
     send_notification_video_size_fct_t sendNotificationVideoSize;
     send_notification_clipping_fct_t sendNotificationClipping;
 };
