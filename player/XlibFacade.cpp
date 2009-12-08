@@ -28,7 +28,8 @@ bool useXvClipping = false;
 
 XFVideo::XFVideo(Display* display, Window window,
 		 unsigned int width, unsigned int height,
-		 send_notification_video_size_fct_t fct)
+		 send_notification_video_size_fct_t fct,
+		 send_notification_clipping_fct_t fct2)
     : m_display(display),
       m_window(window),
       widthVid(width),
@@ -39,7 +40,8 @@ XFVideo::XFVideo(Display* display, Window window,
       topSrc(0),
       widthSrc(width),
       heightSrc(height),
-      sendNotificationVideoSize(fct)
+      sendNotificationVideoSize(fct),
+      sendNotificationClipping(fct2)
 {
     // Check to see if the shared memory extension is available:
     bool shmExtAvailable = XShmQueryExtension(m_display);
@@ -337,32 +339,47 @@ static void constraint(TVAL& val, int min, int max)
     if (val > max) val = max;
 }
 
-void XFVideo::clip(int winLeft, int winRight, int winTop, int winButtom)
+void XFVideo::clipDst(int windowLeft, int windowRight, int windowTop, int windowBottom)
 {
+    // Parameter are widget pixel.
+
     if (m_displayedImage)
     {
-	// std::cout << "win:" << winLeft << ", " << winRight << ", " << winTop << ", " << winButtom << std::endl;
+	// std::cout << "win:" << winLeft << ", " << winRight << ", " << winTop << ", " << winBottom << std::endl;
 
 	// Convert window coordinates into video coordinates and handle 
 	// special values -1 (keep existing value) and -2 (set back to default).
-	int videoLeft   = calcClip(leftSrc,          winLeft,   this, &XFVideo::xVideo, 0);
-	int videoRight  = calcClip(leftSrc+widthSrc, winRight,  this, &XFVideo::xVideo, m_displayedImage->width());
-	int videoTop    = calcClip(topSrc,           winTop,    this, &XFVideo::yVideo, 0);
-	int videoButtom = calcClip(topSrc+heightSrc, winButtom, this, &XFVideo::yVideo, m_displayedImage->height());
+	int videoLeft   = calcClip(leftSrc,          windowLeft,   this, &XFVideo::xVideo, 0);
+	int videoRight  = calcClip(leftSrc+widthSrc, windowRight,  this, &XFVideo::xVideo, m_displayedImage->width());
+	int videoTop    = calcClip(topSrc,           windowTop,    this, &XFVideo::yVideo, 0);
+	int videoBottom = calcClip(topSrc+heightSrc, windowBottom, this, &XFVideo::yVideo, m_displayedImage->height());
 
-	// std::cout << "vid:" << videoLeft << ", " << videoRight << ", " << videoTop << ", " << videoButtom << std::endl;
+	clipSrc(videoLeft, videoRight, videoTop, videoBottom);
+    }
+}
+
+void XFVideo::clipSrc(int videoLeft, int videoRight, int videoTop, int videoBottom)
+{
+    // Parameters are video pixel.
+
+    if (m_displayedImage)
+    {
+	// std::cout << "vid:" << videoLeft << ", " << videoRight << ", " << videoTop << ", " << videoBottom << std::endl;
 
 	// Values may be out of range:
 	constraint(videoLeft,   0,           m_displayedImage->width());
 	constraint(videoRight,  videoLeft+1, m_displayedImage->width());
 	constraint(videoTop,    0,           m_displayedImage->height());
-	constraint(videoButtom, videoTop+1,  m_displayedImage->height());
+	constraint(videoBottom, videoTop+1,  m_displayedImage->height());
 
 	// Round to muliples of 2, since YUV format is used:
 	leftSrc   = 0xfffffffe & (videoLeft);
 	widthSrc  = 0xfffffffe & (videoRight  - videoLeft);
 	topSrc    = 0xfffffffe & (videoTop);
-	heightSrc = 0xfffffffe & (videoButtom - videoTop);
+	heightSrc = 0xfffffffe & (videoBottom - videoTop);
+
+	sendNotificationClipping(boost::make_shared<NotificationClipping>
+				 (leftSrc, leftSrc+widthSrc, topSrc, topSrc+heightSrc));
 
 	// std::cout << "src:" << leftSrc << ", " << widthSrc << ", " << topSrc << ", " << heightSrc << std::endl;
 

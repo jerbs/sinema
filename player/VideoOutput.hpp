@@ -105,7 +105,8 @@ private:
     void process(boost::shared_ptr<WindowRealizeEvent> event);
     void process(boost::shared_ptr<WindowConfigureEvent> event);
     void process(boost::shared_ptr<WindowExposeEvent> event);
-    void process(boost::shared_ptr<ClipVideoEvent> event);
+    void process(boost::shared_ptr<ClipVideoDstEvent> event);
+    void process(boost::shared_ptr<ClipVideoSrcEvent> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);
@@ -117,6 +118,7 @@ private:
     void showBlackFrame();
 
     void sendNotificationVideoSize(boost::shared_ptr<NotificationVideoSize> event);
+    void sendNotificationClipping(boost::shared_ptr<NotificationClipping> event);
 };
 
 #endif

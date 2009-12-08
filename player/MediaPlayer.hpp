@@ -49,7 +49,9 @@ public:
     void setPlaybackVolume(double volume);
     void setPlaybackSwitch(bool enabled);
 
-    // protected:
+    void clip(boost::shared_ptr<ClipVideoDstEvent> event);
+    void clip(boost::shared_ptr<ClipVideoSrcEvent> event);
+
     void processEventQueue();
 
 protected:
@@ -102,6 +104,7 @@ private:
     virtual void process(boost::shared_ptr<NotificationCurrentTime> event) = 0;
     virtual void process(boost::shared_ptr<NotificationCurrentVolume> event) = 0;
     virtual void process(boost::shared_ptr<NotificationVideoSize> event) = 0;
+    virtual void process(boost::shared_ptr<NotificationClipping> event) = 0;
 
     virtual void process(boost::shared_ptr<OpenAudioStreamFailed> event) {};
     virtual void process(boost::shared_ptr<OpenVideoStreamFailed> event) {};

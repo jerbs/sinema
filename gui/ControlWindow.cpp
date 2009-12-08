@@ -66,7 +66,7 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer, SignalDispatcher& si
 
     // Don't display value as string next to the slider
     m_VScaleVolume.set_draw_value(false);
-    // Lowest value at buttom, highest at top:
+    // Lowest value at bottom, highest at top:
     m_VScaleVolume.set_inverted(true);
     m_HBox_Level0.pack_end(m_VBox_Level1a, Gtk::PACK_SHRINK);
 

@@ -47,6 +47,8 @@ public:
     bool on_button_press_event(GdkEventButton* event);
     bool on_control_window_state_event(GdkEventWindowState* event);
     bool on_main_window_state_event(GdkEventWindowState* event);
+    void on_notification_video_size(const NotificationVideoSize& event);
+    void on_notification_clipping(const NotificationClipping& event);
 
 private:
     // Slots:
@@ -60,6 +62,10 @@ private:
     virtual void on_view_zoom_200();
     virtual void on_view_zoom_100();
     virtual void on_view_zoom_50();
+    virtual void on_view_clipping_none();
+    virtual void on_view_clipping_custom();
+    virtual void on_view_clipping_43();
+    virtual void on_view_clipping_169();
     virtual void on_view_controlwindow();
     virtual void on_view_menubar();
     virtual void on_view_toolbar();
@@ -88,14 +94,23 @@ private:
     MainWindow* m_MainWindow;
     GtkmmMediaPlayer& m_MediaPlayer;
 
+    Gtk::RadioAction::Group m_groupClipping;
+
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
-    Glib::RefPtr<Gtk::RadioAction> m_refChoiceOne, m_refChoiceTwo;
+    Glib::RefPtr<Gtk::RadioAction> m_refClippingNone;
+    Glib::RefPtr<Gtk::RadioAction> m_refClippingCustom;
+    Glib::RefPtr<Gtk::RadioAction> m_refClipping43;
+    Glib::RefPtr<Gtk::RadioAction> m_refClipping169;
     Glib::RefPtr<Gtk::ToggleAction> m_refMute;
     Glib::RefPtr<Gtk::ToggleAction> m_refControlWindowVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refMenuBarVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refToolBarVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refStatusBarVisible;
+
+    ClipVideoSrcEvent getClipVideoSrcEventNone();
+    ClipVideoSrcEvent getClipVideoSrcEvent43();
+    ClipVideoSrcEvent getClipVideoSrcEvent169();
 
     bool acceptAdjustmentPositionValueChanged;
     bool acceptAdjustmentVolumeValueChanged;
@@ -103,6 +118,8 @@ private:
     Gtk::Adjustment m_AdjustmentVolume;
 
     Gtk::Statusbar m_StatusBar;
+
+    NotificationVideoSize m_VideoSize;
 
     timespec_t timeTitlePlaybackStarted;
 

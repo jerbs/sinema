@@ -263,8 +263,12 @@ void VideoOutput::process(boost::shared_ptr<WindowRealizeEvent> event)
 	fct_t tmp = &VideoOutput::sendNotificationVideoSize;
 	boost::function<void (boost::shared_ptr<NotificationVideoSize>)> fct = boost::bind(tmp, this, _1);
 
+	typedef void (VideoOutput::*fct2_t)(boost::shared_ptr<NotificationClipping>);
+	fct2_t tmp2 = &VideoOutput::sendNotificationClipping;
+	boost::function<void (boost::shared_ptr<NotificationClipping>)> fct2 = boost::bind(tmp2, this, _1);
+
 	xfVideo = boost::make_shared<XFVideo>(static_cast<Display*>(event->display),
-					      event->window, 720, 576, fct);
+					      event->window, 720, 576, fct, fct2);
 
 	showBlackFrame();
     }
@@ -296,11 +300,19 @@ void VideoOutput::process(boost::shared_ptr<WindowExposeEvent> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<ClipVideoEvent> event)
+void VideoOutput::process(boost::shared_ptr<ClipVideoDstEvent> event)
 {
     if (xfVideo)
     {
-	xfVideo->clip(event->left, event->right, event->top, event->buttom);
+	xfVideo->clipDst(event->left, event->right, event->top, event->bottom);
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<ClipVideoSrcEvent> event)
+{
+    if (xfVideo)
+    {
+	xfVideo->clipSrc(event->left, event->right, event->top, event->bottom);
     }
 }
 
@@ -457,6 +469,11 @@ void VideoOutput::showBlackFrame()
 }
 
 void VideoOutput::sendNotificationVideoSize(boost::shared_ptr<NotificationVideoSize> event)
+{
+    mediaPlayer->queue_event(event);
+}
+
+void VideoOutput::sendNotificationClipping(boost::shared_ptr<NotificationClipping> event)
 {
     mediaPlayer->queue_event(event);
 }

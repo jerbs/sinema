@@ -96,6 +96,11 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationVideoSize> event)
     notificationVideoSize(*event);
 }
 
+void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationClipping> event)
+{
+    notificationClipping(*event);
+}
+
 void GtkmmMediaPlayer::on_realize()
 {
     INFO();
@@ -182,23 +187,23 @@ bool GtkmmMediaPlayer::on_button_press_event(GdkEventButton* event)
     {
 	if (event->button == 1)
 	{
-	    ClipVideoEvent* clipVideoEventPtr;
+	    ClipVideoDstEvent* clipVideoDstEventPtr;
 	    int x, y;
 	    getQuadrant(event, x, y);
 	    if (x == 1 && y == 1)
 	    {
-		clipVideoEventPtr = ClipVideoEvent::createDisable();
+		clipVideoDstEventPtr = ClipVideoDstEvent::createDisable();
 	    }
 	    else
 	    {
-		clipVideoEventPtr = ClipVideoEvent::createKeepIt();
-		if (x == 0) clipVideoEventPtr->left = event->x;
-		if (x == 2) clipVideoEventPtr->right = event->x;
-		if (y == 0) clipVideoEventPtr->top = event->y;
-		if (y == 2) clipVideoEventPtr->buttom = event->y;
+		clipVideoDstEventPtr = ClipVideoDstEvent::createKeepIt();
+		if (x == 0) clipVideoDstEventPtr->left = event->x;
+		if (x == 2) clipVideoDstEventPtr->right = event->x;
+		if (y == 0) clipVideoDstEventPtr->top = event->y;
+		if (y == 2) clipVideoDstEventPtr->bottom = event->y;
 	    }
-	    boost::shared_ptr<ClipVideoEvent> clipVideoEvent(clipVideoEventPtr);
-	    videoOutput->queue_event(clipVideoEvent);
+	    boost::shared_ptr<ClipVideoDstEvent> clipVideoDstEvent(clipVideoDstEventPtr);
+	    videoOutput->queue_event(clipVideoDstEvent);
 
 	    // Event has been handled:
 	    return true;

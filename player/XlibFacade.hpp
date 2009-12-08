@@ -33,10 +33,12 @@ class XFVideo
 
 public:
     typedef boost::function<void (boost::shared_ptr<NotificationVideoSize>)> send_notification_video_size_fct_t;
+    typedef boost::function<void (boost::shared_ptr<NotificationClipping>)> send_notification_clipping_fct_t;
 
     XFVideo(Display* display, Window window,
 	    unsigned int width, unsigned int height,
-	    send_notification_video_size_fct_t fct);
+	    send_notification_video_size_fct_t fct,
+	    send_notification_clipping_fct_t fct2);
     ~XFVideo();
 
     void selectEvents();
@@ -45,7 +47,8 @@ public:
     void show();
     void handleConfigureEvent(boost::shared_ptr<WindowConfigureEvent> event);
     void handleExposeEvent();
-    void clip(int winLeft, int winRight, int winTop, int winButtom);
+    void clipDst(int windowLeft, int windowRight, int windowTop, int windowBottom);
+    void clipSrc(int videoLeft, int videoRight, int videoTop, int videoBottom);
     Display* display() {return m_display;}
     Window window() {return m_window;}
 
@@ -94,6 +97,7 @@ private:
     unsigned int heightSrc;
 
     send_notification_video_size_fct_t sendNotificationVideoSize;
+    send_notification_clipping_fct_t sendNotificationClipping;
 };
 
 class XFVideoImage

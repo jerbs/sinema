@@ -18,8 +18,6 @@ MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
 		       SignalDispatcher& signalDispatcher)
     : Gtk::Window(),
       m_GtkmmMediaPlayer(gtkmmMediaPlayer),
-      m_video_width(0),
-      m_video_height(0),
       m_video_zoom(1),
       m_fullscreen(false),
       m_ignore_window_size_change(getTimespec(0)),
@@ -115,7 +113,6 @@ std::ostream& operator<<(std::ostream& strm, const NotificationVideoSize::Reason
 
 void MainWindow::on_notification_video_size(const NotificationVideoSize& event)
 {
-    NotificationVideoSize oldVideoSize = m_VideoSize;
     m_VideoSize = event;
 
     DEBUG( << std::dec << event.reason << ","

@@ -358,6 +358,23 @@ struct NotificationVideoSize
     unsigned int heightSrc;
 };
 
+struct NotificationClipping
+{
+    // Values are video pixels.
+
+    NotificationClipping(int left, int right, int top, int bottom)
+	: left(left),
+	  right(right),
+	  top(top),
+	  bottom(bottom)
+    {}
+
+    int left;
+    int right;
+    int top;
+    int bottom;
+};
+
 // ===================================================================
 
 struct HideCursorEvent {};
@@ -390,43 +407,59 @@ struct WindowExposeEvent
     //    gint count;
 };
 
-struct ClipVideoEvent
+struct ClipVideoDstEvent
 {
     // Values are window pixels, i.e. values after zooming.
     // except the special values:
     // -1: keep clipping as it is at this edge
     // -2: no clipping at this edge
 
-    ClipVideoEvent(int val)
+    ClipVideoDstEvent(int val)
 	: left(val),
 	  right(val),
 	  top(val),
-	  buttom(val)
+	  bottom(val)
     {}
 
-    ClipVideoEvent(int left, int right, int top, int buttom)
+    ClipVideoDstEvent(int left, int right, int top, int bottom)
 	: left(left),
 	  right(right),
 	  top(top),
-	  buttom(buttom)
+	  bottom(bottom)
     {}
 
     int left;
     int right;
     int top;
-    int buttom;
+    int bottom;
 
-    inline static ClipVideoEvent* createKeepIt()
+    inline static ClipVideoDstEvent* createKeepIt()
     {
-	return new ClipVideoEvent(-1);
+	return new ClipVideoDstEvent(-1);
     }
 
-    inline static ClipVideoEvent* createDisable()
+    inline static ClipVideoDstEvent* createDisable()
     {
-	return new ClipVideoEvent(-2);
+	return new ClipVideoDstEvent(-2);
     }
 };
 
+struct ClipVideoSrcEvent
+{
+    // Values are video pixels.
+
+    ClipVideoSrcEvent(int left, int right, int top, int bottom)
+	: left(left),
+	  right(right),
+	  top(top),
+	  bottom(bottom)
+    {}
+
+    int left;
+    int right;
+    int top;
+    int bottom;
+};
 
 // ===================================================================
 

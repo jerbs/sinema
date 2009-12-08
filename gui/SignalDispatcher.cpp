@@ -67,6 +67,20 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_zoom_100));
     m_refActionGroup->add(Gtk::Action::create("ViewZoom50", "Zoom 50%"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_zoom_50));
+
+    m_refClippingNone = Gtk::RadioAction::create(m_groupClipping, "ViewClippingNone", "No Clipping");
+    m_refActionGroup->add(m_refClippingNone,
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_clipping_none) );
+    m_refClippingCustom = Gtk::RadioAction::create(m_groupClipping, "ViewClippingCustom", "Custom Clipping");
+    m_refActionGroup->add(m_refClippingCustom,
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_clipping_custom) );
+    m_refClipping43 = Gtk::RadioAction::create(m_groupClipping, "ViewClipping43", "PAL 4:3");
+    m_refActionGroup->add(m_refClipping43,
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_clipping_43) );
+    m_refClipping169 = Gtk::RadioAction::create(m_groupClipping, "ViewClipping169", "PAL 16:9");
+    m_refActionGroup->add(m_refClipping169,
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_clipping_169) );
+
     m_refMute = Gtk::ToggleAction::create("ViewMute", "Mute");
     m_refActionGroup->add(m_refMute, sigc::mem_fun(*this, &SignalDispatcher::on_mute_toggled));
 
@@ -145,7 +159,14 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
         "      <menuitem action='ViewZoom100'/>"
         "      <menuitem action='ViewZoom50'/>"
         "      <separator/>"
+        "      <menuitem action='ViewClippingNone'/>"
+        "      <menuitem action='ViewClippingCustom'/>"
+        "      <menuitem action='ViewClipping43'/>"
+        "      <menuitem action='ViewClipping169'/>"
+        "      <separator/>"
         "      <menuitem action='ViewControlWindow'/>"
+        "      <separator/>"
+        "      <menuitem action='ViewMute'/>"
         "      <separator/>"
         "      <menuitem action='ViewMenuBar'/>"
         "      <menuitem action='ViewToolBar'/>"
@@ -195,6 +216,11 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
         "    <menuitem action='ViewZoom200'/>"
         "    <menuitem action='ViewZoom100'/>"
         "    <menuitem action='ViewZoom50'/>"
+        "    <separator/>"
+        "    <menuitem action='ViewClippingNone'/>"
+        "    <menuitem action='ViewClippingCustom'/>"
+        "    <menuitem action='ViewClipping43'/>"
+        "    <menuitem action='ViewClipping169'/>"
         "    <separator/>"
         "    <menuitem action='ViewControlWindow'/>"
         "    <separator/>"
@@ -407,6 +433,77 @@ void SignalDispatcher::on_view_zoom_50()
     zoomMainWindow(0.5);
 }
 
+void SignalDispatcher::on_view_clipping_none()
+{
+    INFO();
+    if (m_refClippingNone->get_active())
+    {
+
+	boost::shared_ptr<ClipVideoSrcEvent> event(new ClipVideoSrcEvent(getClipVideoSrcEventNone()));
+	m_MediaPlayer.clip(event);
+    }
+}
+
+void SignalDispatcher::on_view_clipping_custom()
+{
+    INFO();
+    if (m_refClippingCustom->get_active())
+    {
+
+    }
+}
+
+ClipVideoSrcEvent SignalDispatcher::getClipVideoSrcEventNone()
+{
+    // No clipping:
+    int l = 0;
+    int r = m_VideoSize.widthVid;
+    int t = 0;
+    int b = m_VideoSize.heightVid;
+    return ClipVideoSrcEvent(l,r,t,b);
+}
+
+ClipVideoSrcEvent SignalDispatcher::getClipVideoSrcEvent43()
+{
+    // "PAL 4:3" clipping
+    int l = 16;
+    int r = m_VideoSize.widthVid - 16;
+    int t = 16;
+    int b = m_VideoSize.heightVid - 16;
+    return ClipVideoSrcEvent(l,r,t,b);
+}
+
+ClipVideoSrcEvent SignalDispatcher::getClipVideoSrcEvent169()
+{
+    // "PAL 16:9" clipping
+    int l = 16;
+    int r = m_VideoSize.widthVid - 16;
+    int t = 72;
+    int b = m_VideoSize.heightVid - 80;
+    return ClipVideoSrcEvent(l,r,t,b);
+}
+
+void SignalDispatcher::on_view_clipping_43()
+{
+    INFO();
+    if (m_refClipping43->get_active())
+    {
+	boost::shared_ptr<ClipVideoSrcEvent> event(new ClipVideoSrcEvent(getClipVideoSrcEvent43()));
+	m_MediaPlayer.clip(event);
+    }
+}
+
+void SignalDispatcher::on_view_clipping_169()
+{
+    INFO();
+    if (m_refClipping169->get_active())
+    {
+	
+	boost::shared_ptr<ClipVideoSrcEvent> event(new ClipVideoSrcEvent(getClipVideoSrcEvent169()));
+	m_MediaPlayer.clip(event);
+    }
+}
+
 bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)
 {
 }
@@ -430,6 +527,41 @@ bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
     m_refStatusBarVisible->set_active(m_visible->statusBar);
 
     return false;
+}
+
+void SignalDispatcher::on_notification_video_size(const NotificationVideoSize& event)
+{
+    m_VideoSize = event;
+}
+
+bool operator==(const NotificationClipping& rect1, const ClipVideoSrcEvent& rect2)
+{
+    return ( rect1.left == rect2.left &&
+	     rect1.right == rect2.right &&
+	     rect1.top == rect2.top &&
+	     rect1.bottom == rect2.bottom );
+}
+
+void SignalDispatcher::on_notification_clipping(const NotificationClipping& event)
+{
+    INFO( << "(" << event.left << "," << event.right << "," << event.top << "," << event.bottom << ")" );
+
+    if (event == getClipVideoSrcEventNone())
+    {
+	m_refClippingNone->set_active(true);
+    }
+    else if (event == getClipVideoSrcEvent43())
+    {
+	m_refClipping43->set_active(true);
+    }
+    else if (event == getClipVideoSrcEvent169())
+    {
+	m_refClipping169->set_active(true);
+    }
+    else
+    {
+	m_refClippingCustom->set_active(true);
+    }
 }
 
 void SignalDispatcher::on_view_controlwindow()

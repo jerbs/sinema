@@ -196,6 +196,16 @@ void MediaPlayer::setPlaybackSwitch(bool enabled)
     audioOutput->queue_event(boost::make_shared<CommandSetPlaybackSwitch>(enabled));
 }
 
+void MediaPlayer::clip(boost::shared_ptr<ClipVideoDstEvent> event)
+{
+    videoOutput->queue_event(event);
+}
+
+void MediaPlayer::clip(boost::shared_ptr<ClipVideoSrcEvent> event)
+{
+    videoOutput->queue_event(event);
+}
+
 void MediaPlayer::process(boost::shared_ptr<OpenFileResp> event)
 {
 }

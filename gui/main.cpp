@@ -55,8 +55,12 @@ int main(int argc, char *argv[])
 				    &MainWindow::ignoreWindowResize));
     signalDispatcher.setMainWindow(&mainWindow);
 
-    mediaPlayer.notificationVideoSize.connect( sigc::mem_fun(&mainWindow, &MainWindow::on_notification_video_size) );
-
+    mediaPlayer.notificationVideoSize.connect( sigc::mem_fun(&mainWindow,
+				    &MainWindow::on_notification_video_size) );
+    mediaPlayer.notificationVideoSize.connect( sigc::mem_fun(&signalDispatcher, 
+				    &SignalDispatcher::on_notification_video_size) );
+    mediaPlayer.notificationClipping.connect( sigc::mem_fun(&signalDispatcher, 
+				    &SignalDispatcher::on_notification_clipping) );
 
     Gtk::Main::run(mainWindow);
 

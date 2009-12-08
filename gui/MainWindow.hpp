@@ -42,8 +42,6 @@ private:
 
     NotificationVideoSize m_VideoSize;
 
-    int m_video_width;
-    int m_video_height;
     double m_video_zoom;
     bool m_fullscreen;
     timespec_t m_ignore_window_size_change;
