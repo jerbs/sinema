@@ -7,6 +7,7 @@
 #include <iostream>
 #include <gtkmm/menu.h>
 #include <gtkmm/stock.h>
+#include <gdk/gdkkeysyms.h>
 
 #include "platform/timer.hpp"
 
@@ -102,14 +103,11 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
 
     // Menu: Media
     m_refActionGroup->add(Gtk::Action::create("MediaMenu", "Media"));
-    m_refActionGroup->add(Gtk::Action::create("MediaPlay", Gtk::Stock::MEDIA_PLAY,
-					      "_Play", "Play"),
-			  Gtk::AccelKey("<shift>p"),
-			  sigc::mem_fun(*this, &SignalDispatcher::on_media_play));
-    m_refActionGroup->add(Gtk::Action::create("MediaPause", Gtk::Stock::MEDIA_PAUSE,
-					      "Pause", "Pause"),
-			  Gtk::AccelKey("p"),
-			  sigc::mem_fun(*this, &SignalDispatcher::on_media_pause));
+    m_refActionPlay = Gtk::Action::create("MediaPlay", Gtk::Stock::MEDIA_PLAY, "_Play", "Play");
+    m_refActionGroup->add(m_refActionPlay, sigc::mem_fun(*this, &SignalDispatcher::on_media_play));
+    m_refActionPause = Gtk::Action::create("MediaPause", Gtk::Stock::MEDIA_PAUSE, "_Pause", "Pause");
+    m_refActionPause->set_visible(false);
+    m_refActionGroup->add(m_refActionPause, sigc::mem_fun(*this, &SignalDispatcher::on_media_pause));
     m_refActionGroup->add(Gtk::Action::create("MediaStop", Gtk::Stock::MEDIA_STOP,
 					      "_Stop", "Stop"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_media_stop));
@@ -348,6 +346,57 @@ bool SignalDispatcher::on_button_press_event(GdkEventButton* event)
 
     // Event has not been handled:
     return false;
+}
+
+bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
+{
+    if(event->type == GDK_KEY_PRESS)
+    {
+	INFO(<< std::hex << "keyval = " << event->keyval);
+
+	int factor = 1;
+	if (event->state & GDK_SHIFT_MASK)
+	    factor *= 3;
+	if (event->state & GDK_CONTROL_MASK)
+	    factor *= 6;
+
+	// Key values are defined in /usr/include/gtk-2.0/gdk/gdkkeysyms.h
+	switch (event->keyval)
+	{
+	case GDK_Left:
+	    m_MediaPlayer.seekRelative(-10 * factor);
+	    break;
+	case GDK_Right:
+	    m_MediaPlayer.seekRelative(+10 * factor);
+	    break;
+	case ' ':
+	    if (m_refActionPlay->is_visible())
+		on_media_play();
+	    else if (m_refActionPause->is_visible())
+		on_media_pause();
+	    break;
+	case GDK_Up:
+	    m_AdjustmentVolume.set_value(m_AdjustmentVolume.get_value() +
+					 m_AdjustmentVolume.get_step_increment() * factor);
+	    break;
+	case GDK_Down:
+	    m_AdjustmentVolume.set_value(m_AdjustmentVolume.get_value() -
+					 m_AdjustmentVolume.get_step_increment() * factor);
+	    break;
+	case 'm':
+	    m_refMute->set_active(!m_refMute->get_active());
+	    break;
+	case GDK_Page_Up:
+	    on_media_previous();
+	    break;
+	case GDK_Page_Down:
+	    on_media_next();
+	    break;
+	case GDK_Escape:
+	    on_file_quit();
+	    break;
+	}
+    }
 }
 
 void SignalDispatcher::on_file_open()
@@ -602,7 +651,6 @@ void SignalDispatcher::on_view_toolbar()
 	{
 	    pToolbar->hide();
 	}
-
     }
 }
 
@@ -624,12 +672,20 @@ void SignalDispatcher::on_media_play()
 {
     m_MediaPlayer.open();
     m_MediaPlayer.play();
+
+    // Hide/show buttons and menu entries:
+    m_refActionPlay->set_visible(false);
+    m_refActionPause->set_visible(true);
     timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_media_pause()
 {
     m_MediaPlayer.pause();
+
+    // Hide/show buttons and menu entries:
+    m_refActionPause->set_visible(false);
+    m_refActionPlay->set_visible(true);
 }
 
 void SignalDispatcher::on_media_stop()
@@ -725,6 +781,10 @@ void SignalDispatcher::set_time(double seconds)
     acceptAdjustmentPositionValueChanged = false;
     m_AdjustmentPosition.set_value(seconds);
     acceptAdjustmentPositionValueChanged = true;
+
+    // Playing, show pause, hide play buttons/menues:
+    m_refActionPlay->set_visible(false);
+    m_refActionPause->set_visible(true);
 }
 
 void SignalDispatcher::set_duration(double seconds)

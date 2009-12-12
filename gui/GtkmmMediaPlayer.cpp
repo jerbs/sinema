@@ -54,9 +54,11 @@ GtkmmMediaPlayer::GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList)
     // widget after a mouse button press event.
     add_events(Gdk::POINTER_MOTION_MASK);
     add_events(Gdk::BUTTON_PRESS_MASK|Gdk::BUTTON_RELEASE_MASK);
+    add_events(Gdk::KEY_PRESS_MASK|Gdk::KEY_RELEASE_MASK);
 
     set_app_paintable(true);
     set_double_buffered(false);
+    set_flags(Gtk::CAN_FOCUS);
 
     m_hideCursorTimer.relative(getTimespec(2));
 }
@@ -177,6 +179,8 @@ bool GtkmmMediaPlayer::on_motion_notify_event(GdkEventMotion* event)
 	start_timer(boost::make_shared<HideCursorEvent>(), m_hideCursorTimer);
     }
 
+    grab_focus();
+
     // Event has been handled:
     return true;
 }
@@ -213,7 +217,7 @@ bool GtkmmMediaPlayer::on_button_press_event(GdkEventButton* event)
     // Event has not been handled:
     return false;
 }
-    
+
 void GtkmmMediaPlayer::process(boost::shared_ptr<HideCursorEvent> event)
 {
     Glib::RefPtr <Gdk::Window> gdkWindow = get_window();

@@ -61,6 +61,8 @@ int main(int argc, char *argv[])
 				    &SignalDispatcher::on_notification_video_size) );
     mediaPlayer.notificationClipping.connect( sigc::mem_fun(&signalDispatcher, 
 				    &SignalDispatcher::on_notification_clipping) );
+    mediaPlayer.signal_key_press_event().connect(sigc::mem_fun(signalDispatcher,
+				    &SignalDispatcher::on_key_press_event));
 
     Gtk::Main::run(mainWindow);
 

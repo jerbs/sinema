@@ -45,6 +45,7 @@ public:
 
     // Slots:
     bool on_button_press_event(GdkEventButton* event);
+    bool on_key_press_event(GdkEventKey* event);
     bool on_control_window_state_event(GdkEventWindowState* event);
     bool on_main_window_state_event(GdkEventWindowState* event);
     void on_notification_video_size(const NotificationVideoSize& event);
@@ -98,6 +99,8 @@ private:
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
+    Glib::RefPtr<Gtk::Action> m_refActionPlay;
+    Glib::RefPtr<Gtk::Action> m_refActionPause;
     Glib::RefPtr<Gtk::RadioAction> m_refClippingNone;
     Glib::RefPtr<Gtk::RadioAction> m_refClippingCustom;
     Glib::RefPtr<Gtk::RadioAction> m_refClipping43;
