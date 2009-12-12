@@ -676,7 +676,6 @@ void SignalDispatcher::on_media_play()
     // Hide/show buttons and menu entries:
     m_refActionPlay->set_visible(false);
     m_refActionPause->set_visible(true);
-    timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_media_pause()
@@ -774,6 +773,8 @@ void SignalDispatcher::on_mute_toggled()
 }
 void SignalDispatcher::set_title(Glib::ustring title)
 {
+    // A new title is opened.
+    timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::set_time(double seconds)
