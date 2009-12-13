@@ -268,8 +268,6 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
     m_MediaPlayer.notificationDuration.connect( sigc::mem_fun(*this, &SignalDispatcher::set_duration) );
     m_MediaPlayer.notificationCurrentTime.connect( sigc::mem_fun(*this, &SignalDispatcher::set_time) );
     m_MediaPlayer.notificationCurrentVolume.connect( sigc::mem_fun(*this, &SignalDispatcher::set_volume) );
-
-    m_StatusBar.push("...");
 }
 
 SignalDispatcher::~SignalDispatcher()

@@ -57,13 +57,18 @@ int main(int argc, char *argv[])
 
     mediaPlayer.notificationVideoSize.connect( sigc::mem_fun(&mainWindow,
 				    &MainWindow::on_notification_video_size) );
+    mediaPlayer.notificationDuration.connect( sigc::mem_fun(&mainWindow,
+				    &MainWindow::set_duration) );
+    mediaPlayer.notificationCurrentTime.connect( sigc::mem_fun(&mainWindow,
+				    &MainWindow::set_time) );
+    mediaPlayer.notificationFileName.connect( sigc::mem_fun(&mainWindow,
+				    &MainWindow::set_title) );
     mediaPlayer.notificationVideoSize.connect( sigc::mem_fun(&signalDispatcher, 
 				    &SignalDispatcher::on_notification_video_size) );
     mediaPlayer.notificationClipping.connect( sigc::mem_fun(&signalDispatcher, 
 				    &SignalDispatcher::on_notification_clipping) );
     mediaPlayer.signal_key_press_event().connect(sigc::mem_fun(signalDispatcher,
 				    &SignalDispatcher::on_key_press_event));
-
     Gtk::Main::run(mainWindow);
 
 #else

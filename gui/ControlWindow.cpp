@@ -11,6 +11,8 @@
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/SignalDispatcher.hpp"
 
+extern std::string applicationName;
+
 ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer, SignalDispatcher& signalDispatcher)
     : Gtk::Window(),
       m_HBox_Level0(false, 2),  // not homogeneous, spacing
@@ -33,7 +35,7 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer, SignalDispatcher& si
       m_pos_x(0),
       m_pos_y(0)
 {
-    set_title("Control Window");
+    set_title(applicationName + " (Ctrl)");
 
     add(m_HBox_Level0);
 
@@ -124,6 +126,7 @@ void ControlWindow::on_show_control_window(bool pshow)
 
 void ControlWindow::set_title(Glib::ustring title)
 {
+    Gtk::Window::set_title(applicationName + " (Ctrl) " + title);
     m_LabelTitle.set_text(title);
 }
 

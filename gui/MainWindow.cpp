@@ -14,6 +14,8 @@
 #define DEBUG(s)
 // #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
+std::string applicationName = "player";
+
 MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
 		       SignalDispatcher& signalDispatcher)
     : Gtk::Window(),
@@ -21,9 +23,10 @@ MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
       m_video_zoom(1),
       m_fullscreen(false),
       m_ignore_window_size_change(getTimespec(0)),
-      m_StatusBar(signalDispatcher.getStatusBar())
+      m_StatusBar(signalDispatcher.getStatusBar()),
+      m_ScrollbarPosition(signalDispatcher.getPositionAdjustment())
 {
-    set_title("player");
+    set_title(applicationName);
     set_default_size(400, 300);
 
     // Hot Keys:
@@ -48,6 +51,12 @@ MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
     m_Box.pack_start(m_GtkmmMediaPlayer, Gtk::PACK_EXPAND_WIDGET);
 
     // Status Bar:
+    m_StatusBar.set_spacing(15);
+    m_StatusBar.pack_end(m_LabelStatusBarDuration, Gtk::PACK_SHRINK);
+    m_StatusBar.pack_end(m_LabelStatusBarTime, Gtk::PACK_SHRINK);
+    m_StatusBar.pack_end(m_LabelStatusBarSize, Gtk::PACK_SHRINK);
+    m_StatusBar.pack_end(m_LabelStatusBarZoom, Gtk::PACK_SHRINK);
+    m_StatusBar.pack_end(m_ScrollbarPosition);
     m_Box.pack_end(m_StatusBar, Gtk::PACK_SHRINK);
 
     add(m_Box);
@@ -125,16 +134,13 @@ void MainWindow::on_notification_video_size(const NotificationVideoSize& event)
     const double yzoom = round(double(m_VideoSize.heightDst) / double(m_VideoSize.heightSrc)* 100) / 100;
 
     std::stringstream ss;
+    ss << xzoom * 100 << " %";
+    m_LabelStatusBarZoom.set_text(ss.str());
 
-    if (xzoom == yzoom)
-    {
-	ss << xzoom * 100 << " %";
-    }
-    else
-    {
-	ss << xzoom * 100 << " % x " << yzoom * 100 << " %";
-    }
-    m_StatusBar.push(ss.str(), 0);
+    ss.clear();  // Clear the state of the ios object.
+    ss.str("");  // Erase the content of the underlying string object.
+    ss << m_VideoSize.widthVid << " x " << m_VideoSize.heightVid;
+    m_LabelStatusBarSize.set_text(ss.str());
 
     switch(event.reason)
     {
@@ -162,7 +168,24 @@ void MainWindow::on_notification_video_size(const NotificationVideoSize& event)
 	break;
     }
 }
-    
+
+extern std::string getTimeString(int seconds);
+
+void MainWindow::set_duration(double seconds)
+{
+    m_LabelStatusBarDuration.set_text(getTimeString(seconds));
+}
+
+void MainWindow::set_time(double seconds)
+{
+    m_LabelStatusBarTime.set_text(getTimeString(seconds));
+}
+
+void MainWindow::set_title(Glib::ustring title)
+{
+    Gtk::Window::set_title(applicationName +" - " + title);
+}
+
 void MainWindow::zoom(double percent)
 {
     m_video_zoom = percent;
