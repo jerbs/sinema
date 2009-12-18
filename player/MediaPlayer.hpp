@@ -85,8 +85,7 @@ private:
 
     void process(boost::shared_ptr<OpenFileResp> event);
     void process(boost::shared_ptr<OpenFileFail> event);
-    void process(boost::shared_ptr<CloseFileReq> event);
-    void process(boost::shared_ptr<CloseFileResp> event);
+    virtual void process(boost::shared_ptr<CloseFileResp> event);
 
     void process(boost::shared_ptr<NoAudioStream> event);
     void process(boost::shared_ptr<NoVideoStream> event);

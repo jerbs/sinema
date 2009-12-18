@@ -290,8 +290,7 @@ void Demuxer::updateSystemStreamStatusClosing()
 	    av_close_input_file(avFormatContext);
 	    avFormatContext = 0;
 
-	    // Reset current time in GUI, keep title and duration:
-	    mediaPlayer->queue_event(boost::make_shared<NotificationCurrentTime>(0));
+	    mediaPlayer->queue_event(boost::make_shared<CloseFileResp>());
 
 	    queue_deferred_events();
 	}

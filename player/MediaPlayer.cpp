@@ -215,10 +215,6 @@ void MediaPlayer::process(boost::shared_ptr<OpenFileFail> event)
     skipForward();
 }
 
-void MediaPlayer::process(boost::shared_ptr<CloseFileReq> event)
-{
-}
-
 void MediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
 {
 }

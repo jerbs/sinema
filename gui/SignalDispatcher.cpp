@@ -769,6 +769,15 @@ void SignalDispatcher::on_mute_toggled()
 	m_MediaPlayer.setPlaybackSwitch(m_refMute->get_active());
     }
 }
+
+void SignalDispatcher::on_file_closed()
+{
+    // Playing, show play, hide pause buttons/menues:
+    m_refActionPlay->set_visible(true);
+    m_refActionPause->set_visible(false);
+    m_AdjustmentPosition.set_value(0);
+}
+
 void SignalDispatcher::set_title(Glib::ustring title)
 {
     // A new title is opened.

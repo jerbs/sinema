@@ -50,6 +50,7 @@ public:
     bool on_main_window_state_event(GdkEventWindowState* event);
     void on_notification_video_size(const NotificationVideoSize& event);
     void on_notification_clipping(const NotificationClipping& event);
+    void on_file_closed();
 
 private:
     // Slots:
