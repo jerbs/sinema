@@ -86,6 +86,7 @@ AFMixer::AFMixer(AudioOutput* audioOutput, MediaPlayer* mediaPlayer)
 	exit(1);
     }
 
+    DEBUG(<< "Searching playback volume element...");
     snd_mixer_elem_t* elem = snd_mixer_first_elem(handle);
     while (elem)
     {
@@ -95,6 +96,7 @@ AFMixer::AFMixer(AudioOutput* audioOutput, MediaPlayer* mediaPlayer)
 
 	    if (isPlaybackVolumeElem(elem))
 	    {
+		DEBUG(<< "Found playback volume element.");
 		playbackVolumeElem = elem;
 		sendCurrentPlaybackValues();
 		break;
@@ -181,22 +183,27 @@ bool AFMixer::isPlaybackVolumeElem(snd_mixer_elem_t* elem)
     if (snd_mixer_selem_is_playback_mono(elem))
     {
 	pMono = true;
+	DEBUG(<< "Mono:");
     }
     else
     {
 	pMono = false;
-	for (int i = 0; i <= SND_MIXER_SCHN_LAST; i++)
+	DEBUG(<< "Multi Channel:");
+    }
+
+    for (int i = 0; i <= SND_MIXER_SCHN_LAST; i++)
+    {
+	snd_mixer_selem_channel_id_t chn = snd_mixer_selem_channel_id_t(i);
+	if (snd_mixer_selem_has_playback_channel(elem, chn))
 	{
-	    snd_mixer_selem_channel_id_t chn = snd_mixer_selem_channel_id_t(i);
-	    if (snd_mixer_selem_has_playback_channel(elem, chn))
-	    {
-		std::string name(snd_mixer_selem_channel_name(chn));
-		channels.insert(ChannelMapValue(chn,ChannelInfo(name)));
-	    }
+	    std::string name(snd_mixer_selem_channel_name(chn));
+	    channels.insert(ChannelMapValue(chn,ChannelInfo(name)));
+	    DEBUG(<< "Channel " << i << ": " << name);
 	}
     }
 
     snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
+    DEBUG(<< "Range: " << pmin << "..." << pmax);
 
     return true;
 }
@@ -259,7 +266,7 @@ int AFMixer::mixer_elem_event(snd_mixer_elem_t *elem,
 			      unsigned int mask)
 {
     AFMixer* obj = (AFMixer*)snd_mixer_elem_get_callback_private(elem);
-    std::cout << "mixer_elem_event: " << std::hex << obj << std::endl;
+    std::cout << "mixer_elem_event: " << std::hex << obj << std::dec << std::endl;
 
     if (mask == SND_CTL_EVENT_MASK_REMOVE)
     {
@@ -289,7 +296,7 @@ int AFMixer::mixer_event(snd_mixer_t *mixer,
 			 snd_mixer_elem_t *elem)
 {
     AFMixer* obj = (AFMixer*)snd_mixer_get_callback_private(mixer);
-    DEBUG(<< "mixer_event: " << std::hex << obj);
+    DEBUG(<< "mixer_event: " << std::hex << obj << std::dec);
 
     if (mask & SND_CTL_EVENT_MASK_ADD)
     {
