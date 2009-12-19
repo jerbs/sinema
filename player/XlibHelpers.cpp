@@ -11,7 +11,7 @@ using namespace std;
 std::ostream& operator<<(std::ostream& strm, const XVisualInfo& xvi)
 {
     strm.setf(ios::showbase);
-    strm << std::hex << "XVisualInfo:" << endl;
+    strm << "XVisualInfo:" << endl;
     strm << "Visual        = " << xvi.visual << endl;
     strm << "VisualID      = " << xvi.visualid << endl;
     strm << "screen        = " << xvi.screen << endl;
@@ -29,7 +29,7 @@ std::ostream& operator<<(std::ostream& strm, const XVisualInfo& xvi)
 std::ostream& operator<<(std::ostream& strm, const XvVersionInfo& xvi)
 {
     strm.setf(ios::showbase);
-    strm << std::hex << "XvVersionInfo:" << endl;
+    strm << "XvVersionInfo:" << endl;
     strm << "version      = " << xvi.version << endl;
     strm << "revision     = " << xvi.revision << endl;
     strm << "request_base = " << xvi.request_base << endl;
@@ -47,7 +47,6 @@ std::ostream& operator<<(std::ostream& strm, const XvFormat& f)
 std::ostream& operator<<(std::ostream& strm, const XvAdaptorInfo& ai)
 {
     strm.setf(ios::showbase);
-    strm << std::hex;
     strm << "base_id   = " << ai.base_id << endl;
     strm << "num_ports = " << ai.num_ports << endl;
     strm << "type      = " << int(ai.type) << " = "
@@ -67,7 +66,6 @@ std::ostream& operator<<(std::ostream& strm, const XvAdaptorInfo& ai)
 std::ostream& operator<<(std::ostream& strm, const XvEncodingInfo& ei)
 {
     strm.setf(ios::showbase);
-    strm << std::hex;
     strm << "XvEncodingID   = " << ei.encoding_id << endl;
     strm << "name           = " << ei.name << endl;
     strm << "width * height = " << ei.width << " * " 
@@ -81,9 +79,8 @@ std::ostream& operator<<(std::ostream& strm, const XvEncodingInfo& ei)
 std::ostream& operator<<(std::ostream& strm, const XvAttribute& att)
 {
     strm.setf(ios::showbase);
-    strm << std::hex;
     strm << "name      = " << att.name << endl;
-    strm << "flags     = " << att.flags << endl << std::dec;
+    strm << "flags     = " << att.flags << endl;
     strm << "min_value = " << att.min_value << endl;
     strm << "max_value = " << att.max_value << endl;
     return strm;
@@ -92,7 +89,6 @@ std::ostream& operator<<(std::ostream& strm, const XvAttribute& att)
 std::ostream& operator<<(std::ostream& strm, const XvImageFormatValues& ifv)
 {
     strm.setf(ios::showbase);
-    strm << std::hex;
     strm << "id      = " << ifv.id << endl;
     strm << "type    = " << ifv.type << " = "
 	 << ((ifv.type & XvRGB) ? "XvRGB" : "" )

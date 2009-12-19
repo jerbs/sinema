@@ -254,6 +254,26 @@ void AFPCMDigitalAudioInterface::setPcmSwParams()
 
 void AFPCMDigitalAudioInterface::dump()
 {
+    snd_pcm_hw_params_t* current_hwparams;
+
+    int ret = snd_pcm_hw_params_malloc(&current_hwparams);
+    if (ret < 0)
+    {
+	ERROR(<< "snd_pcm_hw_params_malloc failed: " << snd_strerror(ret));
+	exit(-1);
+    }
+
+    ret = snd_pcm_hw_params_current(handle, current_hwparams);
+    if (ret < 0)
+    {
+	ERROR(<< "snd_pcm_hw_params_current failed: " << snd_strerror(ret));
+	exit(-1);
+    }
+
+    DEBUG(<< "snd_pcm_hw_params_dump:");
+    snd_pcm_hw_params_dump(current_hwparams, output);
+    snd_pcm_hw_params_free(current_hwparams);
+
     DEBUG(<< "snd_pcm_dump:");
     snd_pcm_dump(handle, output);
 }
@@ -340,6 +360,7 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 
 	if (avail < 0)
 	{
+	    DEBUG(<< "snd_pcm_avail_update failed");
 	    int err = xrun_recovery(avail);
 	    if (err < 0)
 	    {
@@ -417,6 +438,7 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
     // Here frames is the number of free continous samples in the playback buffer.
     if (err < 0)
     {
+	DEBUG(<< "snd_pcm_mmap_begin failed");
 	if ((err = xrun_recovery(err)) < 0)
 	{
 	    ERROR(<< "snd_pcm_mmap_begin recovery failed: " << snd_strerror(err));
@@ -425,6 +447,7 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
     }
 
     DEBUG(<<" frames=" << frames);
+
     if (frame->atBegin())
     {
 	nextPTS = frame->getPTS();
@@ -437,6 +460,7 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
     commitres = snd_pcm_mmap_commit(handle, offset, frames);
     if (commitres < 0 || (snd_pcm_uframes_t)commitres != frames)
     {
+	ERROR(<< "snd_pcm_mmap_commit failed");
 	if ((err = xrun_recovery(commitres >= 0 ? -EPIPE : commitres)) < 0)
 	{
 	    ERROR( << "snd_pcm_mmap_commit recovery failed: " << snd_strerror(err));
