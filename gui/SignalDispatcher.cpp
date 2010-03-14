@@ -1,7 +1,7 @@
 //
 // Signal Dispatcher
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include <iostream>
@@ -89,6 +89,10 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
     m_refControlWindowVisible->set_active(false);
     m_refActionGroup->add(m_refControlWindowVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_controlwindow) );
 
+    m_refChannelConfigWindowVisible = Gtk::ToggleAction::create("ViewChannelConfigWindow", "Channel Config Window");
+    m_refChannelConfigWindowVisible->set_active(false);
+    m_refActionGroup->add(m_refChannelConfigWindowVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_channelconfigwindow) );
+
     m_refMenuBarVisible = Gtk::ToggleAction::create("ViewMenuBar", "Menu Bar");
     m_refMenuBarVisible->set_active(true);
     m_refActionGroup->add(m_refMenuBarVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_menubar) );
@@ -163,6 +167,7 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
         "      <menuitem action='ViewClipping169'/>"
         "      <separator/>"
         "      <menuitem action='ViewControlWindow'/>"
+        "      <menuitem action='ViewChannelConfigWindow'/>"
         "      <separator/>"
         "      <menuitem action='ViewMute'/>"
         "      <separator/>"
@@ -614,6 +619,11 @@ void SignalDispatcher::on_notification_clipping(const NotificationClipping& even
 void SignalDispatcher::on_view_controlwindow()
 {
     showControlWindow(m_refControlWindowVisible->get_active());
+}
+
+void SignalDispatcher::on_view_channelconfigwindow()
+{
+    showChannelConfigWindow(m_refChannelConfigWindowVisible->get_active());
 }
     
 void SignalDispatcher::on_view_menubar()

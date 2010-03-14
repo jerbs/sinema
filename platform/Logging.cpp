@@ -19,7 +19,7 @@ public:
     
     TraceReceiver(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc),
-	  log("log")
+	  log("/tmp/log")
     {
     }
 

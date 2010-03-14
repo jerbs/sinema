@@ -1,7 +1,7 @@
 //
 // Signal Dispatcher
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #ifndef SIGNAL_DISPATCHER_HPP
@@ -23,6 +23,7 @@ class SignalDispatcher
 {
 public:
     sigc::signal<void, bool> showControlWindow;
+    sigc::signal<void, bool> showChannelConfigWindow;
     sigc::signal<void> hideMainWindow;
     sigc::signal<void, double> zoomMainWindow;
     sigc::signal<void> ignoreWindowResize;
@@ -69,6 +70,7 @@ private:
     virtual void on_view_clipping_43();
     virtual void on_view_clipping_169();
     virtual void on_view_controlwindow();
+    virtual void on_view_channelconfigwindow();
     virtual void on_view_menubar();
     virtual void on_view_toolbar();
     virtual void on_view_statusbar();
@@ -108,6 +110,7 @@ private:
     Glib::RefPtr<Gtk::RadioAction> m_refClipping169;
     Glib::RefPtr<Gtk::ToggleAction> m_refMute;
     Glib::RefPtr<Gtk::ToggleAction> m_refControlWindowVisible;
+    Glib::RefPtr<Gtk::ToggleAction> m_refChannelConfigWindowVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refMenuBarVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refToolBarVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refStatusBarVisible;

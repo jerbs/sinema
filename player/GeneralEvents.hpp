@@ -1,11 +1,11 @@
 //
 // Media Player Events
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
-#ifndef GENERAL_EVENTS_HPP
-#define GENERAL_EVENTS_HPP
+#ifndef PLAYER_GENERAL_EVENTS_HPP
+#define PLAYER_GENERAL_EVENTS_HPP
 
 #include "platform/Logging.hpp"
 

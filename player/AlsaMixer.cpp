@@ -1,7 +1,7 @@
 //
 // ALSA Mixer Interface
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include "player/AlsaMixer.hpp"
@@ -266,7 +266,7 @@ int AFMixer::mixer_elem_event(snd_mixer_elem_t *elem,
 			      unsigned int mask)
 {
     AFMixer* obj = (AFMixer*)snd_mixer_elem_get_callback_private(elem);
-    std::cout << "mixer_elem_event: " << std::hex << obj << std::dec << std::endl;
+    DEBUG( << "mixer_elem_event: " << std::hex << obj << std::dec);
 
     if (mask == SND_CTL_EVENT_MASK_REMOVE)
     {

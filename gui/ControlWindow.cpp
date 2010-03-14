@@ -1,7 +1,7 @@
 //
 // Control Window
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include <iostream>

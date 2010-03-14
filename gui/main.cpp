@@ -1,15 +1,17 @@
 //
 // Media Player
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include <iostream>
 #include <boost/make_shared.hpp>
 #include <gtkmm/main.h>
 
+#include "gui/ChannelConfigWindow.hpp"
 #include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
+#include "gui/GtkmmMediaReceiver.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
@@ -36,8 +38,11 @@ int main(int argc, char *argv[])
 
     GtkmmMediaPlayer mediaPlayer(playList);
     mediaPlayer.init();
+    GtkmmMediaReceiver mediaReceiver;
+    mediaReceiver.init();
     SignalDispatcher signalDispatcher(mediaPlayer);
     ControlWindow controlWindow(mediaPlayer, signalDispatcher);
+    ChannelConfigWindow channelConfigWindow;
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
 
     controlWindow.set_transient_for(mainWindow);
@@ -72,6 +77,15 @@ int main(int argc, char *argv[])
 				    &SignalDispatcher::on_key_press_event));
     mediaPlayer.notificationFileClosed.connect( sigc::mem_fun(signalDispatcher,
 				    &SignalDispatcher::on_file_closed) );
+
+    mediaReceiver.notificationChannelTuned.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_tuner_channel_tuned) );
+    mediaReceiver.notificationSignalDetected.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_tuner_signal_detected) );
+    mediaReceiver.notificationScanStopped.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_tuner_scan_stopped) );
+    mediaReceiver.notificationScanFinished.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_tuner_scan_finished) );
+    channelConfigWindow.signalSetFrequency.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::setFrequency) );
+    channelConfigWindow.signalStartScan.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::startFrequencyScan) );
+    signalDispatcher.showChannelConfigWindow.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_show_window) );
+
     Gtk::Main::run(mainWindow);
 
 #else
