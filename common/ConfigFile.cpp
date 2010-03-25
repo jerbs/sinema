@@ -8,6 +8,7 @@
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <iostream>
+#include <vector>
 
 namespace qi = boost::spirit::qi;
 namespace ascii = boost::spirit::ascii;
@@ -20,6 +21,8 @@ struct station
     int fine;
 };
 
+typedef std::vector<station> station_list;
+
 // Adapt the struct to be a fully conforming fusion tuple:
 
 BOOST_FUSION_ADAPT_STRUCT(
@@ -31,7 +34,7 @@ BOOST_FUSION_ADAPT_STRUCT(
 )
 
 template <typename Iterator>
-struct config_parser : qi::grammar<Iterator, station(), ascii::space_type>
+struct config_parser : qi::grammar<Iterator, station_list(), ascii::space_type>
 {
     config_parser() : config_parser::base_type(start)
     {
@@ -43,6 +46,7 @@ struct config_parser : qi::grammar<Iterator, station(), ascii::space_type>
         quoted_string %= lexeme['"' >> +(char_ - '"') >> '"'];
 
         start %=
+            *(
             lit("station")
             >> '{'
             >>  lit("name") >> '=' >> quoted_string >> ';'
@@ -50,11 +54,12 @@ struct config_parser : qi::grammar<Iterator, station(), ascii::space_type>
             >>  lit("channel") >> '=' >> quoted_string >> ';'
             >>  lit("fine") >> '=' >> int_ >> ';'
             >>  '}' >> ";"
+	    )
             ;
     }
 
     qi::rule<Iterator, std::string(), ascii::space_type> quoted_string;
-    qi::rule<Iterator, station(), ascii::space_type> start;
+    qi::rule<Iterator, station_list(), ascii::space_type> start;
 };
 
 std::ostream& operator<<(std::ostream& strm, const station& s)
@@ -70,11 +75,12 @@ std::ostream& operator<<(std::ostream& strm, const station& s)
 
 int main()
 {
-    std::string input("station { name = \"ARD\"; standard = \"europe-west\"; channel = \"E5\"; fine = 0; };");
+    std::string input("station { name = \"ARD\"; standard = \"europe-west\"; channel = \"E5\"; fine = 0; };"
+		      "station { name = \"ZDF\"; standard = \"europe-west\"; channel = \"E9\"; fine = 0; };");
     std::string::iterator begin = input.begin();
     std::string::iterator end = input.end();
 
-    station result;
+    station_list result;
 
     if (! qi::phrase_parse(begin, end, config_parser<std::string::iterator>(), ascii::space, result))
     {
@@ -87,14 +93,13 @@ int main()
 	std::cout << "parse incomplete" << std::endl;
 	return -1;
     }
-    else
-    {
-        std::cout << "result = " << result << std::endl;
 
-        std::cout << boost::fusion::tuple_open('[');
-        std::cout << boost::fusion::tuple_close(']');
-        std::cout << boost::fusion::tuple_delimiter("; ");
-        std::cout << "result = " << boost::fusion::as_vector(result) << std::endl;
+    station_list::iterator it = result.begin();
+
+    while(it != result.end())
+    {
+        std::cout << "----" << std::endl << *it << std::endl;
+	it++;
     }
 
     return 0;
