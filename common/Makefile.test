@@ -1,0 +1,4 @@
+CFLAGS=-g -Wall -I /usr/local/include -DTEST
+
+ConfigFile: ConfigFile.cpp
+	$(CXX) -o $@ $(CPPFLAGS) $(CFLAGS) $<
