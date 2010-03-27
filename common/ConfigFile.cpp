@@ -6,11 +6,14 @@
 
 #include <boost/spirit/include/karma.hpp>
 #include <boost/spirit/include/qi.hpp>
+#include <boost/spirit/include/support_istream_iterator.hpp>
 #include <boost/fusion/adapted/struct/adapt_struct.hpp>
 #include <boost/fusion/include/adapt_struct.hpp>
 #include <iostream>
+#include <fstream>
 #include <vector>
 
+namespace spirit = boost::spirit;
 namespace karma = boost::spirit::karma;
 namespace qi = boost::spirit::qi;
 namespace ascii = boost::spirit::ascii;
@@ -103,17 +106,25 @@ std::ostream& operator<<(std::ostream& strm, const station& s)
 
 int main()
 {
-    std::string input("station { name = \"ARD\"; standard = \"europe-west\"; channel = \"E5\"; fine = 0; };"
-		      "station { name = \"ZDF\"; standard = \"europe-west\"; channel = \"E9\"; fine = 0; };");
+    // Opening input file:
+
+    std::ifstream in("example.conf");
+    if (!in.is_open())
+    {
+	std::cout << "Opening input file failed." << std::endl;
+	return -1;
+    }
 
     // Parse:
 
-    std::string::iterator begin = input.begin();
-    std::string::iterator end = input.end();
+    // Spirit needs a forward iterator, std::istream_iterator<> is an input iterator only.
+    typedef spirit::basic_istream_iterator<char> base_iterator_type;
+    base_iterator_type begin(in);
+    base_iterator_type end;
 
     station_list result;
 
-    if (! qi::phrase_parse(begin, end, config_parser<std::string::iterator>(), ascii::space, result))
+    if (! qi::phrase_parse(begin, end, config_parser<base_iterator_type>(), ascii::space, result))
     {
 	std::cout << "parse failed" << std::endl;
 	return -1;
@@ -125,6 +136,8 @@ int main()
 	return -1;
     }
 
+    // Print:
+
     station_list::iterator it = result.begin();
 
     while(it != result.end())
@@ -133,20 +146,25 @@ int main()
 	it++;
     }
 
+    // Opening output file:
+
+    std::ofstream out("output.conf");
+    if (!out.is_open())
+    {
+	std::cout << "Opening output file failed." << std::endl;
+	return -1;
+    }
+
     // Generate:
 
-    typedef std::back_insert_iterator<std::string> sink_type;
-    std::string output;
-    sink_type sink(output);
+    typedef std::ostream_iterator<char> sink_type;
+    sink_type sink(out);
 
     if (! karma::generate(sink, config_generator<sink_type>(), result))
     {
 	std::cout << "generate failed" << std::endl;
 	return -1;
     }
-
-    std::cout << "output:" << std::endl
-	      << output << std::endl;
 
     return 0;
 }
