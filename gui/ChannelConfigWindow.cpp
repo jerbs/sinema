@@ -8,6 +8,7 @@
 #include "gui/ComboBoxDialog.hpp"
 #include "receiver/ChannelFrequencyTable.hpp"
 #include "platform/Logging.hpp"
+#include "platform/temp_value.hpp"
 
 #include <gtkmm/cellrenderercombo.h>
 #include <gtkmm/cellrendererspin.h>
@@ -20,7 +21,8 @@ extern std::string applicationName;
 // #define DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
 
 ChannelConfigWindow::ChannelConfigWindow()
-    : m_FinetuneAdjustment(0, -100, 100)
+    : m_FinetuneAdjustment(0, -100, 100),
+      dont_save(false)
 {
     set_title(applicationName + " (Channel Configuration)");
     set_default_size(400,200);
@@ -137,25 +139,6 @@ ChannelConfigWindow::ChannelConfigWindow()
     // TreeView:
     //    Glib::SignalProxy2< void, const TreeModel::Path &, TreeViewColumn* > 	signal_row_activated ()
 
-    //Fill the TreeView's model
-    Gtk::TreeModel::Row row = *(m_refTreeModel->append());
-    row[m_Columns.m_col_name] = "ARD";
-    row[m_Columns.m_col_standard] = "europe-west";
-    row[m_Columns.m_col_channel] = "E5";
-    row[m_Columns.m_col_channel_choices] = m_ChannelListMap[std::string("europe-west")];
-    row[m_Columns.m_col_frequency] = 175250;
-    row[m_Columns.m_col_finetune] = 0;
-    row[m_Columns.m_col_signal] = false;
-
-    row = *(m_refTreeModel->append());
-    row[m_Columns.m_col_name] = "ZDF";
-    row[m_Columns.m_col_standard] = "europe-west";
-    row[m_Columns.m_col_channel] = "E9";
-    row[m_Columns.m_col_channel_choices] = m_ChannelListMap[std::string("europe-west")];
-    row[m_Columns.m_col_frequency] = 203250;
-    row[m_Columns.m_col_finetune] = 0;
-    row[m_Columns.m_col_signal] = false;
-
     // Context Menu
     // Create actions for menus and toolbars:
     m_refActionGroup = Gtk::ActionGroup::create();
@@ -210,6 +193,11 @@ ChannelConfigWindow::ChannelConfigWindow()
     m_TreeView.signal_button_press_event().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_button_press_event), false);
     m_TreeView.signal_row_activated().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_row_activated), false);
 
+    m_refTreeModel->signal_row_changed().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_row_changed), false);
+    m_refTreeModel->signal_row_inserted().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_row_inserted), false);
+    m_refTreeModel->signal_row_deleted().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_row_deleted), false);
+    m_refTreeModel->signal_rows_reordered().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_rows_reordered), false);
+
     show_all_children();
 }
 
@@ -262,6 +250,8 @@ void ChannelConfigWindow::on_tuner_signal_detected(const ChannelData& channelDat
        << ", " << channelData.getTunedFrequency()/1000.0 << " MHz";
     m_StatusBarMessage.set_text(ss.str());
 
+    TemporaryEnable e(dont_save);
+
     // Check if an entry for the cannel already exists:
     Gtk::TreeModel::Children children = m_refTreeModel->children();
     Gtk::TreeModel::iterator iter = children.begin();
@@ -287,6 +277,8 @@ void ChannelConfigWindow::on_tuner_signal_detected(const ChannelData& channelDat
     row[m_Columns.m_col_frequency] = channelData.frequency;
     row[m_Columns.m_col_finetune] = channelData.finetune;
     row[m_Columns.m_col_signal] = true;
+
+    saveConfigurationData(true);
 }
 
 void ChannelConfigWindow::on_tuner_scan_stopped()
@@ -299,6 +291,34 @@ void ChannelConfigWindow::on_tuner_scan_finished()
 {
     DEBUG();
     m_StatusBarMessage.set_text("Scanning channels finished");
+}
+
+void ChannelConfigWindow::on_configuration_data_loaded(const ConfigurationData& configurationData)
+{
+    DEBUG();
+
+    TemporaryEnable e(dont_save);
+
+    const StationList& stationList = configurationData.stationList;
+    StationList::const_iterator it = stationList.begin();
+    while(it != stationList.end())
+    {
+	const StationData& stationData = *it;
+
+	// Add a new entry
+	Gtk::TreeRow row = *(m_refTreeModel->append());
+	row[m_Columns.m_col_name] = stationData.name;
+	row[m_Columns.m_col_standard] = stationData.standard;
+	row[m_Columns.m_col_channel] = stationData.channel;
+	row[m_Columns.m_col_channel_choices] = m_ChannelListMap[stationData.standard];
+	updateFrequency(row);
+	row[m_Columns.m_col_finetune] = stationData.fine;
+	row[m_Columns.m_col_signal] = false;
+
+	it++;
+    }
+
+    // This function receives saved configuration data, i.e. nothing to save here.
 }
 
 void ChannelConfigWindow::on_cellrenderer_standard_edited(
@@ -414,6 +434,26 @@ bool ChannelConfigWindow::on_button_press_event(GdkEventButton* event)
     return false;
 }
 
+void ChannelConfigWindow::on_row_changed(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator&  iter)
+{
+    saveConfigurationData();
+}
+
+void ChannelConfigWindow::on_row_inserted(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter)
+{
+    saveConfigurationData();
+}
+
+void ChannelConfigWindow::on_row_deleted(const Gtk::TreeModel::Path& path)
+{
+    saveConfigurationData();
+}
+
+void ChannelConfigWindow::on_rows_reordered(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter, int* new_order)
+{
+    saveConfigurationData();
+}
+
 void ChannelConfigWindow::on_tune_channel()
 {
     DEBUG();
@@ -493,6 +533,8 @@ void ChannelConfigWindow::on_scan_channels()
 	Gtk::TreeModel::iterator iter = children.begin();
 	while (iter != children.end())
 	{
+	    TemporaryEnable e(dont_save);
+
 	    Gtk::TreeRow row = *iter;
 	    row[m_Columns.m_col_signal] = false;
 	    iter++;
@@ -502,13 +544,43 @@ void ChannelConfigWindow::on_scan_channels()
     }
 }
 
+void ChannelConfigWindow::saveConfigurationData(bool force)
+{
+    if (!force && dont_save)
+	return;
+
+    std::cout << __PRETTY_FUNCTION__ << std::endl;
+
+    ConfigurationData configurationData;
+    StationList& stationList = configurationData.stationList;
+
+    Gtk::TreeModel::Children children = m_refTreeModel->children();
+    Gtk::TreeModel::iterator iter = children.begin();
+
+    while (iter != children.end())
+    {
+	Gtk::TreeRow row = *iter;
+	StationData stationData;
+	stationData.name = Glib::ustring(row[m_Columns.m_col_name]);
+	stationData.standard = Glib::ustring(row[m_Columns.m_col_standard]);
+	stationData.channel = Glib::ustring(row[m_Columns.m_col_channel]);
+	stationData.fine = row[m_Columns.m_col_finetune];
+	stationList.push_back(stationData);
+	iter++;
+    }
+
+    signalConfigurationDataChanged(configurationData);
+}
+
 void ChannelConfigWindow::setStandard(Gtk::TreeRow& row, const Glib::ustring& standard)
 {
     if (row[m_Columns.m_col_standard] != standard)
     {
+	TemporaryEnable e(dont_save);
 	row[m_Columns.m_col_standard] = standard;
 	row[m_Columns.m_col_channel_choices] = m_ChannelListMap[std::string(standard)];
 	setChannel(row, "");
+	saveConfigurationData(true);
     }
 }
 
@@ -516,11 +588,13 @@ void ChannelConfigWindow::setChannel(Gtk::TreeRow& row, const Glib::ustring& cha
 {
     if (row[m_Columns.m_col_channel] != channel)
     {
+	TemporaryEnable e(dont_save);
 	row[m_Columns.m_col_channel] = channel;
 	row[m_Columns.m_col_frequency] = 0;
 	row[m_Columns.m_col_finetune] = 0; 
 	row[m_Columns.m_col_signal] = false;
 	updateFrequency(row);
+	saveConfigurationData(true);
     }
 }
 

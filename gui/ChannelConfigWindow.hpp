@@ -8,6 +8,7 @@
 #define CHANNEL_CONFIG_WINDOW_HPP
 
 #include "receiver/GeneralEvents.hpp"
+#include "common/GeneralEvents.hpp"
 
 #include <gtkmm/actiongroup.h>
 #include <gtkmm/window.h>
@@ -29,6 +30,7 @@ class ChannelConfigWindow : public Gtk::Window
 public:
     sigc::signal<void, const ChannelData&> signalSetFrequency;
     sigc::signal<void, std::string> signalStartScan;
+    sigc::signal<void, const ConfigurationData&> signalConfigurationDataChanged;
 
     ChannelConfigWindow();
     virtual ~ChannelConfigWindow();
@@ -40,6 +42,8 @@ public:
     virtual void on_tuner_signal_detected(const ChannelData& channelData);
     virtual void on_tuner_scan_stopped();
     virtual void on_tuner_scan_finished();
+
+    virtual void on_configuration_data_loaded(const ConfigurationData&);
 
 private:
     //Signal handlers:
@@ -53,11 +57,18 @@ private:
 				   Gtk::TreeViewColumn* column);
     virtual bool on_button_press_event(GdkEventButton* event);
 
+    virtual void on_row_changed(const Gtk::TreeModel::Path&  path, const Gtk::TreeModel::iterator&  iter);
+    virtual void on_row_inserted(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter);
+    virtual void on_row_deleted(const Gtk::TreeModel::Path& path);
+    virtual void on_rows_reordered(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter, int* new_order);
+
     virtual void on_tune_channel();
     virtual void on_add_entry_before();
     virtual void on_add_entry_after();
     virtual void on_remove_entry();
     virtual void on_scan_channels();
+
+    void saveConfigurationData(bool force = false);
 
     void setStandard(Gtk::TreeRow& row, const Glib::ustring& standard);
     void setChannel(Gtk::TreeRow& row, const Glib::ustring& channel);
@@ -130,6 +141,8 @@ private:
     bool m_shown;
     int m_pos_x;
     int m_pos_y;
+
+    bool dont_save;
 };
 
 #endif

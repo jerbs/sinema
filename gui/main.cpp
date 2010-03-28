@@ -12,6 +12,7 @@
 #include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/GtkmmMediaReceiver.hpp"
+#include "gui/GtkmmMediaCommon.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
@@ -40,6 +41,7 @@ int main(int argc, char *argv[])
     mediaPlayer.init();
     GtkmmMediaReceiver mediaReceiver;
     mediaReceiver.init();
+    GtkmmMediaCommon mediaCommon;
     SignalDispatcher signalDispatcher(mediaPlayer);
     ControlWindow controlWindow(mediaPlayer, signalDispatcher);
     ChannelConfigWindow channelConfigWindow;
@@ -85,6 +87,11 @@ int main(int argc, char *argv[])
     channelConfigWindow.signalSetFrequency.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::setFrequency) );
     channelConfigWindow.signalStartScan.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::startFrequencyScan) );
     signalDispatcher.showChannelConfigWindow.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_show_window) );
+
+    mediaCommon.signal_configuration_data_loaded.connect(sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_configuration_data_loaded) );
+    channelConfigWindow.signalConfigurationDataChanged.connect(sigc::mem_fun(&mediaCommon, &MediaCommon::saveConfigurationData) );
+
+    mediaCommon.init();
 
     Gtk::Main::run(mainWindow);
 
