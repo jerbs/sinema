@@ -12,16 +12,14 @@
 #include "platform/timer.hpp"
 
 #include "gui/ControlWindow.hpp"
-#include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
 #undef INFO
 #define INFO(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
-SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
+SignalDispatcher::SignalDispatcher()
     : m_MainWindow(0),
-      m_MediaPlayer(mediaPlayer),
       acceptAdjustmentPositionValueChanged(true),
       acceptAdjustmentVolumeValueChanged(true),
       m_AdjustmentPosition(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
@@ -268,11 +266,6 @@ SignalDispatcher::SignalDispatcher(GtkmmMediaPlayer& mediaPlayer)
     m_AdjustmentVolume.set_step_increment(0);
     m_AdjustmentVolume.signal_changed().connect(sigc::mem_fun(*this, &SignalDispatcher::on_volume_changed));
     m_AdjustmentVolume.signal_value_changed().connect(sigc::mem_fun(*this, &SignalDispatcher::on_volume_value_changed));
-
-    m_MediaPlayer.notificationFileName.connect( sigc::mem_fun(*this, &SignalDispatcher::set_title) );
-    m_MediaPlayer.notificationDuration.connect( sigc::mem_fun(*this, &SignalDispatcher::set_duration) );
-    m_MediaPlayer.notificationCurrentTime.connect( sigc::mem_fun(*this, &SignalDispatcher::set_time) );
-    m_MediaPlayer.notificationCurrentVolume.connect( sigc::mem_fun(*this, &SignalDispatcher::set_volume) );
 }
 
 SignalDispatcher::~SignalDispatcher()
@@ -367,10 +360,10 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 	switch (event->keyval)
 	{
 	case GDK_Left:
-	    m_MediaPlayer.seekRelative(-10 * factor);
+	    signal_seek_relative(-10 * factor);
 	    break;
 	case GDK_Right:
-	    m_MediaPlayer.seekRelative(+10 * factor);
+	    signal_seek_relative(+10 * factor);
 	    break;
 	case ' ':
 	    if (m_refActionPlay->is_visible())
@@ -490,9 +483,7 @@ void SignalDispatcher::on_view_clipping_none()
     INFO();
     if (m_refClippingNone->get_active())
     {
-
-	boost::shared_ptr<ClipVideoSrcEvent> event(new ClipVideoSrcEvent(getClipVideoSrcEventNone()));
-	m_MediaPlayer.clip(event);
+	signal_clip(boost::make_shared<ClipVideoSrcEvent>(getClipVideoSrcEventNone()));
     }
 }
 
@@ -540,8 +531,7 @@ void SignalDispatcher::on_view_clipping_43()
     INFO();
     if (m_refClipping43->get_active())
     {
-	boost::shared_ptr<ClipVideoSrcEvent> event(new ClipVideoSrcEvent(getClipVideoSrcEvent43()));
-	m_MediaPlayer.clip(event);
+	signal_clip(boost::make_shared<ClipVideoSrcEvent>(getClipVideoSrcEvent43()));
     }
 }
 
@@ -550,9 +540,7 @@ void SignalDispatcher::on_view_clipping_169()
     INFO();
     if (m_refClipping169->get_active())
     {
-	
-	boost::shared_ptr<ClipVideoSrcEvent> event(new ClipVideoSrcEvent(getClipVideoSrcEvent169()));
-	m_MediaPlayer.clip(event);
+	signal_clip(boost::make_shared<ClipVideoSrcEvent>(getClipVideoSrcEvent169()));
     }
 }
 
@@ -678,8 +666,8 @@ void SignalDispatcher::on_view_statusbar()
 
 void SignalDispatcher::on_media_play()
 {
-    m_MediaPlayer.open();
-    m_MediaPlayer.play();
+    signal_open();
+    signal_play();
 
     // Hide/show buttons and menu entries:
     m_refActionPlay->set_visible(false);
@@ -688,7 +676,7 @@ void SignalDispatcher::on_media_play()
 
 void SignalDispatcher::on_media_pause()
 {
-    m_MediaPlayer.pause();
+    signal_pause();
 
     // Hide/show buttons and menu entries:
     m_refActionPause->set_visible(false);
@@ -697,12 +685,12 @@ void SignalDispatcher::on_media_pause()
 
 void SignalDispatcher::on_media_stop()
 {
-    m_MediaPlayer.close();
+    signal_close();
 }
 
 void SignalDispatcher::on_media_next()
 {
-    m_MediaPlayer.skipForward();
+    signal_skip_forward();
     timeTitlePlaybackStarted = timer::get_current_time();
 }
 
@@ -710,23 +698,23 @@ void SignalDispatcher::on_media_previous()
 {
     if ((timer::get_current_time() - timeTitlePlaybackStarted) < getTimespec(1))
     {
-	m_MediaPlayer.skipBack();
+	signal_skip_back();
     }
     else
     {
-	m_MediaPlayer.seekAbsolute(0);
+	signal_seek_absolute(0);
     }
     timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_media_forward()
 {
-    m_MediaPlayer.seekRelative(+10);
+    signal_seek_relative(+10);
 }
 
 void SignalDispatcher::on_media_rewind()
 {
-    m_MediaPlayer.seekRelative(-10);
+    signal_seek_relative(-10);
 }
 
 void SignalDispatcher::on_media_record()
@@ -754,7 +742,7 @@ void SignalDispatcher::on_position_value_changed()
     if (acceptAdjustmentPositionValueChanged)
     {
 	// Adjustment value changed.
-	m_MediaPlayer.seekAbsolute(m_AdjustmentPosition.get_value());
+	signal_seek_absolute(m_AdjustmentPosition.get_value());
     }
 }
 
@@ -767,7 +755,7 @@ void SignalDispatcher::on_volume_value_changed()
     if (acceptAdjustmentVolumeValueChanged)
     {
 	// Adjustment value changed.
-	m_MediaPlayer.setPlaybackVolume(m_AdjustmentVolume.get_value());
+	signal_playback_volume(m_AdjustmentVolume.get_value());
     }
 }
 
@@ -776,7 +764,7 @@ void SignalDispatcher::on_mute_toggled()
     if (acceptAdjustmentVolumeValueChanged)
     {
 	// Mute button toggled
-	m_MediaPlayer.setPlaybackSwitch(m_refMute->get_active());
+	signal_playback_switch(m_refMute->get_active());
     }
 }
 
@@ -788,13 +776,13 @@ void SignalDispatcher::on_file_closed()
     m_AdjustmentPosition.set_value(0);
 }
 
-void SignalDispatcher::set_title(Glib::ustring title)
+void SignalDispatcher::on_set_title(Glib::ustring title)
 {
     // A new title is opened.
     timeTitlePlaybackStarted = timer::get_current_time();
 }
 
-void SignalDispatcher::set_time(double seconds)
+void SignalDispatcher::on_set_time(double seconds)
 {
     acceptAdjustmentPositionValueChanged = false;
     m_AdjustmentPosition.set_value(seconds);
@@ -805,14 +793,14 @@ void SignalDispatcher::set_time(double seconds)
     m_refActionPause->set_visible(true);
 }
 
-void SignalDispatcher::set_duration(double seconds)
+void SignalDispatcher::on_set_duration(double seconds)
 {
     acceptAdjustmentPositionValueChanged = false;
     m_AdjustmentPosition.set_upper(seconds);
     acceptAdjustmentPositionValueChanged = true;
 }
 
-void SignalDispatcher::set_volume(const NotificationCurrentVolume& vol)
+void SignalDispatcher::on_set_volume(const NotificationCurrentVolume& vol)
 {
     double stepIncrement = double(vol.maxVolume - vol.minVolume) / 100;
     double pageIncrement = stepIncrement * 5;

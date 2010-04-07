@@ -42,10 +42,31 @@ int main(int argc, char *argv[])
     GtkmmMediaReceiver mediaReceiver;
     mediaReceiver.init();
     GtkmmMediaCommon mediaCommon;
-    SignalDispatcher signalDispatcher(mediaPlayer);
+    SignalDispatcher signalDispatcher;
     ControlWindow controlWindow(mediaPlayer, signalDispatcher);
     ChannelConfigWindow channelConfigWindow;
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
+
+    // Compiler needs help to find the correct overloaded method:
+    void (GtkmmMediaPlayer::*GtkmmMediaPlayer_ClipSrc)(boost::shared_ptr<ClipVideoSrcEvent> event) = &GtkmmMediaPlayer::clip;
+
+    mediaPlayer.notificationFileName.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_set_title) );
+    mediaPlayer.notificationDuration.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_set_duration) );
+    mediaPlayer.notificationCurrentTime.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_set_time) );
+    mediaPlayer.notificationCurrentVolume.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_set_volume) );
+
+    signalDispatcher.signal_seek_absolute.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::seekAbsolute) );
+    signalDispatcher.signal_seek_relative.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::seekRelative) );
+    signalDispatcher.signal_clip.connect( sigc::mem_fun(mediaPlayer, GtkmmMediaPlayer_ClipSrc ) );
+    signalDispatcher.signal_open.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::open) );
+    signalDispatcher.signal_play.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::play) );
+    signalDispatcher.signal_pause.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::pause) );
+    signalDispatcher.signal_close.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::close) );
+    signalDispatcher.signal_skip_forward.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::skipForward) );
+    signalDispatcher.signal_skip_back.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::skipBack) );
+    signalDispatcher.signal_close.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::close) );
+    signalDispatcher.signal_playback_volume.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::setPlaybackVolume) );
+    signalDispatcher.signal_playback_switch.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::setPlaybackSwitch) );
 
     controlWindow.set_transient_for(mainWindow);
     controlWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher,

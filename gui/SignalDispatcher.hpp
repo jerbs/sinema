@@ -15,7 +15,6 @@
 #include <gtkmm/toggleaction.h>
 #include <gtkmm/uimanager.h>
 
-class GtkmmMediaPlayer;
 class MainWindow;
 class ControlWindow;
 
@@ -28,7 +27,19 @@ public:
     sigc::signal<void, double> zoomMainWindow;
     sigc::signal<void> ignoreWindowResize;
 
-    SignalDispatcher(GtkmmMediaPlayer& mediaPlayer);
+    sigc::signal<void, double> signal_seek_absolute;
+    sigc::signal<void, double> signal_seek_relative;
+    sigc::signal<void, boost::shared_ptr<ClipVideoSrcEvent> > signal_clip;
+    sigc::signal<void> signal_open;
+    sigc::signal<void> signal_play;
+    sigc::signal<void> signal_pause;
+    sigc::signal<void> signal_close;
+    sigc::signal<void> signal_skip_forward;
+    sigc::signal<void> signal_skip_back;
+    sigc::signal<void, double> signal_playback_volume;
+    sigc::signal<void, bool> signal_playback_switch;
+
+    SignalDispatcher();
     ~SignalDispatcher();
 
     Glib::RefPtr<Gtk::UIManager> getUIManager();
@@ -52,6 +63,11 @@ public:
     void on_notification_video_size(const NotificationVideoSize& event);
     void on_notification_clipping(const NotificationClipping& event);
     void on_file_closed();
+
+    void on_set_title(Glib::ustring title);
+    void on_set_duration(double seconds);
+    void on_set_time(double seconds);
+    void on_set_volume(const NotificationCurrentVolume& vol);
 
 private:
     // Slots:
@@ -90,13 +106,7 @@ private:
     virtual void on_volume_value_changed();
     virtual void on_mute_toggled();
 
-    void set_title(Glib::ustring title);
-    void set_duration(double seconds);
-    void set_time(double seconds);
-    void set_volume(const NotificationCurrentVolume& vol);
-
     MainWindow* m_MainWindow;
-    GtkmmMediaPlayer& m_MediaPlayer;
 
     Gtk::RadioAction::Group m_groupClipping;
 
