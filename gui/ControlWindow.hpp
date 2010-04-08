@@ -17,23 +17,21 @@
 #include <gtkmm/scale.h>
 #include <glibmm/ustring.h>
 
-class GtkmmMediaPlayer;
 class SignalDispatcher;
 class NotificationCurrentVolume;
 
 class ControlWindow : public Gtk::Window
 {
 public:
-    ControlWindow(GtkmmMediaPlayer& mediaPlayer, SignalDispatcher& signalDispatcher);
+    ControlWindow(SignalDispatcher& signalDispatcher);
     virtual ~ControlWindow();
 
+    void on_set_title(Glib::ustring title);
+    void on_set_duration(double seconds);
+    void on_set_time(double seconds);
+    void on_show_window(bool show);
+
 private:
-    virtual void on_show_control_window(bool show);
-
-    void set_title(Glib::ustring title);
-    void set_duration(double seconds);
-    void set_time(double seconds);
-
     // Child widgets:
     Gtk::HBox m_HBox_Level0;
     Gtk::VBox m_VBox_Level1;

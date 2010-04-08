@@ -8,12 +8,11 @@
 #include <iomanip>
 
 #include "gui/ControlWindow.hpp"
-#include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/SignalDispatcher.hpp"
 
 extern std::string applicationName;
 
-ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer, SignalDispatcher& signalDispatcher)
+ControlWindow::ControlWindow(SignalDispatcher& signalDispatcher)
     : Gtk::Window(),
       m_HBox_Level0(false, 2),  // not homogeneous, spacing
       m_VBox_Level1(false, 2), 
@@ -88,11 +87,6 @@ ControlWindow::ControlWindow(GtkmmMediaPlayer& mediaPlayer, SignalDispatcher& si
     // Clear text again, that was set when connecting the CheckButton to the Action:
     m_Mute.set_label("");
 
-    mediaPlayer.notificationFileName.connect( sigc::mem_fun(*this, &ControlWindow::set_title) );
-    mediaPlayer.notificationDuration.connect( sigc::mem_fun(*this, &ControlWindow::set_duration) );
-    mediaPlayer.notificationCurrentTime.connect( sigc::mem_fun(*this, &ControlWindow::set_time) );
-
-    signalDispatcher.showControlWindow.connect( sigc::mem_fun(*this, &ControlWindow::on_show_control_window) );
 
     show_all_children();
 }
@@ -101,9 +95,8 @@ ControlWindow::~ControlWindow()
 {
 }
 
-void ControlWindow::on_show_control_window(bool pshow)
+void ControlWindow::on_show_window(bool pshow)
 {
-
     if (pshow)
     {
 	// Let the window manager decide where to place the window when shown
@@ -124,7 +117,7 @@ void ControlWindow::on_show_control_window(bool pshow)
     }
 }
 
-void ControlWindow::set_title(Glib::ustring title)
+void ControlWindow::on_set_title(Glib::ustring title)
 {
     Gtk::Window::set_title(applicationName + " (Ctrl) " + title);
     m_LabelTitle.set_text(title);
@@ -146,12 +139,12 @@ std::string getTimeString(int seconds)
     return ss.str();
 }
 
-void ControlWindow::set_time(double seconds)
+void ControlWindow::on_set_time(double seconds)
 {
     m_LabelTime.set_text(getTimeString(seconds));
 }
 
-void ControlWindow::set_duration(double seconds)
+void ControlWindow::on_set_duration(double seconds)
 {
     m_LabelDuration.set_text(getTimeString(seconds));
 }

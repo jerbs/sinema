@@ -4,6 +4,7 @@
 // Copyright (C) Joachim Erbs, 2009, 2010
 //
 
+#include <boost/make_shared.hpp>
 #include <iostream>
 #include <gtkmm/menu.h>
 #include <gtkmm/stock.h>

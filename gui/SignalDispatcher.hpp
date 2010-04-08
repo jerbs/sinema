@@ -7,6 +7,10 @@
 #ifndef SIGNAL_DISPATCHER_HPP
 #define SIGNAL_DISPATCHER_HPP
 
+#include "player/GeneralEvents.hpp"
+#include "platform/timer.hpp"
+
+#include <boost/shared_ptr.hpp>
 #include <gtkmm/action.h>
 #include <gtkmm/actiongroup.h>
 #include <gtkmm/adjustment.h>
