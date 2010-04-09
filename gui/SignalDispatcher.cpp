@@ -390,7 +390,7 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 	    on_media_next();
 	    break;
 	case GDK_Escape:
-	    on_file_quit();
+	    m_MainWindow->unfullscreen();
 	    break;
 	}
     }
