@@ -38,6 +38,8 @@ XFVideo::XFVideo(Display* display, Window window,
       topSrc(0),
       widthSrc(width),
       heightSrc(height),
+      parNum(16),
+      parDen(15),
       useXvClipping(true),
       sendNotificationVideoSize(fct),
       sendNotificationClipping(fct2)
@@ -191,7 +193,7 @@ void XFVideo::selectEvents()
     XSelectInput(m_display, m_window, StructureNotifyMask | ExposureMask | KeyPressMask);
 }
 
-void XFVideo::resize(unsigned int width, unsigned int height)
+void XFVideo::resize(unsigned int width, unsigned int height, unsigned int parNum, unsigned int parDen)
 {
     // This method is called when the video size changes.
     // It is not called when the widget is resized.
@@ -207,6 +209,10 @@ void XFVideo::resize(unsigned int width, unsigned int height)
     heightSrc = height;
     useXvClipping = true;
 
+    // Sample aspect ratio:
+    this->parNum = parNum;
+    this->parDen = parDen;
+
     calculateDestinationArea(NotificationVideoSize::VideoSizeChanged);
 }
 
@@ -215,11 +221,15 @@ void XFVideo::calculateDestinationArea(NotificationVideoSize::Reason reason)
     topDest = 0;
     leftDest = 0;
 
+    // pixel aspect ratio:
+    double par = double(parNum)/double(parDen);
+
+    DEBUG( << "par = " << par);
+
     // Keep aspect ratio:
-    double ratio = double(widthSrc)/double(heightSrc);
-    double iratio = double(heightSrc)/double(widthSrc);
+    double ratio = par*double(widthSrc)/double(heightSrc);
     widthDest = round(ratio * double(heightWin));
-    heightDest = round(iratio * double(widthWin));
+    heightDest = round(double(widthWin) / ratio);
 
     if (widthDest<=widthWin)
     {
@@ -252,6 +262,8 @@ void XFVideo::calculateDestinationArea(NotificationVideoSize::Reason reason)
     nvs->topSrc = topSrc;
     nvs->widthSrc = widthSrc;
     nvs->heightSrc = heightSrc;
+    nvs->widthAdj = widthSrc * par;
+    nvs->heightAdj = heightSrc;
     sendNotificationVideoSize(nvs);
 }
 
@@ -325,11 +337,14 @@ int XFVideo::yVideo(int yWindow) {return round(topSrc   + (double(heightSrc) /do
 
 typedef int (XFVideo::* Convert_t)(int);
 
-static int calcClip(int origVal, int newVal, XFVideo* obj, Convert_t fct, int defaultVal)
+static int calcClip(int currentVideoPixelVal,
+		    int newWidgetPixelVal,
+		    XFVideo* obj, Convert_t fct,
+		    int defaultVideoPixelVal)
 {
-    if (newVal == -2) return defaultVal;
-    if (newVal == -1) return origVal;
-    return (obj->*fct)(newVal);
+    if (newWidgetPixelVal == -2) return defaultVideoPixelVal;
+    if (newWidgetPixelVal == -1) return currentVideoPixelVal;
+    return (obj->*fct)(newWidgetPixelVal);
 }
 
 template<typename TVAL>
@@ -341,7 +356,7 @@ static void constraint(TVAL& val, int min, int max)
 
 void XFVideo::clipDst(int windowLeft, int windowRight, int windowTop, int windowBottom)
 {
-    // Parameter are widget pixel.
+    // Parameters are widget pixel.
 
     if (m_displayedImage)
     {

@@ -61,7 +61,14 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 		    {
 			int w = avCodecContext->width;
 			int h = avCodecContext->height;
-			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h));
+			AVRational& par = avCodecContext->sample_aspect_ratio;
+			int pn = par.num;
+			int pd = par.den;
+			DEBUG( << "size = " << w << ":" << h);
+			DEBUG( << "par  = " << pn << ":" << pd);
+			if (pn == 0 || pd == 0) {pn = pd = 1;}
+
+			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd));
 
 			state = Opening;
 
@@ -373,7 +380,11 @@ void VideoDecoder::queue()
 
 	int w = avCodecContext->width;
 	int h = avCodecContext->height;
-	videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(w,h));
+	AVRational& par = avCodecContext->sample_aspect_ratio;
+	int pn = par.num;
+	int pd = par.den;
+	if (pn == 0 || pd == 0) {pn = pd = 1;}
+	videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(w,h,pn,pd));
 
 	return;
     }

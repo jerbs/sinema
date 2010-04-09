@@ -42,7 +42,7 @@ public:
     ~XFVideo();
 
     void selectEvents();
-    void resize(unsigned int width, unsigned int height);
+    void resize(unsigned int width, unsigned int height, unsigned int sarNom, unsigned int sarDen);
     boost::shared_ptr<XFVideoImage> show(boost::shared_ptr<XFVideoImage> xfVideoImage);
     void show();
     void handleConfigureEvent(boost::shared_ptr<WindowConfigureEvent> event);
@@ -95,6 +95,10 @@ private:
     unsigned int topSrc;
     unsigned int widthSrc;
     unsigned int heightSrc;
+
+    // pixel aspect ratio:
+    unsigned int parNum;
+    unsigned int parDen;
 
     bool useXvClipping;
 

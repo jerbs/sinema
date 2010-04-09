@@ -41,7 +41,7 @@ void VideoOutput::process(boost::shared_ptr<OpenVideoOutputReq> event)
     {
 	DEBUG();
 
-	xfVideo->resize(event->width, event->height);
+	xfVideo->resize(event->width, event->height, event->parNum, event->parDen);
 	for (int i=0; i<10; i++)
 	{
 	    createVideoImage();
@@ -94,7 +94,7 @@ void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
     {
 	DEBUG();
 
-	xfVideo->resize(event->width, event->height);
+	xfVideo->resize(event->width, event->height, event->parNum, event->parDen);
 	createVideoImage();
     }
 }

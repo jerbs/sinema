@@ -219,12 +219,16 @@ struct CloseAudioOutputResp{};
 
 struct OpenVideoOutputReq
 {
-    OpenVideoOutputReq(int width, int height)
+    OpenVideoOutputReq(int width, int height, int parNum, int parDen)
 	: width(width),
-	  height(height)
+	  height(height),
+	  parNum(parNum),
+	  parDen(parDen)
     {}
     int width;
     int height;
+    int parNum;  // pixel aspect ratio numerator
+    int parDen;  // pixel aspect ratio denominator
 };
 
 struct OpenVideoOutputResp{};
@@ -235,12 +239,16 @@ struct CloseVideoOutputResp{};
 
 struct ResizeVideoOutputReq
 {
-    ResizeVideoOutputReq(int width, int height)
+    ResizeVideoOutputReq(int width, int height, int parNum, int parDen)
 	: width(width),
-	  height(height)
+	  height(height),
+	  parNum(parNum),
+	  parDen(parDen)
     {}
     int width;
     int height;
+    int parNum;  // pixel aspect ratio numerator
+    int parDen;  // pixel aspect ratio denominator
 };
 
 // ===================================================================
@@ -356,6 +364,11 @@ struct NotificationVideoSize
     unsigned int topSrc;
     unsigned int widthSrc;
     unsigned int heightSrc;
+
+    // size for 100% zoom of clipped area. This may be different 
+    // from (widthSrc, heightSrc) to get correct aspect ratio:
+    unsigned int widthAdj;
+    unsigned int heightAdj;
 };
 
 struct NotificationClipping
