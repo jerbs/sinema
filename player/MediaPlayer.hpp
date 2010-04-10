@@ -29,7 +29,7 @@ class MediaPlayer : public event_receiver<MediaPlayer,
     friend class MediaPlayerThreadNotification;
 
 public:
-    MediaPlayer(boost::shared_ptr<PlayList> playList);
+    MediaPlayer(PlayList& playList);
     ~MediaPlayer();
 
     void init();
@@ -79,7 +79,7 @@ private:
     boost::shared_ptr<event_processor<> > outputEventProcessor;
 
     // PlayList:
-    boost::shared_ptr<PlayList> playList;
+    PlayList& m_PlayList;
 
     void sendInitEvents();
 

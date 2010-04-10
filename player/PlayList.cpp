@@ -17,6 +17,12 @@ void PlayList::append(std::string file)
     }
 }
 
+void PlayList::clear()
+{
+    m_list.clear();
+    m_current = m_list.begin();
+}
+
 std::string PlayList::getCurrent()
 {
     if (m_current != m_list.end())

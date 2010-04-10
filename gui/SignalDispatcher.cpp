@@ -4,8 +4,11 @@
 // Copyright (C) Joachim Erbs, 2009, 2010
 //
 
+#include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <iostream>
+#include <list>
+#include <gtkmm/filechooserdialog.h>
 #include <gtkmm/menu.h>
 #include <gtkmm/stock.h>
 #include <gdk/gdkkeysyms.h>
@@ -15,12 +18,14 @@
 #include "gui/ControlWindow.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
+#include "player/PlayList.hpp"
 
 #undef INFO
 #define INFO(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
-SignalDispatcher::SignalDispatcher()
+SignalDispatcher::SignalDispatcher(PlayList& playList)
     : m_MainWindow(0),
+      m_PlayList(playList),
       acceptAdjustmentPositionValueChanged(true),
       acceptAdjustmentVolumeValueChanged(true),
       m_AdjustmentPosition(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
@@ -399,6 +404,83 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 void SignalDispatcher::on_file_open()
 {
     INFO();
+
+    Gtk::FileChooserDialog dialog("Please choose a file",
+				  Gtk::FILE_CHOOSER_ACTION_OPEN);
+    dialog.set_transient_for(*m_MainWindow);
+    dialog.set_select_multiple(true);
+
+    //Add response buttons the the dialog:
+    dialog.add_button(Gtk::Stock::CANCEL, Gtk::RESPONSE_CANCEL);
+    dialog.add_button(Gtk::Stock::OPEN, Gtk::RESPONSE_OK);
+
+    //Add filters, so that only certain file types can be selected:
+
+    Gtk::FileFilter filter_any;
+    filter_any.set_name("Any files");
+    filter_any.add_pattern("*");
+    dialog.add_filter(filter_any);
+
+    Gtk::FileFilter filter_video;
+    filter_video.set_name("Video files");
+    filter_video.add_mime_type("video/*");
+    dialog.add_filter(filter_video);
+
+    Gtk::FileFilter filter_audio;
+    filter_audio.set_name("Audio files");
+    filter_audio.add_mime_type("audio/*");
+    dialog.add_filter(filter_audio);
+
+    Gtk::FileFilter filter_image;
+    filter_image.set_name("Image files");
+    filter_image.add_mime_type("image/*");
+    dialog.add_filter(filter_image);
+
+    //Show the dialog and wait for a user response:
+    int result = dialog.run();
+
+    //Handle the response:
+    switch(result)
+    {
+    case(Gtk::RESPONSE_OK):
+	{
+	    DEBUG(<< "RESPONSE_OK");
+
+	    // Get list of selected files:
+	    std::list<std::string> filenames = dialog.get_filenames();
+
+	    // Print file names into log file:
+	    {
+		TraceUnit traceUnit;
+		traceUnit << __PRETTY_FUNCTION__ << " selected files:\n"; 
+		copy(filenames.begin(), filenames.end(),
+		     std::ostream_iterator<std::string>(traceUnit, "\n"));
+	    }
+
+	    // Clear existing play list:
+	    m_PlayList.clear();
+
+	    // Use address of PlayList, otherwise the object is copied.
+	    for_each(filenames.begin(), filenames.end(),
+		     boost::bind(&PlayList::append, &m_PlayList, _1));
+
+	    // Start playing the new list:
+	    on_media_stop();
+	    on_media_play();
+
+	    break;
+	}
+    case(Gtk::RESPONSE_CANCEL):
+	{
+	    DEBUG(<< "RESPONSE_CANCEL");
+	    break;
+	}
+    default:
+	{
+	    DEBUG(<< "result = " << result);
+	    break;
+	}
+    }   
 }
 
 void SignalDispatcher::on_file_close()

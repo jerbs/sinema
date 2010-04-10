@@ -5,7 +5,6 @@
 //
 
 #include <iostream>
-#include <boost/make_shared.hpp>
 #include <gtkmm/main.h>
 
 #include "gui/ChannelConfigWindow.hpp"
@@ -33,9 +32,9 @@ int main(int argc, char *argv[])
 	exit(-1);
     }
 
-    boost::shared_ptr<PlayList> playList(new PlayList());
+    PlayList playList;
     for (int i=1; i<argc; i++)
-	playList->append(std::string(argv[i]));
+	playList.append(std::string(argv[i]));
 
     // ---------------------------------------------------------------
     // Constructing the top level objects:
@@ -43,7 +42,7 @@ int main(int argc, char *argv[])
     GtkmmMediaPlayer mediaPlayer(playList);
     GtkmmMediaReceiver mediaReceiver;
     GtkmmMediaCommon mediaCommon;
-    SignalDispatcher signalDispatcher;
+    SignalDispatcher signalDispatcher(playList);
     ControlWindow controlWindow(signalDispatcher);
     ChannelConfigWindow channelConfigWindow;
     MainWindow mainWindow(mediaPlayer, signalDispatcher);

@@ -21,6 +21,7 @@
 
 class MainWindow;
 class ControlWindow;
+class PlayList;
 
 class SignalDispatcher
 {
@@ -43,7 +44,7 @@ public:
     sigc::signal<void, double> signal_playback_volume;
     sigc::signal<void, bool> signal_playback_switch;
 
-    SignalDispatcher();
+    SignalDispatcher(PlayList& playList);
     ~SignalDispatcher();
 
     Glib::RefPtr<Gtk::UIManager> getUIManager();
@@ -111,6 +112,8 @@ private:
     virtual void on_mute_toggled();
 
     MainWindow* m_MainWindow;
+
+    PlayList& m_PlayList;
 
     Gtk::RadioAction::Group m_groupClipping;
 

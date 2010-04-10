@@ -28,7 +28,7 @@ public:
     sigc::signal<void, NotificationClipping> notificationClipping;
     sigc::signal<void> notificationFileClosed;
 
-    GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList);
+    GtkmmMediaPlayer(PlayList& playList);
     virtual ~GtkmmMediaPlayer();
 
     static void notifyGuiThread();

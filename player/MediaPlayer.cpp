@@ -39,11 +39,11 @@ MediaPlayerThreadNotification::fct_t MediaPlayerThreadNotification::m_fct;
 
 // ===================================================================
 
-MediaPlayer::MediaPlayer(boost::shared_ptr<PlayList> playList)
+MediaPlayer::MediaPlayer(PlayList& playList)
     : base_type(boost::make_shared<event_processor<
 		concurrent_queue<receive_fct_t,
 		MediaPlayerThreadNotification> > >()),
-      playList(playList),
+      m_PlayList(playList),
       endOfAudioStream(false),
       endOfVideoStream(false)
 {
@@ -127,7 +127,7 @@ void MediaPlayer::processEventQueue()
 
 void MediaPlayer::open()
 {
-    std::string file = playList->getCurrent();
+    std::string file = m_PlayList.getCurrent();
     if (!file.empty())
     {
 	demuxer->queue_event(boost::make_shared<OpenFileReq>(file));
@@ -155,7 +155,7 @@ void MediaPlayer::pause()
 
 void MediaPlayer::skipBack()
 {
-    if (playList->selectPrevious())
+    if (m_PlayList.selectPrevious())
     {
 	close();
 	open();
@@ -164,7 +164,7 @@ void MediaPlayer::skipBack()
 
 void MediaPlayer::skipForward()
 {
-    if (playList->selectNext())
+    if (m_PlayList.selectNext())
     {
 	close();
 	open();

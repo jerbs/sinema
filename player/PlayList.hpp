@@ -19,6 +19,7 @@ public:
     ~PlayList() {}
 
     void append(std::string file);
+    void clear();
 
     std::string getCurrent();
     bool selectNext();

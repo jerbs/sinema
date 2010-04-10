@@ -39,7 +39,7 @@ Window get_x_window(Gtk::Widget & widget)
 
 Glib::Dispatcher GtkmmMediaPlayer::m_dispatcher;
 
-GtkmmMediaPlayer::GtkmmMediaPlayer(boost::shared_ptr<PlayList> playList)
+GtkmmMediaPlayer::GtkmmMediaPlayer(PlayList& playList)
     : MediaPlayer(playList),
       m_blankGdkCursor(gdk_cursor_new(GDK_BLANK_CURSOR)),
       m_blankCursor(Gdk::Cursor(m_blankGdkCursor))
