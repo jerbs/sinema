@@ -17,6 +17,15 @@ void PlayList::append(std::string file)
     }
 }
 
+void PlayList::erase()
+{
+    ListIter_t tmp = m_current;
+    if (m_current != m_list.end())
+    {
+	m_current = m_list.erase(m_current);
+    }
+}
+
 void PlayList::clear()
 {
     m_list.clear();

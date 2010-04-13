@@ -72,7 +72,7 @@ public:
     bool on_main_window_state_event(GdkEventWindowState* event);
     void on_notification_video_size(const NotificationVideoSize& event);
     void on_notification_clipping(const NotificationClipping& event);
-    void on_file_closed();
+    void on_notification_file_closed();
 
     void on_set_title(Glib::ustring title);
     void on_set_duration(double seconds);

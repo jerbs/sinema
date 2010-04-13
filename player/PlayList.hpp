@@ -19,7 +19,8 @@ public:
     ~PlayList() {}
 
     void append(std::string file);
-    void clear();
+    void erase();  // Remove the current play list entry and select the next one.
+    void clear();  // Remove all play list entries.
 
     std::string getCurrent();
     bool selectNext();

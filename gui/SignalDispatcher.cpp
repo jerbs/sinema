@@ -509,7 +509,25 @@ void SignalDispatcher::on_file_open()
 
 void SignalDispatcher::on_file_close()
 {
-    INFO();
+    DEBUG();
+
+    on_media_stop();
+
+    // Remove current entry from play list and selecet next entry:
+    m_PlayList.erase();
+
+    if (m_PlayList.getCurrent().empty())
+    {
+	// No entry selected, i.e. closed last file.
+	
+	// Select first file, but do not start playback:
+	while(m_PlayList.selectPrevious()){}
+    }
+    else
+    {
+	// Start playing the next file:
+	on_media_play();
+    }
 }
 
 void SignalDispatcher::on_file_quit()
@@ -921,12 +939,24 @@ void SignalDispatcher::on_mute_toggled()
     }
 }
 
-void SignalDispatcher::on_file_closed()
+void SignalDispatcher::on_notification_file_closed()
 {
+    // MediaPlayer finished playing a file.
+
     // Playing, show play, hide pause buttons/menues:
     m_refActionPlay->set_visible(true);
     m_refActionPause->set_visible(false);
     m_AdjustmentPosition.set_value(0);
+        
+    // MediaPlayer automatically starts playing the next file.
+
+    if (m_PlayList.getCurrent().empty())
+    {
+	// MediaPlayer finished playing the last file of the play list.
+
+	// Select first file, but do not start playback:
+	while(m_PlayList.selectPrevious()){}
+    }
 }
 
 void SignalDispatcher::on_set_title(Glib::ustring title)
