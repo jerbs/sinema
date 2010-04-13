@@ -68,7 +68,7 @@ private:
     virtual void on_remove_entry();
     virtual void on_scan_channels();
 
-    void saveConfigurationData(bool force = false);
+    void saveConfigurationData();
 
     void setStandard(Gtk::TreeRow& row, const Glib::ustring& standard);
     void setChannel(Gtk::TreeRow& row, const Glib::ustring& channel);
@@ -142,7 +142,13 @@ private:
     int m_pos_x;
     int m_pos_y;
 
-    bool dont_save;
+    // saveConfigurationData() is enabled when this flag is true. The flag 
+    // is used to avoid saving the configuration file unnecessarily. Writing 
+    // to the tree modul, i.e. row[m_Columns....] = ..., generates the same 
+    // signal as when the user edits the table using the GUI. In the second
+    // case configuration data has to be saved. In the first case this is 
+    // not useful, when further modification do follow.
+    bool m_isEnabled_signalConfigurationDataChanged;
 };
 
 #endif

@@ -22,7 +22,10 @@ extern std::string applicationName;
 
 ChannelConfigWindow::ChannelConfigWindow()
     : m_FinetuneAdjustment(0, -100, 100),
-      dont_save(false)
+      m_shown(false),
+      m_pos_x(0),
+      m_pos_y(0),
+      m_isEnabled_signalConfigurationDataChanged(true)
 {
     set_title(applicationName + " (Channel Configuration)");
     set_default_size(400,200);
@@ -250,7 +253,8 @@ void ChannelConfigWindow::on_tuner_signal_detected(const ChannelData& channelDat
        << ", " << channelData.getTunedFrequency()/1000.0 << " MHz";
     m_StatusBarMessage.set_text(ss.str());
 
-    TemporaryEnable e(dont_save);
+    {
+    TemporaryDisable d(m_isEnabled_signalConfigurationDataChanged);
 
     // Check if an entry for the cannel already exists:
     Gtk::TreeModel::Children children = m_refTreeModel->children();
@@ -277,8 +281,11 @@ void ChannelConfigWindow::on_tuner_signal_detected(const ChannelData& channelDat
     row[m_Columns.m_col_frequency] = channelData.frequency;
     row[m_Columns.m_col_finetune] = channelData.finetune;
     row[m_Columns.m_col_signal] = true;
+    }
 
-    saveConfigurationData(true);
+    // Here signalConfigurationDataChanged may be enabled again.
+
+    saveConfigurationData();
 }
 
 void ChannelConfigWindow::on_tuner_scan_stopped()
@@ -297,7 +304,7 @@ void ChannelConfigWindow::on_configuration_data_loaded(const ConfigurationData& 
 {
     DEBUG();
 
-    TemporaryEnable e(dont_save);
+    TemporaryDisable d(m_isEnabled_signalConfigurationDataChanged);
 
     const StationList& stationList = configurationData.stationList;
     StationList::const_iterator it = stationList.begin();
@@ -533,7 +540,7 @@ void ChannelConfigWindow::on_scan_channels()
 	Gtk::TreeModel::iterator iter = children.begin();
 	while (iter != children.end())
 	{
-	    TemporaryEnable e(dont_save);
+	    TemporaryDisable d(m_isEnabled_signalConfigurationDataChanged);
 
 	    Gtk::TreeRow row = *iter;
 	    row[m_Columns.m_col_signal] = false;
@@ -544,10 +551,12 @@ void ChannelConfigWindow::on_scan_channels()
     }
 }
 
-void ChannelConfigWindow::saveConfigurationData(bool force)
+void ChannelConfigWindow::saveConfigurationData()
 {
-    if (!force && dont_save)
+    if (!m_isEnabled_signalConfigurationDataChanged)
+    {
 	return;
+    }
 
     std::cout << __PRETTY_FUNCTION__ << std::endl;
 
@@ -576,11 +585,12 @@ void ChannelConfigWindow::setStandard(Gtk::TreeRow& row, const Glib::ustring& st
 {
     if (row[m_Columns.m_col_standard] != standard)
     {
-	TemporaryEnable e(dont_save);
+	TemporaryDisable d(m_isEnabled_signalConfigurationDataChanged);
 	row[m_Columns.m_col_standard] = standard;
 	row[m_Columns.m_col_channel_choices] = m_ChannelListMap[std::string(standard)];
 	setChannel(row, "");
-	saveConfigurationData(true);
+	TemporaryEnable e(m_isEnabled_signalConfigurationDataChanged);
+	saveConfigurationData();
     }
 }
 
@@ -588,13 +598,14 @@ void ChannelConfigWindow::setChannel(Gtk::TreeRow& row, const Glib::ustring& cha
 {
     if (row[m_Columns.m_col_channel] != channel)
     {
-	TemporaryEnable e(dont_save);
+	TemporaryDisable d(m_isEnabled_signalConfigurationDataChanged);
 	row[m_Columns.m_col_channel] = channel;
 	row[m_Columns.m_col_frequency] = 0;
 	row[m_Columns.m_col_finetune] = 0; 
 	row[m_Columns.m_col_signal] = false;
 	updateFrequency(row);
-	saveConfigurationData(true);
+	TemporaryEnable e(m_isEnabled_signalConfigurationDataChanged);
+	saveConfigurationData();
     }
 }
 
@@ -608,6 +619,7 @@ void ChannelConfigWindow::updateFrequency(Gtk::TreeRow& row)
     DEBUG(<< standard << ":" << channel << " = " << freq);
     if (row[m_Columns.m_col_frequency] != freq)
     {
+	TemporaryDisable d(m_isEnabled_signalConfigurationDataChanged);
 	row[m_Columns.m_col_frequency] = freq;
 	row[m_Columns.m_col_finetune] = 0;
 	row[m_Columns.m_col_signal] = false;
