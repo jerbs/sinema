@@ -130,6 +130,21 @@ int main(int argc, char *argv[])
     channelConfigWindow.signalConfigurationDataChanged.connect(sigc::mem_fun(&mediaCommon, &MediaCommon::saveConfigurationData) );
 
     // ---------------------------------------------------------------
+    // Signals: ChannelConfigWindow -> SignalDispatcher
+    channelConfigWindow.signalConfigurationDataChanged.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
+
+    // ---------------------------------------------------------------
+    // Signals: GtkmmMediaCommon -> SignalDispatcher
+    mediaCommon.signal_configuration_data_loaded.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
+
+    // ---------------------------------------------------------------
+    // Signals: SignalDispatcher -> GtkmmMediaReceiver
+    signalDispatcher.signalSetFrequency.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::setFrequency) );
+
+    // Signals: GtkmmMediaReceiver -> SignalDispatcher
+    mediaReceiver.notificationChannelTuned.connect( sigc::mem_fun(&signalDispatcher, &SignalDispatcher::on_tuner_channel_tuned) );
+
+    // ---------------------------------------------------------------
     // Send init events to all threads of all subsystems:
     mediaPlayer.init();
     mediaReceiver.init();

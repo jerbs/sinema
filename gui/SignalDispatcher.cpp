@@ -14,18 +14,18 @@
 #include <gdk/gdkkeysyms.h>
 
 #include "platform/timer.hpp"
+#include "platform/temp_value.hpp"
 
 #include "gui/ControlWindow.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 #include "player/PlayList.hpp"
-
-#undef INFO
-#define INFO(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+#include "receiver/ChannelFrequencyTable.hpp"
 
 SignalDispatcher::SignalDispatcher(PlayList& playList)
     : m_MainWindow(0),
       m_PlayList(playList),
+      m_UiMergeIdChannels(0),
       acceptAdjustmentPositionValueChanged(true),
       acceptAdjustmentVolumeValueChanged(true),
       m_AdjustmentPosition(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
@@ -34,10 +34,12 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
       m_visibleFullscreen(false,false,false),
       m_visibleWindow(true,true,true),
       m_visible(&m_visibleWindow),
-      m_fullscreen(false)
+      m_fullscreen(false),
+      m_isEnabled_signalSetFrequency(true)
 {
     // Create actions for menus and toolbars:
     m_refActionGroup = Gtk::ActionGroup::create();
+    m_refActionGroupChannels = Gtk::ActionGroup::create();
 
     // Menu: File
     m_refActionGroup->add(Gtk::Action::create("FileMenu", "File"));
@@ -73,16 +75,17 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
     m_refActionGroup->add(Gtk::Action::create("ViewZoom50", "Zoom 50%"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_zoom_50));
 
-    m_refClippingNone = Gtk::RadioAction::create(m_groupClipping, "ViewClippingNone", "No Clipping");
+    Gtk::RadioAction::Group clippingGroup;
+    m_refClippingNone = Gtk::RadioAction::create(clippingGroup, "ViewClippingNone", "No Clipping");
     m_refActionGroup->add(m_refClippingNone,
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_clipping_none) );
-    m_refClippingCustom = Gtk::RadioAction::create(m_groupClipping, "ViewClippingCustom", "Custom Clipping");
+    m_refClippingCustom = Gtk::RadioAction::create(clippingGroup, "ViewClippingCustom", "Custom Clipping");
     m_refActionGroup->add(m_refClippingCustom,
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_clipping_custom) );
-    m_refClipping43 = Gtk::RadioAction::create(m_groupClipping, "ViewClipping43", "PAL 4:3");
+    m_refClipping43 = Gtk::RadioAction::create(clippingGroup, "ViewClipping43", "PAL 4:3");
     m_refActionGroup->add(m_refClipping43,
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_clipping_43) );
-    m_refClipping169 = Gtk::RadioAction::create(m_groupClipping, "ViewClipping169", "PAL 16:9");
+    m_refClipping169 = Gtk::RadioAction::create(clippingGroup, "ViewClipping169", "PAL 16:9");
     m_refActionGroup->add(m_refClipping169,
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_clipping_169) );
 
@@ -135,6 +138,12 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
 					      "Record", "Record"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_media_record));
 
+    // Menu: Channels
+    m_refActionGroup->add(Gtk::Action::create("ChannelMenu", "Channels"));
+    m_refActionGroup->add(Gtk::Action::create("ChannelNext", "_Next", "Switch to next channel"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_channel_next));
+    m_refActionGroup->add(Gtk::Action::create("ChannelPrevious", "_Previous", "Switch to previous channel"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_channel_previous));
     // Menu: Help
     m_refActionGroup->add( Gtk::Action::create("HelpMenu", "Help") );
     m_refActionGroup->add( Gtk::Action::create("HelpHelp", Gtk::Stock::HELP),
@@ -144,7 +153,7 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
 
     m_refUIManager = Gtk::UIManager::create();
     m_refUIManager->insert_action_group(m_refActionGroup);
-
+    m_refUIManager->insert_action_group(m_refActionGroupChannels);
 
     //Layout the actions in a menubar and toolbar:
     Glib::ustring ui_info =
@@ -191,6 +200,12 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
         "      <separator/>"
         "      <menuitem action='MediaRecord'/>"
         "    </menu>"
+	"    <menu action='ChannelMenu'>"
+	"      <menuitem action='ViewChannelConfigWindow'/>"
+	"      <menuitem action='ChannelPrevious'/>"
+	"      <menuitem action='ChannelNext'/>"
+        "      <separator/>"
+	"    </menu>"
         "    <menu action='HelpMenu'>"
         "      <menuitem action='HelpHelp'/>"
         "      <menuitem action='HelpAbout'/>"
@@ -230,6 +245,13 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
         "    <menuitem action='ViewClipping169'/>"
         "    <separator/>"
         "    <menuitem action='ViewControlWindow'/>"
+        "    <separator/>"
+	"    <menu action='ChannelMenu'>"
+	"      <menuitem action='ViewChannelConfigWindow'/>"
+	"      <menuitem action='ChannelNext'/>"
+	"      <menuitem action='ChannelPrevious'/>"
+        "      <separator/>"
+	"    </menu>"
         "    <separator/>"
         "    <menuitem action='ViewMenuBar'/>"
         "    <menuitem action='ViewToolBar'/>"
@@ -390,9 +412,11 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 	    break;
 	case GDK_Page_Up:
 	    on_media_previous();
+	    // on_channel_previous();
 	    break;
 	case GDK_Page_Down:
 	    on_media_next();
+	    // on_channel_next();
 	    break;
 	case GDK_Escape:
 	    m_MainWindow->unfullscreen();
@@ -403,7 +427,7 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 
 void SignalDispatcher::on_file_open()
 {
-    INFO();
+    DEBUG();
 
     Gtk::FileChooserDialog dialog("Please choose a file",
 				  Gtk::FILE_CHOOSER_ACTION_OPEN);
@@ -563,7 +587,6 @@ void SignalDispatcher::on_view_zoom_50()
 
 void SignalDispatcher::on_view_clipping_none()
 {
-    INFO();
     if (m_refClippingNone->get_active())
     {
 	signal_clip(boost::make_shared<ClipVideoSrcEvent>(getClipVideoSrcEventNone()));
@@ -572,7 +595,6 @@ void SignalDispatcher::on_view_clipping_none()
 
 void SignalDispatcher::on_view_clipping_custom()
 {
-    INFO();
     if (m_refClippingCustom->get_active())
     {
 
@@ -611,7 +633,6 @@ ClipVideoSrcEvent SignalDispatcher::getClipVideoSrcEvent169()
 
 void SignalDispatcher::on_view_clipping_43()
 {
-    INFO();
     if (m_refClipping43->get_active())
     {
 	signal_clip(boost::make_shared<ClipVideoSrcEvent>(getClipVideoSrcEvent43()));
@@ -620,7 +641,6 @@ void SignalDispatcher::on_view_clipping_43()
 
 void SignalDispatcher::on_view_clipping_169()
 {
-    INFO();
     if (m_refClipping169->get_active())
     {
 	signal_clip(boost::make_shared<ClipVideoSrcEvent>(getClipVideoSrcEvent169()));
@@ -667,7 +687,7 @@ bool operator==(const NotificationClipping& rect1, const ClipVideoSrcEvent& rect
 
 void SignalDispatcher::on_notification_clipping(const NotificationClipping& event)
 {
-    INFO( << "(" << event.left << "," << event.right << "," << event.top << "," << event.bottom << ")" );
+    DEBUG( << "(" << event.left << "," << event.right << "," << event.top << "," << event.bottom << ")" );
 
     if (event == getClipVideoSrcEventNone())
     {
@@ -805,6 +825,56 @@ void SignalDispatcher::on_media_record()
     INFO();
 }
 
+void SignalDispatcher::on_channel_next()
+{
+    DEBUG();
+    int size = m_ChannelSelectRadioAction.size();
+    if (size)
+    {
+	Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[0];
+	int c = ra->get_current_value();
+	c++;
+	if (c>=size) c = 0;
+	ra->set_current_value(c);
+    }
+}
+
+void SignalDispatcher::on_channel_previous()
+{
+    DEBUG();
+    int size = m_ChannelSelectRadioAction.size();
+    if (size)
+    {
+	Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[0];
+	int c = ra->get_current_value();
+	c--;
+	if (c<0) c = size-1;
+	ra->set_current_value(c);
+    }
+}
+
+void SignalDispatcher::on_channel_selected(int num)
+{
+    DEBUG(<< "channel = " << num);
+    Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[num];
+    if (ra && ra->get_active() && m_isEnabled_signalSetFrequency)
+    {
+	DEBUG(<< "active");
+	StationData& sd = m_ConfigurationData.stationList[num];
+
+	ChannelFrequencyTable cft = ChannelFrequencyTable::create(sd.standard.c_str());
+	int ch = ChannelFrequencyTable::getChannelNumber(cft, sd.channel.c_str());
+	int freq = ChannelFrequencyTable::getChannelFreq(cft, ch);
+
+	ChannelData channelData;
+	channelData.standard = sd.standard;
+	channelData.channel = sd.channel;
+	channelData.frequency = freq;
+	channelData.finetune = sd.fine;
+	signalSetFrequency(channelData);
+    }
+}
+
 void SignalDispatcher::on_help_help()
 {
     INFO();
@@ -895,4 +965,112 @@ void SignalDispatcher::on_set_volume(const NotificationCurrentVolume& vol)
     m_AdjustmentVolume.set_value(vol.volume);
     m_refMute->set_active(vol.enabled);
     acceptAdjustmentVolumeValueChanged = true;
+}
+
+void SignalDispatcher::on_configuration_data_changed(const ConfigurationData& configurationData)
+{
+    DEBUG();
+
+    m_ConfigurationData = configurationData;
+
+    // Remove menu entries from UIManager:
+    if (m_UiMergeIdChannels)
+    {
+	m_refUIManager->remove_ui(m_UiMergeIdChannels);
+    }
+
+    // Remove old action group from UIManager:
+    m_refUIManager->remove_action_group(m_refActionGroupChannels);
+
+    m_ChannelSelectRadioAction.clear();
+
+    // Create a new action goup
+    m_refActionGroupChannels = Gtk::ActionGroup::create();
+
+    // Add new channel selection menu entries:
+    Gtk::RadioAction::Group channelGroup;
+
+    Glib::ustring ui_info_channels;
+
+    StationList::const_iterator it = m_ConfigurationData.stationList.begin();
+    while(it != m_ConfigurationData.stationList.end())
+    {
+	const StationData& sd = *it;
+	int num = m_ChannelSelectRadioAction.size();
+	std::stringstream xmlName;
+	xmlName << "Channel" << num;
+	std::stringstream xmlCode;
+	xmlCode << "<menuitem action='" << xmlName.str() << "'/>";
+	ui_info_channels.append(xmlCode.str());
+	Glib::RefPtr<Gtk::RadioAction> refRadioAction = Gtk::RadioAction::create(channelGroup, xmlName.str(), sd.name);
+	refRadioAction->property_value().set_value(num);
+	m_refActionGroupChannels->add(refRadioAction, sigc::bind(sigc::mem_fun(this, &SignalDispatcher::on_channel_selected), num) );
+	m_ChannelSelectRadioAction.push_back(refRadioAction);
+
+	it++;
+    }
+
+    Glib::ustring ui_info;
+    ui_info.append("<ui><menubar name='MenuBar'><menu action='ChannelMenu'>");
+    ui_info.append(ui_info_channels);
+    ui_info.append("</menu></menubar>");
+    ui_info.append("<popup name='PopupMenu'><menu action='ChannelMenu'>");
+    ui_info.append(ui_info_channels);
+    ui_info.append("</menu></popup></ui>");
+
+    m_refUIManager->insert_action_group(m_refActionGroupChannels);
+
+#ifdef GLIBMM_EXCEPTIONS_ENABLED
+    try
+    {
+	m_UiMergeIdChannels = m_refUIManager->add_ui_from_string(ui_info);
+    }
+    catch(const Glib::Error& ex)
+    {
+	std::cerr << "building menus failed: " <<  ex.what();
+    }
+#else
+    std::auto_ptr<Glib::Error> ex;
+    m_UiMergeIdChannels = m_refUIManager->add_ui_from_string(ui_info, ex);
+    if(ex.get())
+    {
+	std::cerr << "building menus failed: " <<  ex->what();
+    }
+#endif //GLIBMM_EXCEPTIONS_ENABLED
+}
+
+void SignalDispatcher::on_tuner_channel_tuned(const ChannelData& channelData)
+{
+    DEBUG();
+
+    // Do not generate signalSetFrequency to avoid recursion:
+    TemporaryDisable d(m_isEnabled_signalSetFrequency);
+
+    int tunedFreq = channelData.getTunedFrequency();
+
+    int num = 0;
+    StationList::const_iterator it = m_ConfigurationData.stationList.begin();
+    while(it != m_ConfigurationData.stationList.end())
+    {
+	const StationData& sd = *it;
+
+	ChannelFrequencyTable cft = ChannelFrequencyTable::create(sd.standard.c_str());
+	int ch = ChannelFrequencyTable::getChannelNumber(cft, sd.channel.c_str());
+	int freq = ChannelFrequencyTable::getChannelFreq(cft, ch);
+
+	if (tunedFreq == freq + sd.fine)
+	{
+	    int size = m_ChannelSelectRadioAction.size();
+	    if (size)
+	    {
+		Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[0];
+
+		// Activate tuned channel in the RadioButtonGroup:
+		ra->set_current_value(num);
+	    }
+	}
+
+	num++;
+	it++;
+    }
 }

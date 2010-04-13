@@ -7,7 +7,9 @@
 #ifndef SIGNAL_DISPATCHER_HPP
 #define SIGNAL_DISPATCHER_HPP
 
+#include "common/GeneralEvents.hpp"
 #include "player/GeneralEvents.hpp"
+#include "receiver/GeneralEvents.hpp"
 #include "platform/timer.hpp"
 
 #include <boost/shared_ptr.hpp>
@@ -25,6 +27,8 @@ class PlayList;
 
 class SignalDispatcher
 {
+    friend class MainWindow;
+
 public:
     sigc::signal<void, bool> showControlWindow;
     sigc::signal<void, bool> showChannelConfigWindow;
@@ -43,6 +47,7 @@ public:
     sigc::signal<void> signal_skip_back;
     sigc::signal<void, double> signal_playback_volume;
     sigc::signal<void, bool> signal_playback_switch;
+    sigc::signal<void, const ChannelData&> signalSetFrequency;
 
     SignalDispatcher(PlayList& playList);
     ~SignalDispatcher();
@@ -74,6 +79,9 @@ public:
     void on_set_time(double seconds);
     void on_set_volume(const NotificationCurrentVolume& vol);
 
+    void on_configuration_data_changed(const ConfigurationData& configurationData);
+    void on_tuner_channel_tuned(const ChannelData& channelData);
+
 private:
     // Slots:
     virtual void on_file_open();
@@ -103,6 +111,9 @@ private:
     virtual void on_media_forward();
     virtual void on_media_rewind();
     virtual void on_media_record();
+    virtual void on_channel_next();
+    virtual void on_channel_previous();
+    virtual void on_channel_selected(int num);
     virtual void on_help_help();
     virtual void on_help_about();
     virtual void on_position_changed();
@@ -115,10 +126,11 @@ private:
 
     PlayList& m_PlayList;
 
-    Gtk::RadioAction::Group m_groupClipping;
+    Gtk::UIManager::ui_merge_id m_UiMergeIdChannels;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
+    Glib::RefPtr<Gtk::ActionGroup> m_refActionGroupChannels;
     Glib::RefPtr<Gtk::Action> m_refActionPlay;
     Glib::RefPtr<Gtk::Action> m_refActionPause;
     Glib::RefPtr<Gtk::RadioAction> m_refClippingNone;
@@ -162,6 +174,10 @@ private:
     Visible m_visibleWindow;
     Visible* m_visible;
     bool m_fullscreen;
+
+    ConfigurationData m_ConfigurationData;
+    std::vector<Glib::RefPtr<Gtk::RadioAction> > m_ChannelSelectRadioAction;
+    bool m_isEnabled_signalSetFrequency;
 };
 
 #endif
