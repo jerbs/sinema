@@ -35,7 +35,8 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
       m_visibleWindow(true,true,true),
       m_visible(&m_visibleWindow),
       m_fullscreen(false),
-      m_isEnabled_signalSetFrequency(true)
+      m_isEnabled_signalSetFrequency(true),
+      m_tunedFrequency(0)
 {
     // Create actions for menus and toolbars:
     m_refActionGroup = Gtk::ActionGroup::create();
@@ -997,6 +998,13 @@ void SignalDispatcher::on_set_volume(const NotificationCurrentVolume& vol)
     acceptAdjustmentVolumeValueChanged = true;
 }
 
+int getTunerFrequency(const StationData& sd)
+{
+    ChannelFrequencyTable cft = ChannelFrequencyTable::create(sd.standard.c_str());
+    int ch = ChannelFrequencyTable::getChannelNumber(cft, sd.channel.c_str());
+    return ChannelFrequencyTable::getChannelFreq(cft, ch) + sd.fine;
+}
+
 void SignalDispatcher::on_configuration_data_changed(const ConfigurationData& configurationData)
 {
     DEBUG();
@@ -1020,6 +1028,12 @@ void SignalDispatcher::on_configuration_data_changed(const ConfigurationData& co
     // Add new channel selection menu entries:
     Gtk::RadioAction::Group channelGroup;
 
+    // Add invisible element to radio button group as first element.
+    // It is enabled by default, i.e. none of the visible buttons is enabled.
+    // This indicates that none of the configured channels is tuned.
+    m_refNoChannel = Gtk::RadioAction::create(channelGroup, "ChannelNone", "No Channel");
+    m_refNoChannel->property_value().set_value(-1);
+
     Glib::ustring ui_info_channels;
 
     StationList::const_iterator it = m_ConfigurationData.stationList.begin();
@@ -1036,6 +1050,11 @@ void SignalDispatcher::on_configuration_data_changed(const ConfigurationData& co
 	refRadioAction->property_value().set_value(num);
 	m_refActionGroupChannels->add(refRadioAction, sigc::bind(sigc::mem_fun(this, &SignalDispatcher::on_channel_selected), num) );
 	m_ChannelSelectRadioAction.push_back(refRadioAction);
+
+	if (m_tunedFrequency == getTunerFrequency(sd))
+	{
+	    refRadioAction->set_current_value(num);
+	}
 
 	it++;
     }
@@ -1073,22 +1092,19 @@ void SignalDispatcher::on_tuner_channel_tuned(const ChannelData& channelData)
 {
     DEBUG();
 
+    // This slot may be triggered before the channel list is available.
+
     // Do not generate signalSetFrequency to avoid recursion:
     TemporaryDisable d(m_isEnabled_signalSetFrequency);
 
-    int tunedFreq = channelData.getTunedFrequency();
+    m_tunedFrequency = channelData.getTunedFrequency();
 
     int num = 0;
     StationList::const_iterator it = m_ConfigurationData.stationList.begin();
     while(it != m_ConfigurationData.stationList.end())
     {
 	const StationData& sd = *it;
-
-	ChannelFrequencyTable cft = ChannelFrequencyTable::create(sd.standard.c_str());
-	int ch = ChannelFrequencyTable::getChannelNumber(cft, sd.channel.c_str());
-	int freq = ChannelFrequencyTable::getChannelFreq(cft, ch);
-
-	if (tunedFreq == freq + sd.fine)
+	if (m_tunedFrequency == getTunerFrequency(sd))
 	{
 	    int size = m_ChannelSelectRadioAction.size();
 	    if (size)
@@ -1098,9 +1114,16 @@ void SignalDispatcher::on_tuner_channel_tuned(const ChannelData& channelData)
 		// Activate tuned channel in the RadioButtonGroup:
 		ra->set_current_value(num);
 	    }
+	    return;
 	}
 
 	num++;
 	it++;
+    }
+
+    if (m_refNoChannel)
+    {
+	// Select the invisible radio action:
+	m_refNoChannel->set_current_value(-1);
     }
 }

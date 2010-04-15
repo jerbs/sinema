@@ -246,11 +246,20 @@ void ChannelConfigWindow::on_tuner_channel_tuned(const ChannelData& channelData)
 
 void ChannelConfigWindow::on_tuner_signal_detected(const ChannelData& channelData)
 {
-    DEBUG();
+    if (channelData.standard.empty())
+    {
+	// This is the first ChannelData event from the receiver. It contains 
+	// the frequency configured in the tuner before the application started.
+	// The strings standard and channel are empty. The code below would
+	// add a new entry to the channel list. This is not wanted.
+	return;
+    }
+
     std::stringstream ss;
     ss << "Signal " << channelData.standard
        << ", " << channelData.channel
        << ", " << channelData.getTunedFrequency()/1000.0 << " MHz";
+    DEBUG(<< ss.str());
     m_StatusBarMessage.set_text(ss.str());
 
     {
@@ -558,7 +567,7 @@ void ChannelConfigWindow::saveConfigurationData()
 	return;
     }
 
-    std::cout << __PRETTY_FUNCTION__ << std::endl;
+    DEBUG(<< __PRETTY_FUNCTION__);
 
     ConfigurationData configurationData;
     StationList& stationList = configurationData.stationList;

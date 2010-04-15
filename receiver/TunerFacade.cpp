@@ -26,6 +26,10 @@ void TunerFacade::process(boost::shared_ptr<TunerOpen> event)
     {
         ERROR( << "Failed to open " << device << ": " << strerror(errno) );
     }
+    else
+    {
+	getFrequency();
+    }
 }
 
 void TunerFacade::process(boost::shared_ptr<TunerClose> event)
@@ -49,6 +53,26 @@ void TunerFacade::process(boost::shared_ptr<TunerTuneChannel> event)
     setFrequency(event->channelData);
 }
 
+void TunerFacade::getFrequency()
+{
+    struct v4l2_frequency vf;
+    vf.tuner = 0;
+    vf.type = V4L2_TUNER_ANALOG_TV;
+    vf.frequency = 0;
+    memset(vf.reserved, 0, sizeof(vf.reserved));
+
+    int result = ioctl(fd, VIDIOC_G_FREQUENCY, &vf);
+    if (result < 0)
+    {
+        ERROR( << "ioctl VIDIOC_G_FREQUENCY failed: " << strerror(errno) );
+	return;
+    }
+
+    tunedChannelData.frequency = (vf.frequency * 1000) / 16;
+    mediaReceiver->queue_event(boost::make_shared<TunerNotifyChannelTuned>(tunedChannelData));
+    detectSignal();
+}
+
 void TunerFacade::setFrequency(const ChannelData& channelData)
 {
     struct v4l2_frequency vf;
@@ -66,9 +90,13 @@ void TunerFacade::setFrequency(const ChannelData& channelData)
     }
 
     tunedChannelData = channelData;
-    signalDetected = false;
-
     mediaReceiver->queue_event(boost::make_shared<TunerNotifyChannelTuned>(channelData));
+    detectSignal();
+}
+
+void TunerFacade::detectSignal()
+{
+    signalDetected = false;
 
     signalDetectionTimer.relative(signalDetectionTime);
     retry = 0;

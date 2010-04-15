@@ -85,6 +85,8 @@ private:
 
     void process(boost::shared_ptr<TunerStartScan> event);
 
+    void detectSignal();
+    void getFrequency();
     void setFrequency(const ChannelData& channelData);
     void setScanningFrequency();
 

@@ -178,6 +178,8 @@ private:
     ConfigurationData m_ConfigurationData;
     std::vector<Glib::RefPtr<Gtk::RadioAction> > m_ChannelSelectRadioAction;
     bool m_isEnabled_signalSetFrequency;
+    Glib::RefPtr<Gtk::RadioAction> m_refNoChannel;
+    int m_tunedFrequency;
 };
 
 #endif
