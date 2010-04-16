@@ -1,10 +1,12 @@
 //
 // Play List
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include "player/PlayList.hpp"
+
+#include <algorithm>
 
 void PlayList::append(std::string file)
 {
@@ -75,4 +77,15 @@ bool PlayList::selectPrevious()
 	// No previous element
 	return false;
     }
+}
+
+bool PlayList::select(std::string file)
+{
+    ListIter_t it = find(m_list.begin(), m_list.end(), file);
+    if (it == m_list.end())
+    {
+	return false;
+    }
+    m_current = it;
+    return true;
 }

@@ -1,7 +1,7 @@
 //
 // Play List
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #ifndef PLAY_LIST_HPP
@@ -25,6 +25,7 @@ public:
     std::string getCurrent();
     bool selectNext();
     bool selectPrevious();
+    bool select(std::string file);
 
 private:
     typedef std::list<std::string> List_t;

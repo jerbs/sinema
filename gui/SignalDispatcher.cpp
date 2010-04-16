@@ -891,6 +891,17 @@ void SignalDispatcher::on_channel_selected(int num)
 	channelData.frequency = freq;
 	channelData.finetune = sd.fine;
 	signalSetFrequency(channelData);
+
+	std::string device = "/dev/video0";
+	if (m_PlayList.getCurrent() != device)
+	{
+	    if (!m_PlayList.select(device))
+	    {
+		m_PlayList.append(device);
+	    }
+	    on_media_stop();
+	}
+	on_media_play();
     }
 }
 
