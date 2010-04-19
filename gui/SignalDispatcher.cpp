@@ -1064,6 +1064,9 @@ void SignalDispatcher::on_configuration_data_changed(const ConfigurationData& co
 
 	if (m_tunedFrequency == getTunerFrequency(sd))
 	{
+	    // This is the deferred activation of the RadioAction.
+	    // m_tunedFrequency was stored in on_tuner_channel_tuned.
+	    TemporaryDisable d(m_isEnabled_signalSetFrequency);
 	    refRadioAction->set_current_value(num);
 	}
 
@@ -1104,6 +1107,9 @@ void SignalDispatcher::on_tuner_channel_tuned(const ChannelData& channelData)
     DEBUG();
 
     // This slot may be triggered before the channel list is available.
+    // In that case the station list is still empty and setting the
+    // RadioAction has to be deferred. The deferred activation of the
+    // RadioAction is done in on_configuration_data_changed.
 
     // Do not generate signalSetFrequency to avoid recursion:
     TemporaryDisable d(m_isEnabled_signalSetFrequency);
