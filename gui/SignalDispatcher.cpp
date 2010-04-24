@@ -19,10 +19,10 @@
 #include "gui/ControlWindow.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
-#include "player/PlayList.hpp"
+#include "gui/GtkmmPlayList.hpp"
 #include "receiver/ChannelFrequencyTable.hpp"
 
-SignalDispatcher::SignalDispatcher(PlayList& playList)
+SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
     : m_MainWindow(0),
       m_PlayList(playList),
       m_UiMergeIdChannels(0),
@@ -100,6 +100,10 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
     m_refChannelConfigWindowVisible = Gtk::ToggleAction::create("ViewChannelConfigWindow", "Channel Config Window");
     m_refChannelConfigWindowVisible->set_active(false);
     m_refActionGroup->add(m_refChannelConfigWindowVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_channelconfigwindow) );
+
+    m_refPlayListWindowVisible = Gtk::ToggleAction::create("ViewPlayListWindow", "Play List Window");
+    m_refPlayListWindowVisible->set_active(false);
+    m_refActionGroup->add(m_refPlayListWindowVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_playlistwindow) );
 
     m_refMenuBarVisible = Gtk::ToggleAction::create("ViewMenuBar", "Menu Bar");
     m_refMenuBarVisible->set_active(true);
@@ -182,6 +186,7 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
         "      <separator/>"
         "      <menuitem action='ViewControlWindow'/>"
         "      <menuitem action='ViewChannelConfigWindow'/>"
+        "      <menuitem action='ViewPlayListWindow'/>"
         "      <separator/>"
         "      <menuitem action='ViewMute'/>"
         "      <separator/>"
@@ -246,6 +251,7 @@ SignalDispatcher::SignalDispatcher(PlayList& playList)
         "    <menuitem action='ViewClipping169'/>"
         "    <separator/>"
         "    <menuitem action='ViewControlWindow'/>"
+        "    <menuitem action='ViewPlayListWindow'/>"
         "    <separator/>"
 	"    <menu action='ChannelMenu'>"
 	"      <menuitem action='ViewChannelConfigWindow'/>"
@@ -487,7 +493,7 @@ void SignalDispatcher::on_file_open()
 
 	    // Use address of PlayList, otherwise the object is copied.
 	    for_each(filenames.begin(), filenames.end(),
-		     boost::bind(&PlayList::append, &m_PlayList, _1));
+		     boost::bind(&GtkmmPlayList::append, &m_PlayList, _1));
 
 	    // Start playing the new list:
 	    on_media_stop();
@@ -666,6 +672,10 @@ void SignalDispatcher::on_view_clipping_169()
     }
 }
 
+bool SignalDispatcher::on_channel_config_window_state_event(GdkEventWindowState* event)
+{
+}
+
 bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)
 {
 }
@@ -689,6 +699,10 @@ bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
     m_refStatusBarVisible->set_active(m_visible->statusBar);
 
     return false;
+}
+
+bool SignalDispatcher::on_play_list_window_state_event(GdkEventWindowState* event)
+{
 }
 
 void SignalDispatcher::on_notification_video_size(const NotificationVideoSize& event)
@@ -734,6 +748,11 @@ void SignalDispatcher::on_view_controlwindow()
 void SignalDispatcher::on_view_channelconfigwindow()
 {
     showChannelConfigWindow(m_refChannelConfigWindowVisible->get_active());
+}
+
+void SignalDispatcher::on_view_playlistwindow()
+{
+    showPlayListWindow(m_refPlayListWindowVisible->get_active());
 }
     
 void SignalDispatcher::on_view_menubar()
@@ -876,6 +895,7 @@ void SignalDispatcher::on_channel_selected(int num)
 {
     DEBUG(<< "channel = " << num);
     Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[num];
+
     if (ra && ra->get_active() && m_isEnabled_signalSetFrequency)
     {
 	DEBUG(<< "active");

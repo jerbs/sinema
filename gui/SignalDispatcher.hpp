@@ -23,7 +23,7 @@
 
 class MainWindow;
 class ControlWindow;
-class PlayList;
+class GtkmmPlayList;
 
 class SignalDispatcher
 {
@@ -32,6 +32,7 @@ class SignalDispatcher
 public:
     sigc::signal<void, bool> showControlWindow;
     sigc::signal<void, bool> showChannelConfigWindow;
+    sigc::signal<void, bool> showPlayListWindow;
     sigc::signal<void> hideMainWindow;
     sigc::signal<void, double> zoomMainWindow;
     sigc::signal<void> ignoreWindowResize;
@@ -49,7 +50,7 @@ public:
     sigc::signal<void, bool> signal_playback_switch;
     sigc::signal<void, const ChannelData&> signalSetFrequency;
 
-    SignalDispatcher(PlayList& playList);
+    SignalDispatcher(GtkmmPlayList& playList);
     ~SignalDispatcher();
 
     Glib::RefPtr<Gtk::UIManager> getUIManager();
@@ -68,8 +69,10 @@ public:
     // Slots:
     bool on_button_press_event(GdkEventButton* event);
     bool on_key_press_event(GdkEventKey* event);
+    bool on_channel_config_window_state_event(GdkEventWindowState* event);
     bool on_control_window_state_event(GdkEventWindowState* event);
     bool on_main_window_state_event(GdkEventWindowState* event);
+    bool on_play_list_window_state_event(GdkEventWindowState* event);
     void on_notification_video_size(const NotificationVideoSize& event);
     void on_notification_clipping(const NotificationClipping& event);
     void on_notification_file_closed();
@@ -100,6 +103,7 @@ private:
     virtual void on_view_clipping_169();
     virtual void on_view_controlwindow();
     virtual void on_view_channelconfigwindow();
+    virtual void on_view_playlistwindow();
     virtual void on_view_menubar();
     virtual void on_view_toolbar();
     virtual void on_view_statusbar();
@@ -124,7 +128,7 @@ private:
 
     MainWindow* m_MainWindow;
 
-    PlayList& m_PlayList;
+    GtkmmPlayList& m_PlayList;
 
     Gtk::UIManager::ui_merge_id m_UiMergeIdChannels;
 
@@ -140,6 +144,7 @@ private:
     Glib::RefPtr<Gtk::ToggleAction> m_refMute;
     Glib::RefPtr<Gtk::ToggleAction> m_refControlWindowVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refChannelConfigWindowVisible;
+    Glib::RefPtr<Gtk::ToggleAction> m_refPlayListWindowVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refMenuBarVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refToolBarVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refStatusBarVisible;

@@ -8,7 +8,16 @@
 
 #include <algorithm>
 
-void PlayList::append(std::string file)
+PlayList::PlayList()
+    : m_current(m_list.begin())
+{
+}
+
+PlayList::~PlayList()
+{
+}
+
+PlayList::iterator PlayList::append(std::string file)
 {
     m_list.push_back(file);
 
@@ -17,21 +26,25 @@ void PlayList::append(std::string file)
 	// Added first element
 	m_current = m_list.begin();
     }
+
+    return --m_list.end();
 }
 
-void PlayList::erase()
+bool PlayList::erase()
 {
-    ListIter_t tmp = m_current;
     if (m_current != m_list.end())
     {
 	m_current = m_list.erase(m_current);
+	return true;
     }
+
+    return false;
 }
 
 void PlayList::clear()
 {
     m_list.clear();
-    m_current = m_list.begin();
+    m_current = m_list.end();
 }
 
 std::string PlayList::getCurrent()
@@ -46,9 +59,28 @@ std::string PlayList::getCurrent()
     }
 }
 
+int PlayList::getCurrentIndex()
+{
+    // If nothing is selected, then this function returns
+    // an invalid index.
+    int n = 0;
+    iterator it = m_list.begin();
+    while (it != m_list.end())
+    {
+	if (it == m_current)
+	{
+	    return n;
+	}
+	it++;
+    }
+
+    // Here n is the list size.
+    return n;    
+}
+
 bool PlayList::selectNext()
 {
-    ListIter_t tmp = m_current;
+    iterator tmp = m_current;
     // end() is the position after the last element
     if (++tmp != m_list.end())
     {
@@ -81,11 +113,23 @@ bool PlayList::selectPrevious()
 
 bool PlayList::select(std::string file)
 {
-    ListIter_t it = find(m_list.begin(), m_list.end(), file);
+    iterator it = find(m_list.begin(), m_list.end(), file);
     if (it == m_list.end())
     {
 	return false;
     }
     m_current = it;
     return true;
+}
+
+int PlayList::size()
+{
+    return m_list.size();
+}
+
+std::string PlayList::operator[](int n)
+{
+    iterator it = m_list.begin();
+    while(n-->0) it++;
+    return *it;
 }

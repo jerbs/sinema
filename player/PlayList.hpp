@@ -9,30 +9,33 @@
 
 #include <list>
 #include <string>
+#include <vector>
 
 class PlayList
 {
 public:
-    PlayList()
-	: m_current(m_list.begin())
-    {}
-    ~PlayList() {}
+    typedef std::list<std::string> list;
+    typedef list::iterator iterator;
 
-    void append(std::string file);
-    void erase();  // Remove the current play list entry and select the next one.
-    void clear();  // Remove all play list entries.
+    PlayList();
+    virtual ~PlayList();
+
+    virtual iterator append(std::string file);
+    virtual bool erase();  // Remove the current play list entry and select the next one.
+    virtual void clear();  // Remove all play list entries.
 
     std::string getCurrent();
+    int getCurrentIndex();
     bool selectNext();
     bool selectPrevious();
     bool select(std::string file);
+    int size();
+    std::string operator[](int);
+
 
 private:
-    typedef std::list<std::string> List_t;
-    typedef List_t::iterator ListIter_t;
-
-    List_t m_list;
-    ListIter_t m_current;
+    list m_list;
+    iterator m_current;
 };
 
 #endif

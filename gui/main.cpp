@@ -13,6 +13,7 @@
 #include "gui/GtkmmMediaReceiver.hpp"
 #include "gui/GtkmmMediaCommon.hpp"
 #include "gui/MainWindow.hpp"
+#include "gui/PlayListWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
 #ifdef SYNCTEST
@@ -32,7 +33,7 @@ int main(int argc, char *argv[])
 	exit(-1);
     }
 
-    PlayList playList;
+    GtkmmPlayList playList;
     for (int i=1; i<argc; i++)
 	playList.append(std::string(argv[i]));
 
@@ -45,6 +46,7 @@ int main(int argc, char *argv[])
     SignalDispatcher signalDispatcher(playList);
     ControlWindow controlWindow(signalDispatcher);
     ChannelConfigWindow channelConfigWindow;
+    PlayListWindow playListWindow(playList);
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
 
     controlWindow.set_transient_for(mainWindow);
@@ -119,6 +121,10 @@ int main(int argc, char *argv[])
     channelConfigWindow.signalStartScan.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::startFrequencyScan) );
 
     // ---------------------------------------------------------------
+    // Signals: ChannelConfigWindow -> SignalDispatcher
+    channelConfigWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_channel_config_window_state_event));
+    channelConfigWindow.signalConfigurationDataChanged.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
+
     // Signals: SignalDispatcher -> ChannelConfigWindow
     signalDispatcher.showChannelConfigWindow.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_show_window) );
 
@@ -130,12 +136,15 @@ int main(int argc, char *argv[])
     channelConfigWindow.signalConfigurationDataChanged.connect(sigc::mem_fun(&mediaCommon, &MediaCommon::saveConfigurationData) );
 
     // ---------------------------------------------------------------
-    // Signals: ChannelConfigWindow -> SignalDispatcher
-    channelConfigWindow.signalConfigurationDataChanged.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
-
-    // ---------------------------------------------------------------
     // Signals: GtkmmMediaCommon -> SignalDispatcher
     mediaCommon.signal_configuration_data_loaded.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
+
+    // ---------------------------------------------------------------
+    // Signals: PlayListWindow -> SignalDispatcher
+    playListWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_play_list_window_state_event));
+
+    // Signals: SignalDispatcher -> PlayListWindow
+    signalDispatcher.showPlayListWindow.connect( sigc::mem_fun(&playListWindow, &PlayListWindow::on_show_window) );
 
     // ---------------------------------------------------------------
     // Signals: SignalDispatcher -> GtkmmMediaReceiver
