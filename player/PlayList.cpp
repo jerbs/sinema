@@ -19,12 +19,12 @@ PlayList::~PlayList()
 
 PlayList::iterator PlayList::append(std::string file)
 {
+    bool currentIsEndOfList = (m_current == m_list.end());
     m_list.push_back(file);
-
-    if (m_current == m_list.end())
+    if (currentIsEndOfList)
     {
-	// Added first element
-	m_current = m_list.begin();
+	m_current = --m_list.end();
+	return m_current;
     }
 
     return --m_list.end();
@@ -120,6 +120,11 @@ bool PlayList::select(std::string file)
     }
     m_current = it;
     return true;
+}
+
+void PlayList::selectEndOfList()
+{
+    m_current = m_list.end();
 }
 
 int PlayList::size()

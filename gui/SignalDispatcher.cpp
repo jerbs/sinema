@@ -488,8 +488,8 @@ void SignalDispatcher::on_file_open()
 		     std::ostream_iterator<std::string>(traceUnit, "\n"));
 	    }
 
-	    // Clear existing play list:
-	    m_PlayList.clear();
+	    // Select end of list, i.e. the next appended file is selected:
+	    m_PlayList.selectEndOfList();
 
 	    // Use address of PlayList, otherwise the object is copied.
 	    for_each(filenames.begin(), filenames.end(),
