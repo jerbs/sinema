@@ -528,12 +528,16 @@ void SignalDispatcher::on_file_close()
 	// No entry selected, i.e. closed last file.
 	
 	// Select first file, but do not start playback:
-	while(m_PlayList.selectPrevious()){}
+	m_PlayList.selectFirst();
     }
     else
     {
-	// Start playing the next file:
-	on_media_play();
+	if (!m_refActionPlay->get_visible())
+	{
+	    // Play button is not visible, i.e. player is playing.
+	    // Start playing the next file:
+	    on_media_play();
+	}
     }
 }
 
@@ -987,7 +991,7 @@ void SignalDispatcher::on_notification_file_closed()
 	// MediaPlayer finished playing the last file of the play list.
 
 	// Select first file, but do not start playback:
-	while(m_PlayList.selectPrevious()){}
+	m_PlayList.selectFirst();
     }
 }
 

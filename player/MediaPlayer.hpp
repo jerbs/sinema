@@ -96,6 +96,8 @@ private:
 
     void process(boost::shared_ptr<AudioSyncInfo> event);
 
+    bool skipForwardInt();
+
     bool endOfAudioStream;
     bool endOfVideoStream;
 

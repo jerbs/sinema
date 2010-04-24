@@ -164,11 +164,20 @@ void MediaPlayer::skipBack()
 
 void MediaPlayer::skipForward()
 {
+    skipForwardInt();
+}
+
+bool MediaPlayer::skipForwardInt()
+{
     if (m_PlayList.selectNext())
     {
 	close();
 	open();
+	return true;
     }
+
+    // No next file in play list.
+    return false;
 }
 
 void MediaPlayer::seekAbsolute(double second)
@@ -242,7 +251,12 @@ void MediaPlayer::process(boost::shared_ptr<EndOfAudioStream> event)
     if (endOfVideoStream)
     {
 	close();
-	skipForward();
+	if (!skipForwardInt())
+	{
+	    // skipForward only skips until the last file is selected.
+	    // Application should see that the whole play list is finished:
+	    m_PlayList.selectEndOfList();
+	}
     }
 }
 
@@ -253,7 +267,12 @@ void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream> event)
     if (endOfAudioStream)
     {
 	close();
-	skipForward();
+	if (!skipForwardInt())
+	{
+	    // skipForward only skips until the last file is selected.
+	    // Application should see that the whole play list is finished:
+	    m_PlayList.selectEndOfList();
+	}
     }
 }
 

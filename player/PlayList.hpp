@@ -29,6 +29,7 @@ public:
     bool selectNext();
     bool selectPrevious();
     bool select(std::string file);
+    bool selectFirst();
     void selectEndOfList();
     int size();
     std::string operator[](int);

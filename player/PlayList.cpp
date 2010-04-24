@@ -122,6 +122,12 @@ bool PlayList::select(std::string file)
     return true;
 }
 
+bool PlayList::selectFirst()
+{
+    m_current = m_list.begin();
+    return (m_current != m_list.end());
+}
+
 void PlayList::selectEndOfList()
 {
     m_current = m_list.end();
