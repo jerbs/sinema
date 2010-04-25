@@ -41,6 +41,13 @@ Glib::RefPtr<PlayListTreeModel> PlayListTreeModel::create(GtkmmPlayList& playLis
     return Glib::RefPtr<PlayListTreeModel>( new PlayListTreeModel(playList) );
 }
 
+void PlayListTreeModel::setCurrent(const Gtk::TreeModel::iterator& iter)
+{
+    int row_index = get_row_index(iter);
+    PlayList::iterator it = m_PlayList.nth(row_index);
+    m_PlayList.select(it);
+}
+
 // -------------------------------------------------------------------
 // TreeModel overrides:
 

@@ -27,6 +27,10 @@
 class PlayListWindow : public Gtk::Window
 {
 public:
+    sigc::signal<void> signal_open;
+    sigc::signal<void> signal_play;
+    sigc::signal<void> signal_close;
+
     PlayListWindow(GtkmmPlayList& playList);
     virtual ~PlayListWindow();
 
@@ -50,7 +54,7 @@ private:
     virtual void on_remove_entry();
     virtual void on_clear_all_entries();
 
-    void playEntry(const Gtk::TreeRow& row);
+    void playEntry(const Gtk::TreeModel::iterator&);
 
     Gtk::Menu* getPopupMenuWidget();
 

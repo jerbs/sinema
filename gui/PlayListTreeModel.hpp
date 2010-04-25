@@ -26,6 +26,8 @@ public:
 
     static Glib::RefPtr<PlayListTreeModel> create(GtkmmPlayList& playList);
 
+    void setCurrent(const Gtk::TreeModel::iterator&);
+
 protected:
     // ---------------------------------
     // TreeModel overrides:

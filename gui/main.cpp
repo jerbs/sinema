@@ -147,6 +147,12 @@ int main(int argc, char *argv[])
     signalDispatcher.showPlayListWindow.connect( sigc::mem_fun(&playListWindow, &PlayListWindow::on_show_window) );
 
     // ---------------------------------------------------------------
+    // Signals: PlayListWindow -> GtkmmMediaPlayer
+    playListWindow.signal_open.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::open) );
+    playListWindow.signal_play.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::play) );
+    playListWindow.signal_close.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::close) );
+
+    // ---------------------------------------------------------------
     // Signals: SignalDispatcher -> GtkmmMediaReceiver
     signalDispatcher.signalSetFrequency.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::setFrequency) );
 

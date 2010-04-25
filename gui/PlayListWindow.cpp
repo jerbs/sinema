@@ -138,8 +138,7 @@ void PlayListWindow::on_row_activated (const Gtk::TreeModel::Path& path,
     Gtk::TreeModel::iterator iter = m_refTreeModel->get_iter(path);
     if (iter)
     {
-	Gtk::TreeRow row = *iter;
-	playEntry(row);
+	playEntry(iter);
     }
 }
 
@@ -217,8 +216,7 @@ void PlayListWindow::on_play_entry()
     Gtk::TreeModel::iterator iter = selection->get_selected();
     if (iter)
     {
-	Gtk::TreeRow row = *iter;
-	playEntry(row);
+	playEntry(iter);
     }
 }
 
@@ -238,9 +236,12 @@ void PlayListWindow::on_clear_all_entries()
 {
 }
 
-void PlayListWindow::playEntry(const Gtk::TreeRow& row)
+void PlayListWindow::playEntry(const Gtk::TreeModel::iterator& it)
 {
-    // to be implemented
+    m_refTreeModel->setCurrent(it);
+    signal_close();
+    signal_open();
+    signal_play();
 }
 
 Gtk::Menu* PlayListWindow::getPopupMenuWidget()
