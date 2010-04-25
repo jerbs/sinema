@@ -5,13 +5,26 @@
 //
 
 #include "gui/GtkmmPlayList.hpp"
+#include "platform/Logging.hpp"
 
 PlayList::iterator GtkmmPlayList::append(std::string file)
 {
     path p(1, size());
-    PlayList::iterator it = base::append(file);
+    iterator it = base::append(file);
     signal_entry_inserted(p, it);
     return it;
+}
+
+void GtkmmPlayList::clear()
+{
+    int n = size();
+    while(n)
+    {
+	n--;
+	path p(1, n);
+	signal_entry_deleted(p);
+    }
+    base::clear();
 }
 
 bool GtkmmPlayList::erase()
@@ -26,14 +39,31 @@ bool GtkmmPlayList::erase()
     return false;
 }
 
-void GtkmmPlayList::clear()
+bool GtkmmPlayList::erase(int n)
 {
-    int n = size();
-    while(n)
+    if (base::erase(n))
     {
-	n--;
 	path p(1, n);
 	signal_entry_deleted(p);
+	return true;
     }
-    base::clear();
+    return false;
+}
+
+PlayList::iterator GtkmmPlayList::insert(int n, std::string elem)
+{
+    iterator it = base::insert(n, elem);
+    if (it != end())
+    {
+	path p(1, n);
+	signal_entry_inserted(p, it);
+    }
+    return it;
+}
+
+void GtkmmPlayList::on_entry_changed(int n, iterator it)
+{
+    DEBUG(<< n);
+    path p(1, n);
+    signal_entry_changed(p, it);
 }

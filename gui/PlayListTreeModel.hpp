@@ -11,10 +11,14 @@
 
 #include <gtkmm/treemodel.h>
 #include <gtkmm/treepath.h>
+#include <gtkmm/treedragsource.h>
+#include <gtkmm/treedragdest.h>
 
 class PlayListTreeModel
   : public Glib::Object,
-    public Gtk::TreeModel
+    public Gtk::TreeModel,
+    public Gtk::TreeDragSource,
+    public Gtk::TreeDragDest
 {
 public:
     PlayListTreeModel(GtkmmPlayList& playList);
@@ -23,6 +27,8 @@ public:
     static Glib::RefPtr<PlayListTreeModel> create(GtkmmPlayList& playList);
 
 protected:
+    // ---------------------------------
+    // TreeModel overrides:
     virtual Gtk::TreeModelFlags get_flags_vfunc() const;
     virtual int get_n_columns_vfunc() const;
     virtual GType get_column_type_vfunc(int index) const;
@@ -48,11 +54,21 @@ protected:
     // on_row_deleted
     // on_rows_reordered
 
+    // ---------------------------------
+    // TreeDragSource overrides:
+    virtual bool row_draggable_vfunc(const TreeModel::Path&  path) const;
+    virtual bool drag_data_get_vfunc(const TreeModel::Path& path, Gtk::SelectionData& selection_data) const;
+    virtual bool drag_data_delete_vfunc(const TreeModel::Path& path);
+
+    // ---------------------------------
+    // TreeDragDest overrides:
+    virtual bool drag_data_received_vfunc(const TreeModel::Path&  dest, const Gtk::SelectionData&  selection_data);
+    virtual bool row_drop_possible_vfunc(const TreeModel::Path& dest, const Gtk::SelectionData& selection_data) const;
+
 private:
     void on_entry_changed(const GtkmmPlayList::path&, const PlayList::iterator&);
     void on_entry_inserted(const GtkmmPlayList::path&, const PlayList::iterator&);
     void on_entry_deleted(const GtkmmPlayList::path&);
-    void on_active_entry_changed(const GtkmmPlayList::path&, const PlayList::iterator&);
 
     GtkmmPlayList& m_PlayList;
 

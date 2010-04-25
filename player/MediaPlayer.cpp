@@ -5,6 +5,7 @@
 //
 
 #include "player/MediaPlayer.hpp"
+#include "player/PlayList.hpp"
 
 #include <boost/make_shared.hpp>
 

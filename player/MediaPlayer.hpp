@@ -17,9 +17,10 @@
 #include "player/AudioDecoder.hpp"
 #include "player/VideoOutput.hpp"
 #include "player/AudioOutput.hpp"
-#include "player/PlayList.hpp"
 
 #include "platform/event_receiver.hpp"
+
+class PlayList;
 
 class MediaPlayer : public event_receiver<MediaPlayer,
 					  concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >

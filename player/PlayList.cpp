@@ -9,7 +9,7 @@
 #include <algorithm>
 
 PlayList::PlayList()
-    : m_current(m_list.begin())
+    : m_current(m_list.end())
 {
 }
 
@@ -21,30 +21,47 @@ PlayList::iterator PlayList::append(std::string file)
 {
     bool currentIsEndOfList = (m_current == m_list.end());
     m_list.push_back(file);
+    iterator it = --m_list.end();
     if (currentIsEndOfList)
     {
-	m_current = --m_list.end();
-	return m_current;
+	select(it);
+	return it;
     }
 
-    return --m_list.end();
+    return it;
 }
 
+void PlayList::clear()
+{
+    m_list.clear();
+    select(m_list.end());
+}
 bool PlayList::erase()
 {
     if (m_current != m_list.end())
     {
-	m_current = m_list.erase(m_current);
+	select(m_list.erase(m_current));
 	return true;
     }
 
     return false;
 }
 
-void PlayList::clear()
+bool PlayList::erase(int n)
 {
-    m_list.clear();
-    m_current = m_list.end();
+    iterator it = nth(n);
+    if (it == m_current)
+    {
+	select(m_list.end());
+    }
+    m_list.erase(it);
+    return true;
+}
+
+PlayList::iterator PlayList::insert(int n, std::string elem)
+{
+    iterator it = nth(n);
+    return m_list.insert(it, elem);
 }
 
 std::string PlayList::getCurrent()
@@ -63,15 +80,21 @@ int PlayList::getCurrentIndex()
 {
     // If nothing is selected, then this function returns
     // an invalid index.
+    return getIndex(m_current);
+}
+
+int PlayList::getIndex(iterator pos)
+{
     int n = 0;
     iterator it = m_list.begin();
     while (it != m_list.end())
     {
-	if (it == m_current)
+	if (it == pos)
 	{
 	    return n;
 	}
 	it++;
+	n++;
     }
 
     // Here n is the list size.
@@ -85,7 +108,7 @@ bool PlayList::selectNext()
     if (++tmp != m_list.end())
     {
 	// Current element is not the last element
-	m_current = tmp;
+	select(tmp);
 	return true;
     }
     else
@@ -101,7 +124,9 @@ bool PlayList::selectPrevious()
     if (m_current != m_list.begin())
     {
 	// Current element is not the first element
-	m_current --;
+	iterator tmp = m_current;
+	tmp--;
+	select(tmp);
 	return true;
     }
     else
@@ -118,19 +143,28 @@ bool PlayList::select(std::string file)
     {
 	return false;
     }
-    m_current = it;
+    select(it);
     return true;
 }
 
+void PlayList::select(iterator it)
+{
+    iterator old = m_current;
+    m_current = it;
+    on_entry_changed(getIndex(old), old);
+    on_entry_changed(getIndex(it), it);
+}
+
+
 bool PlayList::selectFirst()
 {
-    m_current = m_list.begin();
+    select(m_list.begin());
     return (m_current != m_list.end());
 }
 
 void PlayList::selectEndOfList()
 {
-    m_current = m_list.end();
+    select(m_list.end());
 }
 
 int PlayList::size()
@@ -143,4 +177,19 @@ std::string PlayList::operator[](int n)
     iterator it = m_list.begin();
     while(n-->0) it++;
     return *it;
+}
+
+PlayList::iterator PlayList::nth(int n)
+{
+    iterator it = m_list.begin();
+    while(n)
+    {
+	n--;
+	it++;
+    }
+    return it;
+}
+
+void PlayList::on_entry_changed(int n, iterator)
+{
 }

@@ -20,14 +20,18 @@ public:
     sigc::signal<void, const path&, const iterator&> signal_entry_changed;
     sigc::signal<void, const path&, const iterator&> signal_entry_inserted;
     sigc::signal<void, const path&> signal_entry_deleted;
-    sigc::signal<void, const path&, const iterator&> signal_active_entry_changed;
 
     GtkmmPlayList() {}
     virtual ~GtkmmPlayList() {}
 
-    virtual base::iterator append(std::string file);
-    virtual bool erase();  // Remove the current play list entry and select the next one.
+    virtual iterator append(std::string file);
     virtual void clear();  // Remove all play list entries.
+    virtual bool erase();  // Remove the current play list entry and select the next one.
+    virtual bool erase(int n);
+    virtual iterator insert(int n, std::string);
+
+protected:
+    void on_entry_changed(int n, iterator);
 };
 
 #endif
