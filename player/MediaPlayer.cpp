@@ -16,8 +16,25 @@ extern "C"
 
 void logfunc(void* p, int i, const char* format, va_list ap)
 {
-    printf("FFmpeg: ");
-    vprintf(format, ap);
+    TraceUnit traceUnit;
+
+    const size_t size = 1024;
+    char buffer[size];
+    int needed = vsnprintf (buffer, size, format, ap);
+    if (needed < 0)
+    {
+	ERROR(<< "vsnprintf failed: " << needed);
+    }
+    else if (needed > size)
+    {
+	char buffer[needed];
+	int needed = vsnprintf (buffer, needed, format, ap);
+	traceUnit << "FFmpeg: " << buffer;
+    }
+    else
+    {
+	traceUnit << "FFmpeg: " << buffer;
+    }
 }
 
 // ===================================================================
