@@ -41,6 +41,23 @@ Glib::RefPtr<PlayListTreeModel> PlayListTreeModel::create(GtkmmPlayList& playLis
     return Glib::RefPtr<PlayListTreeModel>( new PlayListTreeModel(playList) );
 }
 
+void PlayListTreeModel::clear()
+{
+    m_PlayList.clear();
+}
+
+void PlayListTreeModel::erase(const Gtk::TreeModel::iterator& iter)
+{
+    int row_index = get_row_index(iter);
+    m_PlayList.erase(row_index);
+}
+
+bool PlayListTreeModel::isCurrent(const Gtk::TreeModel::iterator& it)
+{
+    int row_index = get_row_index(it);
+    return (row_index == m_PlayList.getCurrentIndex());
+}
+
 void PlayListTreeModel::setCurrent(const Gtk::TreeModel::iterator& iter)
 {
     int row_index = get_row_index(iter);

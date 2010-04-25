@@ -30,6 +30,7 @@ public:
     sigc::signal<void> signal_open;
     sigc::signal<void> signal_play;
     sigc::signal<void> signal_close;
+    sigc::signal<void> signal_file_close;
 
     PlayListWindow(GtkmmPlayList& playList);
     virtual ~PlayListWindow();
@@ -49,8 +50,6 @@ private:
     virtual void on_rows_reordered(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter, int* new_order);
 
     virtual void on_play_entry();
-    virtual void on_add_entry_before();
-    virtual void on_add_entry_after();
     virtual void on_remove_entry();
     virtual void on_clear_all_entries();
 

@@ -142,6 +142,7 @@ int main(int argc, char *argv[])
     // ---------------------------------------------------------------
     // Signals: PlayListWindow -> SignalDispatcher
     playListWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_play_list_window_state_event));
+    playListWindow.signal_file_close.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_file_close));
 
     // Signals: SignalDispatcher -> PlayListWindow
     signalDispatcher.showPlayListWindow.connect( sigc::mem_fun(&playListWindow, &PlayListWindow::on_show_window) );

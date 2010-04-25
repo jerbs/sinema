@@ -85,7 +85,6 @@ public:
     void on_configuration_data_changed(const ConfigurationData& configurationData);
     void on_tuner_channel_tuned(const ChannelData& channelData);
 
-private:
     // Slots:
     virtual void on_file_open();
     virtual void on_file_close();
@@ -126,6 +125,7 @@ private:
     virtual void on_volume_value_changed();
     virtual void on_mute_toggled();
 
+private:
     MainWindow* m_MainWindow;
 
     GtkmmPlayList& m_PlayList;

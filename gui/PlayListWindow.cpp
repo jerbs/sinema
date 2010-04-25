@@ -43,10 +43,6 @@ PlayListWindow::PlayListWindow(GtkmmPlayList& playList)
     m_refActionGroup = Gtk::ActionGroup::create();
     m_refActionGroup->add(Gtk::Action::create("PlayEntry", "Play Entry"),
                           sigc::mem_fun(*this, &PlayListWindow::on_play_entry));
-    m_refActionGroup->add(Gtk::Action::create("AddEntryBefore", "Add Entry Before"),
-                          sigc::mem_fun(*this, &PlayListWindow::on_add_entry_before));
-    m_refActionGroup->add(Gtk::Action::create("AddEntryAfter", "Add Entry After"),
-                          sigc::mem_fun(*this, &PlayListWindow::on_add_entry_after));
     m_refActionGroup->add(Gtk::Action::create("RemoveEntry", "Remove Entry"),
                           sigc::mem_fun(*this, &PlayListWindow::on_remove_entry));
     m_refActionGroup->add(Gtk::Action::create("ClearAllEntries", "Clear All Entries"),
@@ -62,8 +58,6 @@ PlayListWindow::PlayListWindow(GtkmmPlayList& playList)
         "<ui>"
         "  <popup name='PopupMenu'>"
         "    <menuitem action='PlayEntry'/>"
-        "    <menuitem action='AddEntryBefore'/>"
-        "    <menuitem action='AddEntryAfter'/>"
         "    <menuitem action='RemoveEntry'/>"
         "    <menuitem action='ClearAllEntries'/>"
         "  </popup>"
@@ -220,20 +214,30 @@ void PlayListWindow::on_play_entry()
     }
 }
 
-void PlayListWindow::on_add_entry_before()
-{
-}
-
-void PlayListWindow::on_add_entry_after()
-{
-}
-
 void PlayListWindow::on_remove_entry()
 {
+    Glib::RefPtr<Gtk::TreeView::Selection> selection = m_TreeView.get_selection();
+    Gtk::TreeModel::iterator it = selection->get_selected();
+    if (it)
+    {
+	if (m_refTreeModel->isCurrent(it))
+	{
+	    // Use implementation in SignalDispatcher to close the current file:
+	    signal_file_close();
+	}
+	else
+	{
+	    m_refTreeModel->erase(it);
+	}
+    }
 }
 
 void PlayListWindow::on_clear_all_entries()
 {
+    m_refTreeModel->clear();
+
+    // Close current file:
+    signal_close();
 }
 
 void PlayListWindow::playEntry(const Gtk::TreeModel::iterator& it)
