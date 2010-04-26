@@ -57,6 +57,8 @@ private:
 
     Gtk::Menu* getPopupMenuWidget();
 
+    void prepareCellRenderer(Gtk::CellRenderer*, Gtk::TreeModel::const_iterator const &row) ;
+
     //Tree model columns:
     class ModelColumns : public Gtk::TreeModel::ColumnRecord
     {
@@ -76,8 +78,7 @@ private:
     Gtk::VBox m_Box;
     Gtk::ScrolledWindow m_ScrolledWindow;
     Gtk::TreeView m_TreeView;
-    Gtk::Statusbar m_StatusBar;
-    Gtk::Label m_StatusBarMessage;
+    Gtk::CellRendererText m_CellRendererText;
 
     Glib::RefPtr<PlayListTreeModel> m_refTreeModel;
 

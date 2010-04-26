@@ -139,6 +139,9 @@ ChannelConfigWindow::ChannelConfigWindow()
     // Allow rows to be drag and dropped within the treeview:
     m_TreeView.set_reorderable();
 
+    // User can type in text to search through the tree interactively ("typeahead find"):
+    m_TreeView.set_enable_search(true);
+
     // TreeView:
     //    Glib::SignalProxy2< void, const TreeModel::Path &, TreeViewColumn* > 	signal_row_activated ()
 

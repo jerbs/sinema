@@ -19,24 +19,32 @@ PlayListWindow::PlayListWindow(GtkmmPlayList& playList)
 
     m_ScrolledWindow.add(m_TreeView);
     m_Box.pack_start(m_ScrolledWindow, Gtk::PACK_EXPAND_WIDGET);
-    m_Box.pack_end(m_StatusBar, Gtk::PACK_SHRINK);
-    m_StatusBar.set_spacing(15);
-    m_StatusBar.pack_start(m_StatusBarMessage, Gtk::PACK_EXPAND_WIDGET);
     add(m_Box);
 
     // Show scrollbars only when necessary:
     m_ScrolledWindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
 
-    //Create the Tree model:
-    // m_refTreeModel = PlayListTreeModel::create(m_Columns);
+    // Create the Tree model:
     m_refTreeModel = PlayListTreeModel::create(playList);
     m_TreeView.set_model(m_refTreeModel);
 
-    //Add the TreeView's view columns:
-    m_TreeView.append_column("Name", m_Columns.m_col_name);
+    // Setup and add column to tree model. The own cell renderer with callback
+    // formats the currently played file with a different style:
+    Gtk::TreeViewColumn::SlotCellData slot = sigc::mem_fun(*this, &PlayListWindow::prepareCellRenderer);
+    Gtk::TreeView::Column* pColumnName = Gtk::manage( new Gtk::TreeView::Column("Name") ); 
+    pColumnName->pack_start(m_CellRendererText);
+    pColumnName->add_attribute(m_CellRendererText.property_text(), m_Columns.m_col_name);
+    pColumnName->set_cell_data_func(m_CellRendererText, slot);
+    m_TreeView.append_column(*pColumnName);
 
     // Allow rows to be drag and dropped within the treeview:
     m_TreeView.set_reorderable();
+
+    // User can type in text to search through the tree interactively ("typeahead find"):
+    m_TreeView.set_enable_search(true);
+
+    // Hide table header:    
+    m_TreeView.set_headers_visible(false);
 
     // Context Menu
     // Create actions for menus and toolbars:
@@ -251,4 +259,17 @@ void PlayListWindow::playEntry(const Gtk::TreeModel::iterator& it)
 Gtk::Menu* PlayListWindow::getPopupMenuWidget()
 {
     return dynamic_cast<Gtk::Menu*>(m_refUIManager->get_widget("/PopupMenu"));
+}
+
+void PlayListWindow::prepareCellRenderer(Gtk::CellRenderer*, Gtk::TreeModel::const_iterator const &row)
+{
+    bool current = m_refTreeModel->isCurrent(row);
+
+    // see /usr/include/pangomm-1.4/pangomm/fontdescription.h
+    m_CellRendererText.property_style() = ( current ?
+					    Pango::STYLE_OBLIQUE :
+					    Pango::STYLE_NORMAL );
+    m_CellRendererText.property_weight() = ( current ?
+					     Pango::WEIGHT_ULTRABOLD :
+					     Pango::WEIGHT_NORMAL );
 }

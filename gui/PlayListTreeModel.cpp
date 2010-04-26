@@ -281,11 +281,6 @@ void PlayListTreeModel::get_value_vfunc(const TreeModel::iterator& iter, int col
 	    int row_index = get_row_index(iter);
 	    std::string str = m_PlayList[row_index];
 
-	    if (row_index == m_PlayList.getCurrentIndex())
-	    {
-		str = "* " + str;
-	    }
-
 	    // value and val contains data and type info.
 
 	    // Here type_TreeModelColumn::ValueType is Glib::Value<Glib::ustring>.
