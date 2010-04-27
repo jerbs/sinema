@@ -78,6 +78,7 @@ int main(int argc, char *argv[])
     mediaPlayer.notificationClipping.connect( sigc::mem_fun(&signalDispatcher, &SignalDispatcher::on_notification_clipping) );
     mediaPlayer.signal_key_press_event().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_key_press_event));
     mediaPlayer.notificationFileClosed.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_notification_file_closed) );
+    mediaPlayer.signal_drag_data_received().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_drag_data_received));
 
     // Signals: SignalDispatcher -> GtkmmMediaPlayer
     signalDispatcher.signal_seek_absolute.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::seekAbsolute) );

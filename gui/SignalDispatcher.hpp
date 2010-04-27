@@ -69,6 +69,9 @@ public:
     // Slots:
     bool on_button_press_event(GdkEventButton* event);
     bool on_key_press_event(GdkEventKey* event);
+    void on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context,
+			       int x, int y, const Gtk::SelectionData& selection_data,
+			       guint info, guint time);
     bool on_channel_config_window_state_event(GdkEventWindowState* event);
     bool on_control_window_state_event(GdkEventWindowState* event);
     bool on_main_window_state_event(GdkEventWindowState* event);

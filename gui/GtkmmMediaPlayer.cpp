@@ -61,6 +61,11 @@ GtkmmMediaPlayer::GtkmmMediaPlayer(PlayList& playList)
     set_flags(Gtk::CAN_FOCUS);
 
     m_hideCursorTimer.relative(getTimespec(2));
+
+    // Setup drop destination:
+    std::list<Gtk::TargetEntry> targetList;
+    targetList.push_back(Gtk::TargetEntry("text/uri-list"));
+    drag_dest_set(targetList);
 }
 
 GtkmmMediaPlayer::~GtkmmMediaPlayer()

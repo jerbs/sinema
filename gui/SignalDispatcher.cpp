@@ -432,6 +432,48 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
     }
 }
 
+void SignalDispatcher::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context,
+					     int x, int y, const Gtk::SelectionData& selection_data,
+					     guint info, guint time)
+{
+    DEBUG();
+
+    if ( (selection_data.get_length() >= 0) &&
+	 (selection_data.get_format() == 8) )
+    {
+	typedef std::vector<Glib::ustring> FileList;
+	FileList file_list = selection_data.get_uris();
+	if (file_list.size() > 0)
+	{
+	    FileList::iterator it = file_list.begin();
+	    while(it != file_list.end())
+	    {
+		Glib::ustring file = Glib::filename_from_uri(*it);
+		DEBUG(<< file);
+		PlayList::iterator itPl = m_PlayList.append(file);
+		if (it == file_list.begin())
+		{
+		    // Start playing the first dropped file:
+		    m_PlayList.select(itPl);
+		    on_media_stop();
+		    on_media_play();
+		}
+
+		it++;
+	    }
+
+	    context->drag_finish(true,   // success
+				 false,  // don't delete
+				 time);
+	    return;
+	}
+    }
+
+    context->drag_finish(false,  // no success
+			 false,
+			 time);
+}
+
 void SignalDispatcher::on_file_open()
 {
     DEBUG();
