@@ -10,12 +10,19 @@
 extern std::string applicationName;
 
 PlayListWindow::PlayListWindow(GtkmmPlayList& playList)
-    : m_shown(false),
+    : m_PlayList(playList),
+      m_shown(false),
       m_pos_x(0),
       m_pos_y(0)
 {
     set_title(applicationName + " (Play List)");
     set_default_size(400,200);
+
+
+    // Drop destination:
+    std::list<Gtk::TargetEntry> targetList;
+    targetList.push_back(Gtk::TargetEntry("text/uri-list"));
+    drag_dest_set(targetList);
 
     m_ScrolledWindow.add(m_TreeView);
     m_Box.pack_start(m_ScrolledWindow, Gtk::PACK_EXPAND_WIDGET);
@@ -188,6 +195,53 @@ bool PlayListWindow::on_button_press_event(GdkEventButton* event)
 
     // Event has not been handled:
     return false;
+}
+
+void PlayListWindow::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context,
+					   int x, int y, const Gtk::SelectionData& selection_data,
+					   guint info, guint time)
+{
+    DEBUG();
+
+    if ( (selection_data.get_length() >= 0) &&
+	 (selection_data.get_format() == 8) )
+    {
+	typedef std::vector<Glib::ustring> FileList;
+	FileList file_list = selection_data.get_uris();
+	if (file_list.size() > 0)
+	{
+	    int n;
+	    Gtk::TreeModel::Path path;
+	    if ( m_TreeView.get_path_at_pos(x,y, path) &&
+		 path.size() == 1 )
+	    {
+		n = path[0];
+	    }
+	    else
+	    {
+		n = m_PlayList.size();
+	    }
+
+	    FileList::iterator it = file_list.begin();
+	    while(it != file_list.end())
+	    {
+		Glib::ustring file = Glib::filename_from_uri(*it);
+		DEBUG(<< file);
+		m_PlayList.insert(n++, file);
+		it++;
+		
+	    }
+
+	    context->drag_finish(true,   // success
+				 false,  // don't delete
+				 time);
+	    return;
+	}
+    }
+
+    context->drag_finish(false,  // no success
+			 false,
+			 time);
 }
 
 void PlayListWindow::on_row_changed(const Gtk::TreeModel::Path&  path, const Gtk::TreeModel::iterator&  iter)

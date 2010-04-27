@@ -44,6 +44,10 @@ private:
 				   Gtk::TreeViewColumn* column);
     virtual bool on_button_press_event(GdkEventButton* event);
 
+    virtual void on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context,
+				       int x, int y, const Gtk::SelectionData& selection_data,
+				       guint info, guint time);
+
     virtual void on_row_changed(const Gtk::TreeModel::Path&  path, const Gtk::TreeModel::iterator&  iter);
     virtual void on_row_inserted(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter);
     virtual void on_row_deleted(const Gtk::TreeModel::Path& path);
@@ -80,6 +84,7 @@ private:
     Gtk::TreeView m_TreeView;
     Gtk::CellRendererText m_CellRendererText;
 
+    GtkmmPlayList& m_PlayList;
     Glib::RefPtr<PlayListTreeModel> m_refTreeModel;
 
     // Popup menu:
