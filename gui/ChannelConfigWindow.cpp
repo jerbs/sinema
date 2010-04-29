@@ -228,6 +228,8 @@ void ChannelConfigWindow::on_show_window(bool pshow)
             move(m_pos_x, m_pos_y);
         }
         show();
+        raise();
+        deiconify();
         m_shown = true;
     }
     else

@@ -55,11 +55,16 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
 
     // Menu: View
     m_refActionGroup->add(Gtk::Action::create("ViewMenu", "View"));
-    m_refActionGroup->add(Gtk::Action::create("ViewFullscreen", Gtk::Stock::FULLSCREEN,
-					      "Fullscreen", "Enter fullscrean mode"),
+
+    m_refActionEnterFullscreen = Gtk::Action::create("ViewFullscreen", Gtk::Stock::FULLSCREEN,
+						"Fullscreen", "Enter fullscrean mode");
+    m_refActionGroup->add(m_refActionEnterFullscreen,
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_fullscreen));
-    m_refActionGroup->add(Gtk::Action::create("ViewLeaveFullscreen", Gtk::Stock::LEAVE_FULLSCREEN,
-					      "Leave Fullscreen", "Leave fullscrean mode"),
+
+    m_refActionLeaveFullscreen = Gtk::Action::create("ViewLeaveFullscreen", Gtk::Stock::LEAVE_FULLSCREEN,
+						     "Leave Fullscreen", "Leave fullscrean mode");
+    m_refActionLeaveFullscreen->set_visible(false);
+    m_refActionGroup->add(m_refActionLeaveFullscreen,
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_leave_fullscreen));
 
     m_refActionGroup->add(Gtk::Action::create("ViewNormalMode",
@@ -285,6 +290,9 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
 	std::cerr << "building menus failed: " <<  ex->what();
     }
 #endif //GLIBMM_EXCEPTIONS_ENABLED
+
+    m_refActionLeaveFullscreen->set_visible(false);
+    m_refActionPause->set_visible(false);
 
     m_AdjustmentPosition.set_lower(0);
     m_AdjustmentPosition.set_upper(0);
@@ -718,12 +726,60 @@ void SignalDispatcher::on_view_clipping_169()
     }
 }
 
+void on_window_state_event(Glib::RefPtr<Gtk::ToggleAction> action, GdkEventWindowState* event)
+{
+    DEBUG( << "GDK_WINDOW_STATE_WITHDRAWN:  "
+	   << (event->changed_mask & GDK_WINDOW_STATE_WITHDRAWN) << ","
+	   << (event->new_window_state & GDK_WINDOW_STATE_WITHDRAWN));
+    DEBUG( << "GDK_WINDOW_STATE_ICONIFIED:  "
+	   << (event->changed_mask & GDK_WINDOW_STATE_ICONIFIED) << ","
+	   << (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED));
+    DEBUG( << "GDK_WINDOW_STATE_MAXIMIZED:  "
+	   << (event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED) << ","
+	   << (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED));
+    DEBUG( << "GDK_WINDOW_STATE_STICKY:     "
+	   << (event->changed_mask & GDK_WINDOW_STATE_STICKY) << ","
+	   << (event->new_window_state & GDK_WINDOW_STATE_STICKY));
+    DEBUG( << "GDK_WINDOW_STATE_FULLSCREEN: "
+	   << (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN) << ","
+	   << (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN));
+    DEBUG( << "GDK_WINDOW_STATE_ABOVE:      "
+	   << (event->changed_mask & GDK_WINDOW_STATE_ABOVE) << ","
+	   << (event->new_window_state & GDK_WINDOW_STATE_ABOVE));
+    DEBUG( << "GDK_WINDOW_STATE_BELOW:      "
+	   << (event->changed_mask & GDK_WINDOW_STATE_BELOW) << ","
+	   << (event->new_window_state & GDK_WINDOW_STATE_BELOW));
+
+    if (event->changed_mask & GDK_WINDOW_STATE_WITHDRAWN)
+    {
+	action->set_active((event->new_window_state & GDK_WINDOW_STATE_WITHDRAWN) ? false : true);
+    }
+
+    if (event->changed_mask & GDK_WINDOW_STATE_ICONIFIED)
+    {
+	action->set_active((event->new_window_state & GDK_WINDOW_STATE_ICONIFIED) ? false : true);
+    }
+}
+
 bool SignalDispatcher::on_channel_config_window_state_event(GdkEventWindowState* event)
 {
+    DEBUG();
+    on_window_state_event(m_refChannelConfigWindowVisible, event);
+    return false;
 }
 
 bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)
 {
+    DEBUG();
+    on_window_state_event(m_refControlWindowVisible, event);
+    return false;
+}
+
+bool SignalDispatcher::on_play_list_window_state_event(GdkEventWindowState* event)
+{
+    DEBUG();
+    on_window_state_event(m_refPlayListWindowVisible, event);
+    return false;
 }
 
 bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
@@ -731,24 +787,29 @@ bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
     // This method is called when fullscreen mode is entered or left. This
     // may be triggered by the application itself or by the window manager.
 
-    if (m_fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN)
+    if (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN)
     {
-	m_visible = &m_visibleFullscreen;
-    }
-    else
-    {
-	m_visible = &m_visibleWindow;
-    }
+	bool fullscreen;
+	if (m_fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN)
+	{
+	    m_visible = &m_visibleFullscreen;
+	    fullscreen = true;
+	}
+	else
+	{
+	    m_visible = &m_visibleWindow;
+	    fullscreen = false;
+	}
 
-    m_refMenuBarVisible->set_active(m_visible->menuBar);
-    m_refToolBarVisible->set_active(m_visible->toolBar);
-    m_refStatusBarVisible->set_active(m_visible->statusBar);
+	m_refActionEnterFullscreen->set_visible(!fullscreen);
+	m_refActionLeaveFullscreen->set_visible(fullscreen);
+
+	m_refMenuBarVisible->set_active(m_visible->menuBar);
+	m_refToolBarVisible->set_active(m_visible->toolBar);
+	m_refStatusBarVisible->set_active(m_visible->statusBar);
+    }
 
     return false;
-}
-
-bool SignalDispatcher::on_play_list_window_state_event(GdkEventWindowState* event)
-{
 }
 
 void SignalDispatcher::on_notification_video_size(const NotificationVideoSize& event)

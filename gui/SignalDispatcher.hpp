@@ -138,6 +138,8 @@ private:
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroupChannels;
+    Glib::RefPtr<Gtk::Action> m_refActionEnterFullscreen;
+    Glib::RefPtr<Gtk::Action> m_refActionLeaveFullscreen;
     Glib::RefPtr<Gtk::Action> m_refActionPlay;
     Glib::RefPtr<Gtk::Action> m_refActionPause;
     Glib::RefPtr<Gtk::RadioAction> m_refClippingNone;
