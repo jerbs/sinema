@@ -100,15 +100,21 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
 
     m_refControlWindowVisible = Gtk::ToggleAction::create("ViewControlWindow", "Control Window");
     m_refControlWindowVisible->set_active(false);
-    m_refActionGroup->add(m_refControlWindowVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_controlwindow) );
+    m_refActionGroup->add(m_refControlWindowVisible,
+			  Gtk::AccelKey("<control>1"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_controlwindow) );
 
     m_refChannelConfigWindowVisible = Gtk::ToggleAction::create("ViewChannelConfigWindow", "Channel Config Window");
     m_refChannelConfigWindowVisible->set_active(false);
-    m_refActionGroup->add(m_refChannelConfigWindowVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_channelconfigwindow) );
+    m_refActionGroup->add(m_refChannelConfigWindowVisible,
+			  Gtk::AccelKey("<control>2"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_channelconfigwindow) );
 
     m_refPlayListWindowVisible = Gtk::ToggleAction::create("ViewPlayListWindow", "Play List Window");
     m_refPlayListWindowVisible->set_active(false);
-    m_refActionGroup->add(m_refPlayListWindowVisible, sigc::mem_fun(*this, &SignalDispatcher::on_view_playlistwindow) );
+    m_refActionGroup->add(m_refPlayListWindowVisible,
+			  Gtk::AccelKey("<control>3"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_playlistwindow) );
 
     m_refMenuBarVisible = Gtk::ToggleAction::create("ViewMenuBar", "Menu Bar");
     m_refMenuBarVisible->set_active(true);
