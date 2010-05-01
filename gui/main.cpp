@@ -15,7 +15,8 @@
 #include "gui/MainWindow.hpp"
 #include "gui/PlayListWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
- 
+#include "recorder/PvrProtocol.hpp"
+
 int main(int argc, char *argv[])
 {
     Gtk::Main kit(argc, argv);
@@ -41,6 +42,7 @@ int main(int argc, char *argv[])
     ChannelConfigWindow channelConfigWindow;
     PlayListWindow playListWindow(playList);
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
+    PvrProtocol::init();
 
     controlWindow.set_transient_for(mainWindow);
     signalDispatcher.setMainWindow(&mainWindow);
