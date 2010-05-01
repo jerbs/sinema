@@ -1,7 +1,7 @@
 //
 // Audio Output
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include "player/AudioOutput.hpp"
@@ -10,7 +10,6 @@
 #include "player/MediaPlayer.hpp"
 #include "player/AlsaFacade.hpp"
 #include "player/AlsaMixer.hpp"
-#include "player/SyncTest.hpp"
 #include "platform/timer.hpp"
 
 #include <boost/make_shared.hpp>
@@ -39,11 +38,7 @@ void AudioOutput::process(boost::shared_ptr<InitEvent> event)
     {
 	DEBUG();
 
-#ifdef SYNCTEST
-	syncTest = event->syncTest;
-#else
 	audioDecoder = event->audioDecoder;
-#endif
 	videoOutput = event->videoOutput;
 	mediaPlayer = event->mediaPlayer;
 
@@ -158,6 +153,7 @@ void AudioOutput::process(boost::shared_ptr<FlushReq> event)
 	    boost::shared_ptr<AFAudioFrame> frame(frameQueue.front());
 	    frameQueue.pop_front();
 	    frame->reset();
+
 	    audioDecoder->queue_event(frame);
 	}
 	currentFrame = frameQueue.end();
@@ -277,11 +273,7 @@ void AudioOutput::createAudioFrame()
 {
     DEBUG();
     numAudioFrames++;
-#ifdef SYNCTEST
-    syncTest->queue_event(boost::make_shared<AFAudioFrame>(frameSize));
-#else
     audioDecoder->queue_event(boost::make_shared<AFAudioFrame>(frameSize));
-#endif
 }
 
 void AudioOutput::playNextChunk()
@@ -365,11 +357,8 @@ void AudioOutput::recycleObsoleteFrames()
 	    numPostBuffered--;
 
 	    firstFrame->reset();
-#ifdef SYNCTEST
-	    syncTest->queue_event(firstFrame);
-#else
+
 	    audioDecoder->queue_event(firstFrame);
-#endif
 	}
 	else
 	{
@@ -440,7 +429,7 @@ void AudioOutput::sendAudioSyncInfo()
 	videoOutput->queue_event(audioSyncInfo);
 
 	// For audio only files send an event to the GUI to update the displayed time.
-	// This solition isn't perfect, since sendAudioSyncInfo is not called on second boundaries.
+	// This solution isn't perfect, since sendAudioSyncInfo is not called on second boundaries.
 	int currentTime = currentPTS;
 	if (audioStreamOnly && currentTime != lastNotifiedTime)
 	{

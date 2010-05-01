@@ -25,6 +25,7 @@ log
 m4
 Makefile
 Makefile.in
+player/synctest
 gui/player
 stamp-h1
 typescript

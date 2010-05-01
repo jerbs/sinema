@@ -15,17 +15,10 @@
 #include "gui/MainWindow.hpp"
 #include "gui/PlayListWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
-
-#ifdef SYNCTEST
-#include "player/SyncTest.hpp"
-#endif
-
  
 int main(int argc, char *argv[])
 {
     Gtk::Main kit(argc, argv);
-
-#ifndef SYNCTEST
 
     if (argc < 1)
     {
@@ -169,13 +162,6 @@ int main(int argc, char *argv[])
 
     // Enter gtkmm main loop:
     Gtk::Main::run(mainWindow);
-
-#else
-
-    SyncTestApp syncTestApp;
-    syncTestApp();
-
-#endif
 
     return 0;
 }

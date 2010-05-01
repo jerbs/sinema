@@ -1,7 +1,7 @@
 //
 // X11 and Xv Extension Interface
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include "player/XlibFacade.hpp"
@@ -21,6 +21,131 @@
 #define INFO(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 using namespace std;
+
+// -------------------------------------------------------------------
+
+XFDisplay::XFDisplay()
+{
+    m_display = XOpenDisplay( NULL );
+    if (!m_display)
+    {
+	throw XFException("Cannot open Display");
+    }
+}
+
+XFDisplay::~XFDisplay()
+{
+    XCloseDisplay( m_display );
+}
+
+// -------------------------------------------------------------------
+
+XFWindow::XFWindow(unsigned int width, unsigned int height)
+    : m_xfDisplay(new XFDisplay()),
+      m_display(m_xfDisplay->display()),
+      m_window(0),
+      m_width(width),
+      m_height(height)
+{
+    int screen = DefaultScreen(m_display);
+
+    struct VisualInfo
+    {
+	int depth;
+	int c_class;
+	const char* className;
+    };
+
+    XVisualInfo xVisualInfo;
+
+    VisualInfo visualInfo[] = {
+	{24, TrueColor,  "TrueColor"},
+	{16, TrueColor,  "TrueColor"},
+	{15, TrueColor,  "TrueColor"},
+	{ 8, PseudoColor,"PseudoColor"},
+	{ 8, GrayScale,  "GrayScale"},
+	{ 8, StaticGray, "StaticGray"},
+	{ 1, StaticGray, "StaticGray"}
+    };
+
+    const int numVisualInfo = sizeof(visualInfo)/sizeof(VisualInfo);
+    for (int i=0; i<numVisualInfo; i++)
+    {
+	if (XMatchVisualInfo(display(),
+			     screen,
+			     visualInfo[i].depth,
+			     visualInfo[i].c_class,
+			     &xVisualInfo))
+	{
+	    DEBUG( << "Found " << visualInfo[i].depth << " bit "
+		   << visualInfo[i].className );
+	    DEBUG( << xVisualInfo );
+	    break;
+	}
+
+	if (i == numVisualInfo)
+	{
+	    throw(XFException("XMatchVisualInfo: Nothing found"));
+	}
+    }
+
+    Colormap colormap = XCreateColormap(m_display,
+					DefaultRootWindow(m_display),
+					xVisualInfo.visual,
+					AllocNone);
+
+    XSetWindowAttributes xswa;
+    xswa.colormap = colormap;
+    xswa.event_mask = StructureNotifyMask | ExposureMask | KeyPressMask;
+    xswa.background_pixel = 0;
+    xswa.border_pixel = 0;
+
+    // mask specifies attributes defined in xswa:
+    unsigned long mask = CWColormap | CWEventMask | CWBackPixel | CWBorderPixel;
+
+    m_window = XCreateWindow(m_display,
+			     DefaultRootWindow(m_display),
+			     0, 0,        // x,y position
+			     m_width,
+			     m_height,
+			     0,           // Border width
+			     xVisualInfo.depth,
+			     InputOutput,
+			     xVisualInfo.visual,
+			     mask, &xswa);
+
+    // Set window title used by window manager:
+    XStoreName(m_display, m_window, "Xv Demo Application");
+
+    // Set title used for icon:
+    XSetIconName(m_display, m_window, "Xv Demo");
+
+    // Request events from server (This overwrites the event mask):
+    XSelectInput(m_display, m_window, StructureNotifyMask);
+
+    // Requst the server to show the window:
+    XMapWindow(m_display, m_window);
+
+    // Wait until the server has processed the request:
+    XEvent evt;
+    do
+    {
+	// Wait until a requested event occurs (XClush is called by XNextEvent):
+	XNextEvent( m_display, &evt );
+    }
+    // Wait until the XMapWindow request is processed by the X server.
+    while( evt.type != MapNotify );
+
+    // Now the window is visible on the screen.
+
+    // Setting previous event mask again:
+    XSelectInput(m_display, m_window, xswa.event_mask);
+}
+
+XFWindow::~XFWindow()
+{
+    XDestroyWindow(m_display, m_window);
+}
 
 // -------------------------------------------------------------------
 

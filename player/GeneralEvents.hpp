@@ -7,6 +7,29 @@
 #ifndef PLAYER_GENERAL_EVENTS_HPP
 #define PLAYER_GENERAL_EVENTS_HPP
 
+
+#ifdef SYNCTEST
+
+// This always has to be included first to compile synctest.
+
+// For the synctest application the class SyncTest replaces
+// Demuxer, MediaPlayer, AudioDecoder and VideoDecoder:
+#define MediaPlayer SyncTest
+#define Demuxer SyncTest
+#define AudioDecoder SyncTest
+#define VideoDecoder SyncTest
+
+#define MediaPlayerThreadNotification NoTrigger
+
+// Don't include the original header files for these classes:
+#define MEDIA_PLAYER_HPP
+#define DEMUXER_HPP
+#define AUDIO_DECODER_HPP
+#define VIDEO_DECODER_HPP
+
+#endif
+
+
 #include "platform/Logging.hpp"
 
 #include <boost/shared_ptr.hpp>
@@ -28,9 +51,6 @@ class VideoDecoder;
 class AudioDecoder;
 class VideoOutput;
 class AudioOutput;
-#ifdef SYNCTEST
-class SyncTest;
-#endif
 
 // ===================================================================
 // General Events
@@ -44,9 +64,6 @@ struct InitEvent
     boost::shared_ptr<AudioDecoder> audioDecoder;
     boost::shared_ptr<VideoOutput> videoOutput;
     boost::shared_ptr<AudioOutput> audioOutput;
-#ifdef SYNCTEST
-    boost::shared_ptr<SyncTest> syncTest;
-#endif
 };
 
 struct StartEvent
@@ -476,6 +493,8 @@ struct ClipVideoSrcEvent
 
 // ===================================================================
 
+#ifndef SYNCTEST
+
 class MediaPlayerThreadNotification
 {
 public:
@@ -488,6 +507,12 @@ private:
     static fct_t m_fct;
 };
 
+#endif
+
 // ===================================================================
+
+#ifdef SYNCTEST
+#include "SyncTest.hpp"
+#endif
 
 #endif

@@ -1,7 +1,7 @@
 //
 // Video Output
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #ifndef VIDEO_OUTPUT_HPP
@@ -49,11 +49,7 @@ public:
 private:
     MediaPlayer* mediaPlayer;
     boost::shared_ptr<Demuxer> demuxer;
-#ifdef SYNCTEST
-    boost::shared_ptr<SyncTest> syncTest;
-#else
     boost::shared_ptr<VideoDecoder> videoDecoder;
-#endif
 
     timer frameTimer;
 

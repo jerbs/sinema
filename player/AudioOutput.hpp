@@ -1,7 +1,7 @@
 //
 // Audio Output
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #ifndef AUDIO_OUTPUT_HPP
@@ -30,11 +30,7 @@ public:
     ~AudioOutput();
 
 private:
-#ifdef SYNCTEST
-    boost::shared_ptr<SyncTest> syncTest;
-#else
     boost::shared_ptr<AudioDecoder> audioDecoder;
-#endif
     boost::shared_ptr<VideoOutput> videoOutput;
     MediaPlayer* mediaPlayer;
 

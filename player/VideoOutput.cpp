@@ -1,17 +1,13 @@
 //
 // Video Output
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include "player/VideoOutput.hpp"
 #include "player/VideoDecoder.hpp"
 #include "player/MediaPlayer.hpp"
 #include "player/XlibFacade.hpp"
-
-#ifdef SYNCTEST
-#include "SyncTest.hpp"
-#endif
 
 #include <boost/make_shared.hpp>
 #include <boost/bind.hpp>
@@ -26,11 +22,8 @@ void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 
 	mediaPlayer = event->mediaPlayer;
 	demuxer = event->demuxer;
-#ifdef SYNCTEST
-	syncTest = event->syncTest;
-#else
 	videoDecoder = event->videoDecoder;
-#endif
+
 	state = INIT;
     }
 }
@@ -339,11 +332,7 @@ void VideoOutput::process(boost::shared_ptr<CommandPause> event)
 
 void VideoOutput::createVideoImage()
 {
-#ifdef SYNCTEST
-    syncTest->queue_event(boost::make_shared<XFVideoImage>(xfVideo));
-#else
     videoDecoder->queue_event(boost::make_shared<XFVideoImage>(xfVideo));
-#endif
 }
 
 void VideoOutput::displayNextFrame()
@@ -394,11 +383,7 @@ void VideoOutput::displayNextFrame()
    
     if (previousImage)
     {
-#ifdef SYNCTEST
-	syncTest->queue_event(previousImage);
-#else
 	videoDecoder->queue_event(previousImage);
-#endif
     }
 
     startFrameTimer();

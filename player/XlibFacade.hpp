@@ -1,7 +1,7 @@
 //
 // X11 and Xv Extension Interface
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #ifndef XLIB_FACADE_HPP
@@ -17,12 +17,47 @@
 #include <boost/function.hpp>
 #include <string>
 
-#include <player/GeneralEvents.hpp>
+#include "player/GeneralEvents.hpp"
 
 struct XFException
 {
     XFException(const std::string &s) : s(s) {}
     std::string s;
+};
+
+class XFDisplay
+{
+public:
+    XFDisplay();
+    ~XFDisplay();
+
+    Display* display() {return m_display;}
+
+private:
+    Display* m_display;
+};
+
+class XFWindow
+{
+public:
+    XFWindow(unsigned int width, unsigned int height);
+    ~XFWindow();
+
+    Display* display() {return m_display;}
+    Window window() {return m_window;}
+    //unsigned int width() {return m_width;}
+    //unsigned int height() {return m_height;}
+
+private:
+    XFWindow();
+    XFWindow(const XFWindow&);
+
+    boost::shared_ptr<XFDisplay> m_xfDisplay;
+    Display* m_display;
+    Window m_window;
+
+    unsigned int m_width;
+    unsigned int m_height;
 };
 
 class XFVideoImage;
