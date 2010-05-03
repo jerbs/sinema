@@ -45,7 +45,6 @@ extern "C"
 #include <string>
 
 class MediaPlayer;
-class FileReader;
 class Demuxer;
 class VideoDecoder;
 class AudioDecoder;
@@ -58,7 +57,6 @@ class AudioOutput;
 struct InitEvent
 {
     MediaPlayer* mediaPlayer;
-    boost::shared_ptr<FileReader> fileReader;
     boost::shared_ptr<Demuxer> demuxer;
     boost::shared_ptr<VideoDecoder> videoDecoder;
     boost::shared_ptr<AudioDecoder> audioDecoder;

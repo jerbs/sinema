@@ -5,7 +5,6 @@
 //
 
 #include "player/Demuxer.hpp"
-#include "player/FileReader.hpp"
 #include "player/AudioDecoder.hpp"
 #include "player/VideoDecoder.hpp"
 #include "player/MediaPlayer.hpp"
@@ -47,7 +46,6 @@ void Demuxer::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG();
     mediaPlayer = event->mediaPlayer;
-    fileReader = event->fileReader;
     audioDecoder = event->audioDecoder;
     videoDecoder = event->videoDecoder;
 }
@@ -356,12 +354,6 @@ void Demuxer::process(boost::shared_ptr<FlushReq> event)
     DEBUG();
     videoDecoder->queue_event(event);
     audioDecoder->queue_event(event);
-}
-
-void Demuxer::process(boost::shared_ptr<SystemStreamChunkEvent> event)
-{
-    DEBUG();
-    fileReader->queue_event(boost::make_shared<SystemStreamGetMoreDataEvent>());
 }
 
 void Demuxer::process(boost::shared_ptr<ConfirmAudioPacketEvent> event)

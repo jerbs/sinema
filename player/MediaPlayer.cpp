@@ -73,7 +73,6 @@ MediaPlayer::MediaPlayer(PlayList& playList)
     outputEventProcessor = boost::make_shared<event_processor<> >();
 
     // Create event_receiver instances:
-    fileReader = boost::make_shared<FileReader>(demuxerEventProcessor);
     demuxer = boost::make_shared<Demuxer>(demuxerEventProcessor);
     videoDecoder = boost::make_shared<VideoDecoder>(decoderEventProcessor);
     audioDecoder = boost::make_shared<AudioDecoder>(decoderEventProcessor);
@@ -120,14 +119,12 @@ void MediaPlayer::sendInitEvents()
      boost::shared_ptr<InitEvent> initEvent(new InitEvent());
 
      initEvent->mediaPlayer = this;
-     initEvent->fileReader = fileReader;
      initEvent->demuxer = demuxer;
      initEvent->videoDecoder = videoDecoder;
      initEvent->audioDecoder = audioDecoder;
      initEvent->videoOutput = videoOutput;
      initEvent->audioOutput = audioOutput;
 
-     fileReader->queue_event(initEvent);
      demuxer->queue_event(initEvent);
      videoDecoder->queue_event(initEvent);
      audioDecoder->queue_event(initEvent);

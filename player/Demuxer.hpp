@@ -8,7 +8,6 @@
 #define DEMUXER_HPP
 
 #include "player/GeneralEvents.hpp"
-#include "player/SystemStreamEvents.hpp"
 #include "platform/event_receiver.hpp"
 
 #include <boost/shared_ptr.hpp>
@@ -62,7 +61,6 @@ public:
 
 private:
     MediaPlayer* mediaPlayer;
-    boost::shared_ptr<FileReader> fileReader;
     boost::shared_ptr<AudioDecoder> audioDecoder;
     boost::shared_ptr<VideoDecoder> videoDecoder;
 
@@ -70,8 +68,6 @@ private:
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<StopEvent> event);
-
-    void process(boost::shared_ptr<SystemStreamChunkEvent> event);
 
     void process(boost::shared_ptr<OpenFileReq> event);
     void process(boost::shared_ptr<OpenAudioStreamResp> event);

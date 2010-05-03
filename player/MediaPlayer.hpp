@@ -11,7 +11,6 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-#include "player/FileReader.hpp"
 #include "player/Demuxer.hpp"
 #include "player/VideoDecoder.hpp"
 #include "player/AudioDecoder.hpp"
@@ -57,7 +56,6 @@ public:
 
 protected:
     // EventReceiver
-    boost::shared_ptr<FileReader> fileReader;
     boost::shared_ptr<Demuxer> demuxer;
     boost::shared_ptr<VideoDecoder> videoDecoder;
     boost::shared_ptr<AudioDecoder> audioDecoder;
