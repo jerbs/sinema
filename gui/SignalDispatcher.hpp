@@ -60,6 +60,8 @@ public:
     Gtk::Menu* getPopupMenuWidget();
     Gtk::Statusbar& getStatusBar();
 
+    Gtk::Widget* getCtrlWinToolBarWidget();
+
     Glib::RefPtr<Gtk::ActionGroup> getActionGroup();
     Gtk::Adjustment& getPositionAdjustment();
     Gtk::Adjustment& getVolumeAdjustment();

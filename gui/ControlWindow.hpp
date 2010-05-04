@@ -37,12 +37,6 @@ private:
     Gtk::VBox m_VBox_Level1;
     Gtk::VBox m_VBox_Level1a;
     Gtk::HBox m_HBox_Level2;
-    Gtk::VBox m_VBox_Level3;
-    Gtk::HBox m_HBox_Level4;
-
-    Gtk::Table m_Table;
-    Gtk::Button m_Play, m_Pause, m_Stop;
-    Gtk::Button m_Prev, m_Next, m_Rewind, m_Forward;
 
     Gtk::Label m_LabelTitle;
     Gtk::Label m_LabelTime;

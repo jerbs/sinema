@@ -241,7 +241,22 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
         "    <toolitem action='MediaForward'/>"
         "    <toolitem action='MediaNext'/>"
         "    <toolitem action='MediaStop'/>"
+        "    <separator/>"
         "    <toolitem action='MediaRecord'/>"
+        "  </toolbar>"
+        "  <toolbar  name='CtrlWinToolBar'>"
+	"    <toolitem action='MediaPrevious'/>"
+        "    <toolitem action='MediaRewind'/>"
+        "    <toolitem action='MediaPlay'/>"
+        "    <toolitem action='MediaPause'/>"
+        "    <toolitem action='MediaForward'/>"
+        "    <toolitem action='MediaNext'/>"
+        "    <toolitem action='MediaStop'/>"
+        "    <separator/>"
+        "    <toolitem action='MediaRecord'/>"
+        "    <separator/>"
+	"    <toolitem action='ViewFullscreen'/>"
+        "    <toolitem action='ViewLeaveFullscreen'/>"
         "  </toolbar>"
         "  <popup name='PopupMenu'>"
         "    <menuitem action='MediaPlay'/>"
@@ -339,6 +354,11 @@ Gtk::Widget* SignalDispatcher::getToolBarWidget()
 Gtk::Menu* SignalDispatcher::getPopupMenuWidget()
 {
     return dynamic_cast<Gtk::Menu*>(m_refUIManager->get_widget("/PopupMenu"));
+}
+
+Gtk::Widget* SignalDispatcher::getCtrlWinToolBarWidget()
+{
+    return m_refUIManager->get_widget("/CtrlWinToolBar");
 }
 
 Gtk::Statusbar& SignalDispatcher::getStatusBar()
