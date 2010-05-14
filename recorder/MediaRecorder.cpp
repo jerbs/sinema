@@ -38,14 +38,16 @@ MediaRecorder::MediaRecorder()
                 MediaRecorderThreadNotification> > >())
 {
     // Create event_processor instances:
-    recorderEventProcessor = boost::make_shared<event_processor<> >();
+    recorderEventProcessor = boost::make_shared<event_processor< concurrent_queue<receive_fct_t, RecorderThreadNotification> > >();
+    recorderAdapterEventProcessor = boost::make_shared<event_processor<> >();
 
     // Create event_receiver instances:
     recorder = boost::make_shared<Recorder>(recorderEventProcessor);
-    recorderAdapter = boost::make_shared<RecorderAdapter>(recorderEventProcessor);
+    recorderAdapter = boost::make_shared<RecorderAdapter>(recorderAdapterEventProcessor);
 
     // Start all event_processor instance except the own one in an separate thread.
-    recorderThread = boost::thread( recorderEventProcessor->get_callable() );
+    recorderThread = boost::thread( recorderEventProcessor->get_callable(recorder) );
+    recorderAdapterThread = boost::thread( recorderAdapterEventProcessor->get_callable() );
 }
 
 MediaRecorder::~MediaRecorder()

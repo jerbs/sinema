@@ -15,6 +15,26 @@
 #include <stdlib.h>
 #include <string.h>
 
+// ===================================================================
+
+RecorderThreadNotification::RecorderThreadNotification()
+{
+    // Here the Recorder thread is triggered to leave the select() call.
+    if (m_fct)
+    {
+        m_fct();
+    }
+}
+
+void RecorderThreadNotification::setCallback(fct_t fct)
+{
+    m_fct = fct;
+}
+
+RecorderThreadNotification::fct_t RecorderThreadNotification::m_fct;
+
+// ===================================================================
+
 void Recorder::process(boost::shared_ptr<RecorderInitEvent> event)
 {
     DEBUG();
@@ -60,4 +80,23 @@ void Recorder::process(boost::shared_ptr<StopRecordingReq> event)
 	fd = -1;
     }
     recorderAdapter->queue_event(boost::make_shared<StopRecordingResp>(error));
+}
+
+void Recorder::operator()()
+{
+    while(!m_event_processor->terminating())
+    {
+	if (0)
+	{
+	    if (!m_event_processor->empty())
+            {
+                m_event_processor->dequeue_and_process();
+            }
+	}
+	else
+	{
+            m_event_processor->dequeue_and_process();
+        }
+
+    }
 }

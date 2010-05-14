@@ -50,9 +50,11 @@ protected:
 private:
     // Boost threads:
     boost::thread recorderThread;
+    boost::thread recorderAdapterThread;
 
     // EventProcessor:
-    boost::shared_ptr<event_processor<> > recorderEventProcessor;
+    boost::shared_ptr<event_processor< concurrent_queue<receive_fct_t, RecorderThreadNotification> > > recorderEventProcessor;
+    boost::shared_ptr<event_processor<> > recorderAdapterEventProcessor;
 
     void sendInitEvents();
 };
