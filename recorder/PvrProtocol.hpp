@@ -1,11 +1,18 @@
 //
 // PVR Protocol
 //
-// Copyright (C) Joachim Erbs, 2010
+// Copyright (C) Joachim Erbs
 //
 
 #ifndef PVR_PROTOCOL_HPP
 #define PVR_PROTOCOL_HPP
+
+#include "platform/Logging.hpp"
+#include "platform/event_receiver.hpp"
+#include "recorder/GeneralEvents.hpp"
+
+#include <boost/shared_ptr.hpp>
+#include <boost/thread/future.hpp>
 
 extern "C"
 {
@@ -13,13 +20,16 @@ extern "C"
 #include <libavformat/avformat.h>
 }
 
+class PvrStorage;
+class RecorderAdapter;
+
 class PvrProtocol
 {
 public:
-    static void init();
+    static void init(boost::shared_ptr<RecorderAdapter> recorderAdapter);
 
 private:
-    PvrProtocol();
+    PvrProtocol(boost::shared_ptr<RecorderAdapter> recorderAdapter);
     ~PvrProtocol();
 
     static int pvrOpen(URLContext *h, const char *filename, int flags);
@@ -31,6 +41,7 @@ private:
     static PvrProtocol* instance;
 
     URLProtocol m_prot;
+    boost::shared_ptr<RecorderAdapter> recorderAdapter;
 };
 
 class PvrContext

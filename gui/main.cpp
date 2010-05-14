@@ -15,7 +15,7 @@
 #include "gui/MainWindow.hpp"
 #include "gui/PlayListWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
-#include "recorder/PvrProtocol.hpp"
+#include "recorder/MediaRecorder.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -42,7 +42,7 @@ int main(int argc, char *argv[])
     ChannelConfigWindow channelConfigWindow;
     PlayListWindow playListWindow(playList);
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
-    PvrProtocol::init();
+    MediaRecorder mediaRecorder;
 
     controlWindow.set_transient_for(mainWindow);
     signalDispatcher.setMainWindow(&mainWindow);
@@ -161,6 +161,7 @@ int main(int argc, char *argv[])
     mediaPlayer.init();
     mediaReceiver.init();
     mediaCommon.init();
+    mediaRecorder.init();
 
     // Enter gtkmm main loop:
     Gtk::Main::run(mainWindow);
