@@ -46,14 +46,12 @@ struct StartRecordingReq
 
 struct StartRecordingResp
 {
-    StartRecordingResp(std::string tempFilename, int fd, int error)
+    StartRecordingResp(std::string tempFilename, int error)
 	: tempFilename(tempFilename),
-	  fd(fd),
 	  error(error)
     {}
 
     std::string tempFilename;
-    int fd;
     int error;
 };
 

@@ -1045,7 +1045,7 @@ void SignalDispatcher::on_channel_selected(int num)
 	channelData.finetune = sd.fine;
 	signalSetFrequency(channelData);
 
-	std::string device = "/dev/video0";
+	std::string device = "pvr:/dev/video0";
 	if (m_PlayList.getCurrent() != device)
 	{
 	    if (!m_PlayList.select(device))

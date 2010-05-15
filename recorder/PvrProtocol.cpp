@@ -90,7 +90,18 @@ int PvrProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
         return AVERROR(resp->error);
     }
 
-    PvrContext* context = new PvrContext(resp->fd);
+    DEBUG(<< resp->tempFilename);
+
+    int access = O_RDONLY;
+#ifdef O_BINARY
+    access |= O_BINARY;
+#endif
+
+    int fd = open(resp->tempFilename.c_str(), access, 0666);
+    if (fd == -1)
+        return AVERROR(errno);
+
+    PvrContext* context = new PvrContext(fd);
     h->priv_data = (void *)context;
     return 0;
 }
@@ -100,7 +111,27 @@ int PvrProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
     DEBUG();
     PvrContext* context = (PvrContext*)(h->priv_data);
     int& fd = context->m_fd;
-    return read(fd, buf, size);
+    int n = 0;
+    while(1)
+    {
+	// FIXME: End of file detection is needed here.
+	int num = read(fd, buf, size);
+	if (num == 0)
+	{
+	    n++;
+	    if (n == 100)
+	    {
+		DEBUG(<< "waiting 1 second");
+		n = 0;
+	    }
+	    usleep(10*1000); // 10 milli seconds
+	}
+	else
+	{
+	    DEBUG(<< num);
+	    return num;
+	}
+    }
 }
 
 int PvrProtocol::pvrWrite(URLContext *h, unsigned char *buf, int size)
@@ -113,7 +144,7 @@ int PvrProtocol::pvrWrite(URLContext *h, unsigned char *buf, int size)
 
 int64_t PvrProtocol::pvrSeek(URLContext *h, int64_t pos, int whence)
 {
-    DEBUG();
+    DEBUG( << "pos=" << pos << ", whence=" << whence);
     PvrContext* context = (PvrContext*)(h->priv_data);
     int& fd = context->m_fd;
 
@@ -149,12 +180,11 @@ int PvrProtocol::pvrClose(URLContext *h)
     }
 
     PvrContext* context = (PvrContext*)(h->priv_data);
-    // int fd = context->m_fd;
+    int fd = context->m_fd;
     delete(context);
     h->priv_data = 0;
     
-    // return close(fd);
-    return 0;
+    return close(fd);
 }
 
 // -------------------------------------------------------------------
