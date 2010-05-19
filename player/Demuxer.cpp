@@ -213,7 +213,7 @@ void Demuxer::updateSystemStreamStatusOpening()
 
 	// At least one stream is successfully opened.
 	systemStreamStatus = SystemStreamOpened;
-	mediaPlayer->queue_event(boost::make_shared<OpenFileResp>());
+	// mediaPlayer->queue_event(boost::make_shared<OpenFileResp>());
 
 	boost::shared_ptr<NotificationFileInfo> nfi(new NotificationFileInfo());
 	const double INV_AV_TIME_BASE = double(1)/AV_TIME_BASE;

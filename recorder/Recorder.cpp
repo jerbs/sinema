@@ -8,6 +8,7 @@
 
 #include "recorder/Recorder.hpp"
 #include "recorder/RecorderAdapter.hpp"
+#include "recorder/MediaRecorder.hpp"
 
 #include <fcntl.h>
 #include <poll.h>
@@ -18,6 +19,13 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
+
+extern "C"
+{
+#include <libavformat/avformat.h>
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
+}
 
 // #undef DEBUG
 // #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
@@ -49,6 +57,8 @@ Recorder::Recorder(event_processor_ptr_type evt_proc)
       m_event_processor(evt_proc),
       m_state(Closed),
       mediaRecorder(0),
+      m_avFormatContext(0),
+      m_tmpFile("/tmp/tv.mpg"),
       m_rfd(-1),
       m_wfd(-1),
       m_piperfd(m_pipefd[0]),
@@ -75,6 +85,7 @@ Recorder::~Recorder()
 {
     if (m_piperfd != -1) close(m_piperfd);
     if (m_pipewfd != -1) close(m_pipewfd);
+    if (m_avFormatContext != 0) closePvrReader();
 
     RecorderThreadNotification::setCallback(0);
 }
@@ -91,8 +102,6 @@ void Recorder::process(boost::shared_ptr<StartRecordingReq> event)
 {
     DEBUG();
 
-    const char* tmpFile = 0;
-
     int access = O_RDONLY | O_LARGEFILE;
 
 #ifdef O_BINARY
@@ -104,7 +113,7 @@ void Recorder::process(boost::shared_ptr<StartRecordingReq> event)
     if (m_rfd == -1)
     {
 	error = errno;
-	ERROR(<< "opening source failed: " << strerror(error));
+	ERROR(<< "opening source \'" << event->filename << "\' failed: " << strerror(error));
     }
     else
     {
@@ -113,20 +122,20 @@ void Recorder::process(boost::shared_ptr<StartRecordingReq> event)
 #ifdef O_BINARY
 	access |= O_BINARY;
 #endif
-	tmpFile = "/tmp/tv.mpg";
-	m_wfd = open(tmpFile, access, 0666);
+	m_wfd = open(m_tmpFile.c_str(), access, 0666);
 	if (m_wfd == -1)
 	{
 	    error = errno;
-	    ERROR(<< "opening target failed: " << strerror(error));
+	    ERROR(<< "opening target \'" << m_tmpFile << "\' failed: " << strerror(error));
 	}
 	else
 	{
 	    m_state = Opened;
+	    // Too early to call openPvrReader.
 	}
     }
 
-    recorderAdapter->queue_event(boost::make_shared<StartRecordingResp>(tmpFile, error));
+    recorderAdapter->queue_event(boost::make_shared<StartRecordingResp>(m_tmpFile, error));
 }
 
 void Recorder::process(boost::shared_ptr<StopRecordingReq> event)
@@ -158,6 +167,7 @@ void Recorder::process(boost::shared_ptr<StopRecordingReq> event)
 	else
 	{
 	    m_wfd = -1;
+	    closePvrReader();
 	}
     }
 
@@ -242,6 +252,8 @@ void Recorder::operator()()
 			{
 			    writePos = 0;
 			}
+
+			updateDuration();
 		    }
 		}
 		if (pfd[1].revents & POLLERR)
@@ -289,6 +301,66 @@ void Recorder::operator()()
             m_event_processor->dequeue_and_process();
         }
     }
+}
+
+void Recorder::openPvrReader()
+{
+    std::string url = "sto:"+m_tmpFile;
+
+    if (m_avFormatContext)
+    {
+	closePvrReader();
+    }
+
+    int ret = av_open_input_file(&m_avFormatContext,
+				 url.c_str(),
+				 0,   // don't force any format, AVInputFormat*,
+				 0,   // use default buffer size
+				 0);  // default AVFormatParameters*
+    if (ret != 0)
+    {
+	ERROR(<< "av_open_input_file failed: " << ret);
+	m_avFormatContext = 0;
+	return;
+    }
+}
+
+void Recorder::closePvrReader()
+{
+    if (m_avFormatContext)
+    {
+	av_close_input_file(m_avFormatContext);
+	m_avFormatContext = 0;
+    }
+}
+
+void Recorder::updateDuration()
+{
+    DEBUG();
+
+    if (m_avFormatContext)
+    {
+	int ret = av_find_stream_info(m_avFormatContext);
+	if (ret < 0)
+	{
+	    ERROR(<< "av_find_stream_info failed: " << ret);
+	    av_close_input_file(m_avFormatContext);
+	    m_avFormatContext = 0;
+	    return;
+	}
+
+	boost::shared_ptr<NotificationFileInfo> nfi(new NotificationFileInfo());
+	const double INV_AV_TIME_BASE = double(1)/AV_TIME_BASE;
+	nfi->fileName = m_tmpFile;
+	nfi->duration = double(m_avFormatContext->duration) * INV_AV_TIME_BASE;
+	nfi->file_size = m_avFormatContext->file_size;
+	mediaRecorder->queue_event(nfi);
+    }
+    else
+    {
+	openPvrReader();
+    }
+
 }
 
 void Recorder::notify()

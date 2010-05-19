@@ -22,6 +22,7 @@
 //#define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 PvrProtocol* PvrProtocol::instance = 0;
+StorageProtocol* StorageProtocol::instance = 0;
 
 static void show_protocols(void)
 {
@@ -34,70 +35,55 @@ static void show_protocols(void)
 
 // -------------------------------------------------------------------
 
-PvrProtocol::PvrProtocol(boost::shared_ptr<RecorderAdapter> recorderAdapter)
-    : recorderAdapter(recorderAdapter)
-{
-    m_prot.name = "pvr";
-    m_prot.url_open = pvrOpen;
-    m_prot.url_read = pvrRead;
-    m_prot.url_write = pvrWrite;
-    m_prot.url_seek = pvrSeek;
-    m_prot.url_close = pvrClose;
-    m_prot.next = 0;
-    m_prot.url_read_pause = 0;
-    m_prot.url_read_seek = 0;
-
-    av_register_protocol(&m_prot);
-
-    show_protocols();
-}
-
-PvrProtocol::~PvrProtocol()
+StorageProtocol::StorageProtocol()
 {
 }
 
-void PvrProtocol::init(boost::shared_ptr<RecorderAdapter> recorderAdapter)
+StorageProtocol::~StorageProtocol()
+{
+}
+
+void StorageProtocol::init()
 {
     if (instance == 0)
     {
-	instance = new PvrProtocol(recorderAdapter);
+	instance = new StorageProtocol();
+	
     }
+
+    static  URLProtocol prot;
+    prot.name = "sto";
+    prot.url_open = pvrOpen;
+    prot.url_read = pvrRead;
+    prot.url_write = pvrWrite;
+    prot.url_seek = pvrSeek;
+    prot.url_close = pvrClose;
+    prot.next = 0;
+    prot.url_read_pause = 0;
+    prot.url_read_seek = 0;
+
+    av_register_protocol(&prot);
+
+    show_protocols();
 }
 
 // -------------------------------------------------------------------
 // Callbacks used by FFmpeg:
 
-int PvrProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
+int StorageProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
 {
     DEBUG(<< filename);
 
-    av_strstart(filename, "pvr:", &filename);
+    av_strstart(filename, "sto:", &filename);
 
-    boost::promise<boost::shared_ptr<StartRecordingResp> > promise;
-    boost::unique_future<boost::shared_ptr<StartRecordingResp> > future = promise.get_future();
-    boost::shared_ptr<StartRecordingReq> req(new StartRecordingReq(filename));
-    boost::shared_ptr<StartRecordingSReq> sreq(new StartRecordingSReq(req, promise));
-
-    instance->recorderAdapter->queue_event(sreq);
-   
-    future.wait();
-
-    boost::shared_ptr<StartRecordingResp> resp = future.get();
-
-    if (resp->error)
-    {
-	DEBUG(<< "open failed: " << strerror(resp->error));
-        return AVERROR(resp->error);
-    }
-
-    DEBUG(<< resp->tempFilename);
+    std::string fileName(filename);
 
     int access = O_RDONLY;
 #ifdef O_BINARY
     access |= O_BINARY;
 #endif
 
-    int fd = open(resp->tempFilename.c_str(), access, 0666);
+    int fd = open(fileName.c_str(), access, 0666);
     if (fd == -1)
         return AVERROR(errno);
 
@@ -106,35 +92,17 @@ int PvrProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
     return 0;
 }
 
-int PvrProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
+int StorageProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
 {
     DEBUG();
     PvrContext* context = (PvrContext*)(h->priv_data);
     int& fd = context->m_fd;
-    int n = 0;
-    while(1)
-    {
-	// FIXME: End of file detection is needed here.
-	int num = read(fd, buf, size);
-	if (num == 0)
-	{
-	    n++;
-	    if (n == 100)
-	    {
-		DEBUG(<< "waiting 1 second");
-		n = 0;
-	    }
-	    usleep(10*1000); // 10 milli seconds
-	}
-	else
-	{
-	    DEBUG(<< num);
-	    return num;
-	}
-    }
+    int num = read(fd, buf, size);
+    DEBUG(<< num);
+    return num;
 }
 
-int PvrProtocol::pvrWrite(URLContext *h, unsigned char *buf, int size)
+int StorageProtocol::pvrWrite(URLContext *h, unsigned char *buf, int size)
 {
     DEBUG();
     PvrContext* context = (PvrContext*)(h->priv_data);
@@ -142,7 +110,7 @@ int PvrProtocol::pvrWrite(URLContext *h, unsigned char *buf, int size)
     return write(fd, buf, size);
 }
 
-int64_t PvrProtocol::pvrSeek(URLContext *h, int64_t pos, int whence)
+int64_t StorageProtocol::pvrSeek(URLContext *h, int64_t pos, int whence)
 {
     DEBUG( << "pos=" << pos << ", whence=" << whence);
     PvrContext* context = (PvrContext*)(h->priv_data);
@@ -158,6 +126,110 @@ int64_t PvrProtocol::pvrSeek(URLContext *h, int64_t pos, int whence)
     return lseek64(fd, pos, whence);
 }
 
+int StorageProtocol::pvrClose(URLContext *h)
+{
+    DEBUG();
+
+    PvrContext* context = (PvrContext*)(h->priv_data);
+    int fd = context->m_fd;
+    delete(context);
+    h->priv_data = 0;
+    
+    return close(fd);
+}
+
+// -------------------------------------------------------------------
+
+PvrProtocol::PvrProtocol(boost::shared_ptr<RecorderAdapter> recorderAdapter)
+    : recorderAdapter(recorderAdapter)
+{
+}
+
+PvrProtocol::~PvrProtocol()
+{
+}
+
+void PvrProtocol::init(boost::shared_ptr<RecorderAdapter> recorderAdapter)
+{
+    if (instance == 0)
+    {
+	instance = new PvrProtocol(recorderAdapter);
+    }
+
+    static  URLProtocol prot;
+    prot.name = "pvr";
+    prot.url_open = pvrOpen;
+    prot.url_read = pvrRead;
+    prot.url_write = pvrWrite;
+    prot.url_seek = pvrSeek;
+    prot.url_close = pvrClose;
+    prot.next = 0;
+    prot.url_read_pause = 0;
+    prot.url_read_seek = 0;
+
+    av_register_protocol(&prot);
+
+    show_protocols();
+}
+
+// -------------------------------------------------------------------
+// Callbacks used by FFmpeg:
+
+int PvrProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
+{
+    DEBUG(<< filename);
+
+    av_strstart(filename, "pvr:", &filename);
+
+    std::string fileName(filename);
+
+    boost::promise<boost::shared_ptr<StartRecordingResp> > promise;
+    boost::unique_future<boost::shared_ptr<StartRecordingResp> > future = promise.get_future();
+    boost::shared_ptr<StartRecordingReq> req(new StartRecordingReq(fileName));
+    boost::shared_ptr<StartRecordingSReq> sreq(new StartRecordingSReq(req, promise));
+
+    instance->recorderAdapter->queue_event(sreq);
+   
+    future.wait();
+
+    boost::shared_ptr<StartRecordingResp> resp = future.get();
+
+    if (resp->error)
+    {
+	DEBUG(<< "open failed: " << strerror(resp->error));
+	return AVERROR(resp->error);
+    }
+
+    DEBUG(<< resp->tempFilename);
+
+    return StorageProtocol::pvrOpen(h, resp->tempFilename.c_str(), flags);
+}
+
+int PvrProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
+{
+    DEBUG();
+    int n = 0;
+    while(1)
+    {
+	// FIXME: End of file detection is needed here.
+	int num = StorageProtocol::pvrRead(h, buf, size);
+	if (num == 0)
+	{
+	    n++;
+	    if (n == 100)
+	    {
+		DEBUG(<< "waiting 1 second");
+		n = 0;
+	    }
+	    usleep(10*1000); // 10 milli seconds
+	}
+	else
+	{
+	    return num;
+	}
+    }
+}
+
 int PvrProtocol::pvrClose(URLContext *h)
 {
     DEBUG();
@@ -168,7 +240,7 @@ int PvrProtocol::pvrClose(URLContext *h)
     boost::shared_ptr<StopRecordingSReq> sreq(new StopRecordingSReq(req, promise));
 
     instance->recorderAdapter->queue_event(sreq);
-   
+
     future.wait();
 
     boost::shared_ptr<StopRecordingResp> resp = future.get();
@@ -176,15 +248,10 @@ int PvrProtocol::pvrClose(URLContext *h)
     if (resp->error)
     {
 	DEBUG(<< "close failed: " << strerror(resp->error));
-        return AVERROR(resp->error);
+	return AVERROR(resp->error);
     }
 
-    PvrContext* context = (PvrContext*)(h->priv_data);
-    int fd = context->m_fd;
-    delete(context);
-    h->priv_data = 0;
-    
-    return close(fd);
+    return StorageProtocol::pvrClose(h);
 }
 
 // -------------------------------------------------------------------

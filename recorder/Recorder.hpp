@@ -10,6 +10,7 @@
 #include "platform/Logging.hpp"
 #include "platform/event_receiver.hpp"
 #include "recorder/GeneralEvents.hpp"
+#include "player/GeneralEvents.hpp"
 
 #include <boost/shared_ptr.hpp>
 
@@ -42,11 +43,19 @@ private:
     void process(boost::shared_ptr<StartRecordingReq> event);
     void process(boost::shared_ptr<StopRecordingReq> event);
 
+    void openPvrReader();
+    void closePvrReader();
+    void updateDuration();
+
     static Recorder* instance;
     static void notify();
 
     MediaRecorder* mediaRecorder;
     boost::shared_ptr<RecorderAdapter> recorderAdapter;
+
+    AVFormatContext* m_avFormatContext;
+
+    std::string m_tmpFile;
 
     int m_rfd;
     int m_wfd;

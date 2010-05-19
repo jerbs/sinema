@@ -62,8 +62,8 @@ void MediaRecorder::init()
 {
     DEBUG();
     sendInitEvents();
+    StorageProtocol::init();
     PvrProtocol::init(recorderAdapter);
-    DEBUG(<< "end");
 }
 
 void MediaRecorder::sendInitEvents()

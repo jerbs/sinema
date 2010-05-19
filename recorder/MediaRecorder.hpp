@@ -10,6 +10,7 @@
 #include "platform/Logging.hpp"
 #include "platform/event_receiver.hpp"
 #include "recorder/GeneralEvents.hpp"
+#include "player/GeneralEvents.hpp"
 
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
@@ -57,6 +58,8 @@ private:
     boost::shared_ptr<event_processor<> > recorderAdapterEventProcessor;
 
     void sendInitEvents();
+
+    virtual void process(boost::shared_ptr<NotificationFileInfo> event) {};
 };
 
 #endif

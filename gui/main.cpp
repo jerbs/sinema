@@ -15,7 +15,7 @@
 #include "gui/MainWindow.hpp"
 #include "gui/PlayListWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
-#include "recorder/MediaRecorder.hpp"
+#include "gui/GtkmmMediaRecorder.hpp"
 
 int main(int argc, char *argv[])
 {
@@ -42,13 +42,19 @@ int main(int argc, char *argv[])
     ChannelConfigWindow channelConfigWindow;
     PlayListWindow playListWindow(playList);
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
-    MediaRecorder mediaRecorder;
+    GtkmmMediaRecorder mediaRecorder;
 
     controlWindow.set_transient_for(mainWindow);
     signalDispatcher.setMainWindow(&mainWindow);
 
     // Compiler needs help to find the correct overloaded method:
     void (GtkmmMediaPlayer::*GtkmmMediaPlayer_ClipSrc)(boost::shared_ptr<ClipVideoSrcEvent> event) = &GtkmmMediaPlayer::clip;
+
+    // ---------------------------------------------------------------
+    // Signals: GtkmmMediaRecorder -> *
+    mediaRecorder.notificationDuration.connect( sigc::mem_fun(controlWindow, &ControlWindow::on_set_duration) );
+    mediaRecorder.notificationDuration.connect( sigc::mem_fun(&mainWindow, &MainWindow::set_duration) );
+    mediaRecorder.notificationDuration.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_set_duration) );
 
     // ---------------------------------------------------------------
     // Signals: GtkmmMediaPlayer -> ControlWindow

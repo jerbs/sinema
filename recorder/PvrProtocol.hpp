@@ -23,14 +23,14 @@ extern "C"
 class PvrStorage;
 class RecorderAdapter;
 
-class PvrProtocol
+class StorageProtocol
 {
 public:
-    static void init(boost::shared_ptr<RecorderAdapter> recorderAdapter);
+    static void init();
 
-private:
-    PvrProtocol(boost::shared_ptr<RecorderAdapter> recorderAdapter);
-    ~PvrProtocol();
+protected:
+    StorageProtocol();
+    ~StorageProtocol();
 
     static int pvrOpen(URLContext *h, const char *filename, int flags);
     static int pvrRead(URLContext *h, unsigned char *buf, int size);
@@ -38,15 +38,36 @@ private:
     static int64_t pvrSeek(URLContext *h, int64_t pos, int whence);
     static int pvrClose(URLContext *h);
 
+private:
+    static StorageProtocol* instance;
+
+    URLProtocol m_prot;
+};
+
+class PvrProtocol : public StorageProtocol
+{
+public:
+    static void init(boost::shared_ptr<RecorderAdapter> recorderAdapter);
+
+protected:
+    PvrProtocol(boost::shared_ptr<RecorderAdapter> recorderAdapter);
+    ~PvrProtocol();
+
+    static int pvrOpen(URLContext *h, const char *filename, int flags);
+    static int pvrRead(URLContext *h, unsigned char *buf, int size);
+    static int pvrClose(URLContext *h);
+
+private:
     static PvrProtocol* instance;
 
     URLProtocol m_prot;
     boost::shared_ptr<RecorderAdapter> recorderAdapter;
+   
 };
 
 class PvrContext
 {
-    friend class PvrProtocol;
+    friend class StorageProtocol;
 
     PvrContext(int fd)
 	: m_fd(fd)
