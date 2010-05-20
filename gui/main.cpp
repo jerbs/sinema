@@ -45,6 +45,9 @@ int main(int argc, char *argv[])
     GtkmmMediaRecorder mediaRecorder;
 
     controlWindow.set_transient_for(mainWindow);
+    channelConfigWindow.set_transient_for(mainWindow);
+    playListWindow.set_transient_for(mainWindow);
+
     signalDispatcher.setMainWindow(&mainWindow);
 
     // Compiler needs help to find the correct overloaded method:
