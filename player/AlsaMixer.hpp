@@ -1,7 +1,7 @@
 //
 // ALSA Mixer Interface
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs
 //
 
 #ifndef ALSA_MIXER_HPP
@@ -42,32 +42,20 @@ public:
     void setPlaybackSwitch(bool enabled);
 
 private:
+
+    void dump();
+    void getVolumeAndSwitch(snd_mixer_elem_t* elem, long& volume, bool& enabled);
     bool isPlaybackVolumeElem(snd_mixer_elem_t* elem);
     void sendCurrentPlaybackValues();
+    void setDefault(snd_mixer_elem_t* elem);
+    void setVolume(snd_mixer_elem_t* elem, long volume);
+    void setSwitch(snd_mixer_elem_t* elem, bool enabled);
 
     AudioOutput* audioOutput;
     MediaPlayer* mediaPlayer;
     std::string card;
     snd_mixer_t* handle;
     snd_mixer_elem_t* playbackVolumeElem;
-    
-    long pmin, pmax;
-    bool pMono;
-    bool pMuteSwitch;
-
-    struct ChannelInfo
-    {
-	ChannelInfo(std::string name)
-	    : name(name)
-	{}
-	std::string name;
-	long volume;
-	bool enabled;
-    };
-
-    typedef std::map<snd_mixer_selem_channel_id_t, ChannelInfo>  ChannelMap;
-    typedef ChannelMap::value_type ChannelMapValue;
-    ChannelMap channels;
 
     boost::thread eventProcessorThread;
 

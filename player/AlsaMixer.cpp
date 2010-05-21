@@ -1,7 +1,7 @@
 //
 // ALSA Mixer Interface
 //
-// Copyright (C) Joachim Erbs, 2009, 2010
+// Copyright (C) Joachim Erbs
 //
 
 #include "player/AlsaMixer.hpp"
@@ -20,6 +20,30 @@ std::ostream& operator<<(std::ostream& strm, snd_mixer_elem_t* elem)
 	 << snd_mixer_selem_id_get_index(sid);
 
     return strm;
+}
+
+// -------------------------------------------------------------------
+
+static snd_mixer_selem_channel_id_t firstChannel() {return SND_MIXER_SCHN_FRONT_LEFT;}
+static snd_mixer_selem_channel_id_t lastChannel() {return SND_MIXER_SCHN_LAST;}
+static snd_mixer_selem_channel_id_t nextChannel(snd_mixer_selem_channel_id_t& chn)
+{
+    switch(chn)
+    {
+    case SND_MIXER_SCHN_UNKNOWN: chn = SND_MIXER_SCHN_FRONT_LEFT; break;
+    case SND_MIXER_SCHN_FRONT_LEFT: chn = SND_MIXER_SCHN_FRONT_RIGHT; break;
+    case SND_MIXER_SCHN_FRONT_RIGHT: chn = SND_MIXER_SCHN_REAR_LEFT; break;
+    case SND_MIXER_SCHN_REAR_LEFT: chn = SND_MIXER_SCHN_REAR_RIGHT; break;
+    case SND_MIXER_SCHN_REAR_RIGHT: chn = SND_MIXER_SCHN_FRONT_CENTER; break;
+    case SND_MIXER_SCHN_FRONT_CENTER: chn = SND_MIXER_SCHN_WOOFER; break;
+    case SND_MIXER_SCHN_WOOFER: chn = SND_MIXER_SCHN_SIDE_LEFT; break;
+    case SND_MIXER_SCHN_SIDE_LEFT: chn = SND_MIXER_SCHN_SIDE_RIGHT; break;
+    case SND_MIXER_SCHN_SIDE_RIGHT: chn = SND_MIXER_SCHN_REAR_CENTER; break;
+    case SND_MIXER_SCHN_REAR_CENTER: chn = SND_MIXER_SCHN_LAST; break;
+    case SND_MIXER_SCHN_LAST: chn = SND_MIXER_SCHN_LAST; break;
+    }
+
+    return chn;
 }
 
 // -------------------------------------------------------------------
@@ -47,11 +71,7 @@ AFMixer::AFMixer(AudioOutput* audioOutput, MediaPlayer* mediaPlayer)
       mediaPlayer(mediaPlayer),
       card("default"),
       handle(0),
-      playbackVolumeElem(0),
-      pmin(0),
-      pmax(0),
-      pMono(false),
-      pMuteSwitch(false)
+      playbackVolumeElem(0)
 {
     int ret;
 
@@ -87,6 +107,10 @@ AFMixer::AFMixer(AudioOutput* audioOutput, MediaPlayer* mediaPlayer)
     }
 
     DEBUG(<< "Searching playback volume element...");
+
+    // For debugging only:
+    dump();
+
     snd_mixer_elem_t* elem = snd_mixer_first_elem(handle);
     while (elem)
     {
@@ -96,15 +120,20 @@ AFMixer::AFMixer(AudioOutput* audioOutput, MediaPlayer* mediaPlayer)
 
 	    if (isPlaybackVolumeElem(elem))
 	    {
-		DEBUG(<< "Found playback volume element.");
-		playbackVolumeElem = elem;
-		sendCurrentPlaybackValues();
-		break;
+		if (!playbackVolumeElem)
+		{
+		    // Assuming that the first one is the important one.
+		    DEBUG(<< "Found playback volume element.");
+		    playbackVolumeElem = elem;
+		}
+		setDefault(elem);
 	    }
 	}
 
 	elem = snd_mixer_elem_next(elem);
     }
+
+    sendCurrentPlaybackValues();
 
     // Start AFMixerEventProcessor instance in an own thread:
     AFMixerEventProcessor eventProcessor = AFMixerEventProcessor(handle);
@@ -128,84 +157,84 @@ void AFMixer::process(boost::shared_ptr<AlsaMixerElemEvent> event)
 
 void AFMixer::setPlaybackVolume(long volume)
 {
-    for (ChannelMap::iterator pos = channels.begin();
-	 pos != channels.end();
-	 pos++)
-    {
-	const snd_mixer_selem_channel_id_t& chn = pos->first;
-	ChannelInfo& channelInfo = pos->second;
-	snd_mixer_selem_set_playback_volume(playbackVolumeElem, chn, volume);
-    }
+    setVolume(playbackVolumeElem, volume);
 }
 
 void AFMixer::setPlaybackSwitch(bool enabled)
 {
-    for (ChannelMap::iterator pos = channels.begin();
-	 pos != channels.end();
-	 pos++)
+    setSwitch(playbackVolumeElem, enabled);
+}
+
+void AFMixer::setVolume(snd_mixer_elem_t* elem,
+			long volume)
+{
+    for (snd_mixer_selem_channel_id_t chn = firstChannel();
+	 chn < lastChannel();
+	 nextChannel(chn))
     {
-	const snd_mixer_selem_channel_id_t& chn = pos->first;
-	ChannelInfo& channelInfo = pos->second;
-	snd_mixer_selem_set_playback_switch(playbackVolumeElem, chn, enabled);
+	if (snd_mixer_selem_has_playback_channel(elem, chn))
+	{
+	    snd_mixer_selem_set_playback_volume(elem, chn, volume);
+	}
     }
+}
+
+void AFMixer::setSwitch(snd_mixer_elem_t* elem,
+			bool enabled)
+{
+    for (snd_mixer_selem_channel_id_t chn = firstChannel();
+	 chn < lastChannel();
+	 nextChannel(chn))
+    {
+	if (snd_mixer_selem_has_playback_channel(elem, chn))
+	{
+	    snd_mixer_selem_set_playback_switch(elem, chn, enabled);
+	}
+    }
+}
+
+void AFMixer::getVolumeAndSwitch(snd_mixer_elem_t* elem,
+				 long& volume, bool& enabled)
+{
+    volume = 0;
+    enabled = true;
+    long count = 0;
+
+    for (snd_mixer_selem_channel_id_t chn = firstChannel();
+	 chn < lastChannel();
+	 nextChannel(chn))
+    {
+	if (snd_mixer_selem_has_playback_channel(elem, chn))
+	{	
+	    long vol;
+	    int swt;
+
+	    snd_mixer_selem_get_playback_volume(elem, chn, &vol);
+	    snd_mixer_selem_get_playback_switch(elem, chn, &swt);
+
+	    DEBUG(<< snd_mixer_selem_channel_name(chn) << ": "
+		  << vol << ", "
+		  << swt ? "on" : "off");
+
+	    volume += vol;
+	    count++;
+	    enabled = enabled && swt;
+	}
+    }
+
+    volume = count ? volume / count : 0;
 }
 
 bool AFMixer::isPlaybackVolumeElem(snd_mixer_elem_t* elem)
 {
-    bool hasPlaybackVolume = false;
-
     if (snd_mixer_selem_has_common_volume(elem))
     {
-	hasPlaybackVolume = snd_mixer_selem_has_playback_volume_joined(elem);
+	return snd_mixer_selem_has_playback_volume_joined(elem);
     }
     else
     {
-	hasPlaybackVolume = snd_mixer_selem_has_playback_volume(elem);
+	return snd_mixer_selem_has_playback_volume(elem);
     }
-
-    if (!hasPlaybackVolume)
-    {
-	return false;
-    }
-
-    if (snd_mixer_selem_has_common_switch(elem))
-    {
-	pMuteSwitch = snd_mixer_selem_has_playback_switch_joined(elem);
-    }
-    else
-    {
-	pMuteSwitch = snd_mixer_selem_has_playback_switch(elem);
-    }
-
-    // Remove all elements from container:
-    channels.clear();
-
-    if (snd_mixer_selem_is_playback_mono(elem))
-    {
-	pMono = true;
-	DEBUG(<< "Mono:");
-    }
-    else
-    {
-	pMono = false;
-	DEBUG(<< "Multi Channel:");
-    }
-
-    for (int i = 0; i <= SND_MIXER_SCHN_LAST; i++)
-    {
-	snd_mixer_selem_channel_id_t chn = snd_mixer_selem_channel_id_t(i);
-	if (snd_mixer_selem_has_playback_channel(elem, chn))
-	{
-	    std::string name(snd_mixer_selem_channel_name(chn));
-	    channels.insert(ChannelMapValue(chn,ChannelInfo(name)));
-	    DEBUG(<< "Channel " << i << ": " << name);
-	}
-    }
-
-    snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
-    DEBUG(<< "Range: " << pmin << "..." << pmax);
-
-    return true;
 }
 
 void AFMixer::sendCurrentPlaybackValues()
@@ -213,45 +242,89 @@ void AFMixer::sendCurrentPlaybackValues()
     if (!playbackVolumeElem)
 	return;
 
-    long volume = 0;
-    long count = 0;
-    bool enabled = true;
+    long volume;
+    bool enabled;
+    getVolumeAndSwitch(playbackVolumeElem, volume, enabled);
 
-    for (ChannelMap::iterator pos = channels.begin();
-	 pos != channels.end();
-	 pos++)
-    {
-	const snd_mixer_selem_channel_id_t& chn = pos->first;
-	ChannelInfo& channelInfo = pos->second;
-	
-	long& pvol = channelInfo.volume;
-	int psw;
-	
-	snd_mixer_selem_get_playback_volume(playbackVolumeElem, chn, &pvol);
-
-	snd_mixer_selem_get_playback_switch(playbackVolumeElem, chn, &psw);
-
-	channelInfo.enabled = psw;
-
-	DEBUG(<< channelInfo.name << ": "
-	      << channelInfo.volume << ", "
-	      << (channelInfo.enabled ? "on" : "off"));
-
-	volume += pvol;
-	count++;
-	enabled = enabled && psw;
-    }
+    long pmin;
+    long pmax;
+    snd_mixer_selem_get_playback_volume_range(playbackVolumeElem, &pmin, &pmax);
 
     boost::shared_ptr<NotificationCurrentVolume> event(new NotificationCurrentVolume());
     std::stringstream ss;
     ss << playbackVolumeElem;
     event->name = ss.str();
-    event->volume = count ? volume / count : 0;
+    event->volume = volume;
     event->enabled = enabled;
     event->minVolume = pmin;
     event->maxVolume = pmax;
 
     mediaPlayer->queue_event(event);
+}
+
+void AFMixer::setDefault(snd_mixer_elem_t* elem)
+{
+    snd_mixer_selem_id_t *sid;
+    snd_mixer_selem_id_alloca(&sid);
+    snd_mixer_selem_get_id(elem, sid);
+
+    const char* name = snd_mixer_selem_id_get_name(sid);
+
+    long pmin;
+    long pmax;
+    snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
+
+    DEBUG(<< name);
+
+    if (strcmp(name, "Master") == 0 ||
+	strcmp(name, "Front") == 0 ||
+	strcmp(name, "Center") == 0)
+    {
+	DEBUG(<< name << ", " << pmax);
+
+	long volume;
+	bool enabled;
+	getVolumeAndSwitch(elem, volume, enabled);
+
+	setSwitch(elem, true);
+	if (volume < (pmax >> 2))
+	    setVolume(elem, pmax >> 1);
+    }
+}
+
+void AFMixer::dump()
+{
+    snd_mixer_elem_t* elem = snd_mixer_first_elem(handle);
+    while (elem)
+    {
+	if (snd_mixer_selem_is_active(elem))
+	{
+	    DEBUG(<< "name = " << elem);
+	    DEBUG(<< "  has_common_switch = " << snd_mixer_selem_has_common_switch(elem));
+	    DEBUG(<< "  has_playback_switch_joined = " << snd_mixer_selem_has_playback_switch_joined(elem));
+	    DEBUG(<< "  has_playback_switch = " << snd_mixer_selem_has_playback_switch(elem));
+	    DEBUG(<< "  has_common_volume = " << snd_mixer_selem_has_common_volume(elem));
+	    DEBUG(<< "  has_playback_volume_joined = " << snd_mixer_selem_has_playback_volume_joined(elem));
+	    DEBUG(<< "  has_playback_volume = " << snd_mixer_selem_has_playback_volume(elem));
+	    DEBUG(<< "  is_playback_mono = " << snd_mixer_selem_is_playback_mono(elem));
+
+	    long pmin;
+	    long pmax;
+	    snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
+	    DEBUG(<< "  playback_volume_range: " << pmin << "..." << pmax);
+
+	    for (snd_mixer_selem_channel_id_t chn = firstChannel();
+		 chn < lastChannel();
+		 nextChannel(chn))
+	    {
+		if (snd_mixer_selem_has_playback_channel(elem, chn))
+		    DEBUG(<< "    Channel " << chn
+			  << ": " << snd_mixer_selem_channel_name(chn));
+	    }
+	}
+
+	elem = snd_mixer_elem_next(elem);
+    }
 }
 
 // -------------------------------------------------------------------
