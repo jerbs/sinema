@@ -12,6 +12,7 @@
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/GtkmmMediaReceiver.hpp"
 #include "gui/GtkmmMediaCommon.hpp"
+#include "gui/InhibitScreenSaver.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/PlayListWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
@@ -43,6 +44,7 @@ int main(int argc, char *argv[])
     PlayListWindow playListWindow(playList);
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
     GtkmmMediaRecorder mediaRecorder;
+    InhibitScreenSaver inhibitScreenSaver;
 
     controlWindow.set_transient_for(mainWindow);
     channelConfigWindow.set_transient_for(mainWindow);
@@ -164,6 +166,11 @@ int main(int argc, char *argv[])
 
     // Signals: GtkmmMediaReceiver -> SignalDispatcher
     mediaReceiver.notificationChannelTuned.connect( sigc::mem_fun(&signalDispatcher, &SignalDispatcher::on_tuner_channel_tuned) );
+
+    // ---------------------------------------------------------------
+    // Signals: MediaPlayer -> InhibitScreenSaver
+    mediaPlayer.notificationCurrentTime.connect( sigc::hide_functor<0, sigc::bound_mem_functor0<void, InhibitScreenSaver> >
+						 (sigc::mem_fun(inhibitScreenSaver, &InhibitScreenSaver::simulateUserActivity) ) );
 
     // ---------------------------------------------------------------
     // Send init events to all threads of all subsystems:
