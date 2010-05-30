@@ -8,6 +8,7 @@
 #define INHIBIT_SCREEN_SAVER_HPP
 
 #include <boost/shared_ptr.hpp>
+#include <gtkmm/widget.h>
 
 class InhibitScreenSaverImpl;
 
@@ -16,6 +17,7 @@ class InhibitScreenSaver
 public:
     InhibitScreenSaver();
 
+    void on_realize(Gtk::Widget* widget);
     void simulateUserActivity();
 
 private:

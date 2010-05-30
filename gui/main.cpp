@@ -171,6 +171,7 @@ int main(int argc, char *argv[])
     // Signals: MediaPlayer -> InhibitScreenSaver
     mediaPlayer.notificationCurrentTime.connect( sigc::hide_functor<0, sigc::bound_mem_functor0<void, InhibitScreenSaver> >
 						 (sigc::mem_fun(inhibitScreenSaver, &InhibitScreenSaver::simulateUserActivity) ) );
+    mediaPlayer.signal_realize().connect(sigc::bind(sigc::mem_fun(inhibitScreenSaver, &InhibitScreenSaver::on_realize), &mediaPlayer) );
 
     // ---------------------------------------------------------------
     // Send init events to all threads of all subsystems:
