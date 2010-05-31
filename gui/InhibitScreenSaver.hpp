@@ -11,6 +11,7 @@
 #include <gtkmm/widget.h>
 
 class InhibitScreenSaverImpl;
+class XScreenSaverInterface;
 
 class InhibitScreenSaver
 {
@@ -22,6 +23,7 @@ public:
 
 private:
     boost::shared_ptr<InhibitScreenSaverImpl> m_impl;
+    boost::shared_ptr<XScreenSaverInterface> m_XScreenSaverInterface;
 };
 
 #endif

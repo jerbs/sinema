@@ -130,7 +130,7 @@ XFWindow::XFWindow(unsigned int width, unsigned int height)
     XEvent evt;
     do
     {
-	// Wait until a requested event occurs (XClush is called by XNextEvent):
+	// Wait until a requested event occurs (XFlush is called by XNextEvent):
 	XNextEvent( m_display, &evt );
     }
     // Wait until the XMapWindow request is processed by the X server.

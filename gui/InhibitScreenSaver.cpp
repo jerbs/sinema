@@ -12,8 +12,13 @@
 
 #include <gdk/gdkx.h>
 
-#undef DEBUG 
-#define DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
+#include <X11/Xlib.h>
+#include <X11/Xatom.h>
+
+// #undef DEBUG 
+// #define DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
+
+// -------------------------------------------------------------------
 
 class InhibitScreenSaverImpl
 {
@@ -51,8 +56,6 @@ class InhibitScreenSaverImpl
 
     int m_index;
     bool m_connected;
-
-    Display* m_xdisplay;
 };
 
 const InhibitScreenSaverImpl::DBusObject InhibitScreenSaverImpl::screenSaver[] = {
@@ -65,14 +68,34 @@ const int InhibitScreenSaverImpl::numScreenSaver =
 
 // -------------------------------------------------------------------
 
-const char *progname = "VideoPlayer";
-Atom XA_SCREENSAVER, XA_SCREENSAVER_VERSION, XA_SCREENSAVER_RESPONSE;
-Atom XA_SCREENSAVER_ID, XA_SCREENSAVER_STATUS, XA_EXIT;
-Atom XA_VROOT, XA_SELECT, XA_DEMO, XA_BLANK, XA_LOCK;
+class XScreenSaverInterface
+{
+ public:
+    XScreenSaverInterface(Display* display)
+	: m_xdisplay(display)
+    {
+	findScreenSaverWindow();
+    }
 
+    void simulateUserActivity();
 
+ private:
+    void findScreenSaverWindow();
 
-#include "remote.c"
+    
+    Display* m_xdisplay;
+    Window m_ScreenSaverWindow;
+
+    static int errorHandler(Display *dpy, XErrorEvent *error);
+
+    static XErrorHandler oldErrorHandler;
+    static bool gotBadWindow;
+};
+
+XErrorHandler XScreenSaverInterface::oldErrorHandler = 0;
+bool XScreenSaverInterface::gotBadWindow;
+
+// -------------------------------------------------------------------
 
 InhibitScreenSaver::InhibitScreenSaver()
     : m_impl(new InhibitScreenSaverImpl())
@@ -83,50 +106,21 @@ extern Display * get_x_display(Gtk::Widget & widget);
 
 void InhibitScreenSaver::on_realize(Gtk::Widget* widget)
 {
-    m_impl->m_xdisplay = get_x_display(*widget);
-    Display* dpy = m_impl->m_xdisplay;
-
-    XA_VROOT = XInternAtom (dpy, "__SWM_VROOT", False);
-    XA_SCREENSAVER = XInternAtom (dpy, "SCREENSAVER", False);
-    XA_SCREENSAVER_ID = XInternAtom (dpy, "_SCREENSAVER_ID", False);
-    XA_SCREENSAVER_VERSION = XInternAtom (dpy, "_SCREENSAVER_VERSION",False);
-    XA_SCREENSAVER_STATUS = XInternAtom (dpy, "_SCREENSAVER_STATUS", False);
-    XA_SCREENSAVER_RESPONSE = XInternAtom (dpy, "_SCREENSAVER_RESPONSE", False);
-    //XA_ACTIVATE = XInternAtom (dpy, "ACTIVATE", False);
-    //XA_DEACTIVATE = XInternAtom (dpy, "DEACTIVATE", False);
-    //XA_RESTART = XInternAtom (dpy, "RESTART", False);
-    //XA_CYCLE = XInternAtom (dpy, "CYCLE", False);
-    //XA_NEXT = XInternAtom (dpy, "NEXT", False);
-    //XA_PREV = XInternAtom (dpy, "PREV", False);
-    XA_SELECT = XInternAtom (dpy, "SELECT", False);
-    XA_EXIT = XInternAtom (dpy, "EXIT", False);
-    XA_DEMO = XInternAtom (dpy, "DEMO", False);
-    //XA_PREFS = XInternAtom (dpy, "PREFS", False);
-    XA_LOCK = XInternAtom (dpy, "LOCK", False);
-    XA_BLANK = XInternAtom (dpy, "BLANK", False);
-    //XA_THROTTLE = XInternAtom (dpy, "THROTTLE", False);
-    //XA_UNTHROTTLE = XInternAtom (dpy, "UNTHROTTLE", False);
-
+    m_XScreenSaverInterface = boost::make_shared<XScreenSaverInterface>(get_x_display(*widget));
 }
 
 void InhibitScreenSaver::simulateUserActivity()
 {
-    if (m_impl->m_xdisplay)
-    {
-	char* error_msg;
-	Atom XA_DEACTIVATE = XInternAtom(m_impl->m_xdisplay, "DEACTIVATE", False);
-	xscreensaver_command(m_impl->m_xdisplay, XA_DEACTIVATE, 0, true, 0);
-    }
-
     m_impl->simulateUserActivity();
+    if (m_XScreenSaverInterface)
+	m_XScreenSaverInterface->simulateUserActivity();
 }
 
 // -------------------------------------------------------------------
 
 InhibitScreenSaverImpl::InhibitScreenSaverImpl()
     : m_index(0),
-      m_connected(false),
-      m_xdisplay(0)
+      m_connected(false)
 {
     DBus::init();    
 
@@ -221,3 +215,105 @@ void InhibitScreenSaverImpl::recvSimulateUserActivityResponse()
 	ERROR(<< "DBus::ErrorMessage: " << errormsg->name());
     }
 }
+
+// -------------------------------------------------------------------
+
+int XScreenSaverInterface::errorHandler(Display *dpy, XErrorEvent *error)
+{
+    if (error->error_code == BadWindow)
+    {
+	gotBadWindow = true;
+    }
+
+    if (oldErrorHandler)
+	return (*oldErrorHandler) (dpy, error);
+
+    return 0;
+}
+
+void XScreenSaverInterface::findScreenSaverWindow()
+{
+    Window window = RootWindowOfScreen (DefaultScreenOfDisplay (m_xdisplay));
+    Window root;
+    Window parent;
+    Window *children = 0;
+    unsigned int nchildren;
+
+    if (! XQueryTree (m_xdisplay, window, &root, &parent, &children, &nchildren))
+	return;
+
+    if (children)
+    {
+	if (window != root)
+	    return;
+
+	if (parent)
+	    return;
+
+	for (int i = 0; i < nchildren; i++)
+	{
+	    XSync (m_xdisplay, False);
+
+	    gotBadWindow = False;
+	    oldErrorHandler = XSetErrorHandler (errorHandler);
+
+	    Atom XA_SCREENSAVER_VERSION = XInternAtom (m_xdisplay, "_SCREENSAVER_VERSION",False);
+	    Atom actual_type;
+	    int actual_format;
+	    unsigned long nitems;
+	    unsigned long bytes_after;
+	    unsigned char *prop;
+
+	    int status = XGetWindowProperty (m_xdisplay, children[i], XA_SCREENSAVER_VERSION,
+					     0, 200, False, XA_STRING, &actual_type,
+					     &actual_format, &nitems, &bytes_after, &prop);
+
+	    XSync(m_xdisplay, False);
+
+	    XSetErrorHandler (oldErrorHandler);
+	    oldErrorHandler = 0;
+
+	    if (gotBadWindow)
+	    {
+		status = BadWindow;
+		gotBadWindow = false;
+	    }
+
+	    if (status == Success && actual_type != None)
+	    {
+		m_ScreenSaverWindow = children[i];
+	    }
+	}
+
+	XFree (children);
+    }
+}
+
+void XScreenSaverInterface::simulateUserActivity()
+{
+    if (!m_ScreenSaverWindow)
+	return;
+      
+    Atom XA_SCREENSAVER = XInternAtom (m_xdisplay, "SCREENSAVER", False);
+    Atom XA_DEACTIVATE = XInternAtom(m_xdisplay, "DEACTIVATE", False);
+
+    XEvent event;
+    event.xany.type = ClientMessage;
+    event.xclient.display = m_xdisplay;
+    event.xclient.window = m_ScreenSaverWindow;
+    event.xclient.message_type = XA_SCREENSAVER;
+    event.xclient.format = 32;
+    memset (&event.xclient.data, 0, sizeof(event.xclient.data));
+    event.xclient.data.l[0] = (long)XA_DEACTIVATE;
+    event.xclient.data.l[1] = 0;
+    event.xclient.data.l[2] = 0;
+
+    if (! XSendEvent (m_xdisplay, m_ScreenSaverWindow, False, 0L, &event))
+    {
+	ERROR(<< "XSendEvent failed");
+    }
+
+    XFlush(m_xdisplay);
+}
+
+// -------------------------------------------------------------------
