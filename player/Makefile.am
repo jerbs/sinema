@@ -7,9 +7,9 @@ libplayer_la_SOURCES = AlsaFacade.cpp AlsaMixer.cpp AudioDecoder.cpp AudioOutput
 ## Audio/Video Sync Test
 bin_PROGRAMS = synctest
 synctest_SOURCES = AlsaFacade.cpp AlsaMixer.cpp AudioOutput.cpp SyncTest.cpp VideoOutput.cpp XlibFacade.cpp XlibHelpers.cpp
-synctest_CPPFLAGS = -DSYNCTEST $(AM_CFLAGS)
+synctest_CPPFLAGS = -DSYNCTEST $(AM_CFLAGS) $(BOOST_CPPFLAGS)
 synctest_LDADD = ../platform/libplatform.la
-synctest_LDFLAGS = $(PLAYER_LIBS) -lz -lm -lboost_thread-mt -lboost_filesystem -L/usr/X11R6/lib -lX11 -lXext -lXv -lasound
+synctest_LDFLAGS = $(PLAYER_LIBS) -lz -lm $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) -L/usr/X11R6/lib -lX11 -lXext -lXv -lasound
 
 ## http://www.gnu.org/software/hello/manual/automake/Objects-created-both-with-libtool-and-without.html
 ## http://www.gnu.org/software/hello/manual/automake/Renamed-Objects.html

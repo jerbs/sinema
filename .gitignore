@@ -22,7 +22,7 @@ configure.scan
 core
 libtool
 log
-m4
+m4/l*.m4
 Makefile
 Makefile.in
 player/synctest

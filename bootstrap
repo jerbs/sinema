@@ -3,9 +3,9 @@
 set -x
 
 cp /usr/share/aclocal/libtool.m4 ./aclocal.m4
-mkdir config
+mkdir -p config
 
-aclocal -I config
+aclocal -I m4
 libtoolize --force --copy
 autoheader
 automake --foreign --add-missing --copy

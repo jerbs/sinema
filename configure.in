@@ -66,6 +66,10 @@ PKG_CHECK_MODULES([GUI], [gtkmm-2.4 >= 2.8.0  dbus-cxx-1.0 >= 0.7.0  dbus-cxx-gl
 AC_SUBST(GUI_CFLAGS)
 AC_SUBST(GUI_LIBS)
 
+AX_BOOST_BASE([1.42.0])
+AX_BOOST_THREAD
+AX_BOOST_FILESYSTEM
+
 dnl
 dnl 5. Headers
 dnl ----------
