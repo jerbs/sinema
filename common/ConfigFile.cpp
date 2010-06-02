@@ -19,6 +19,7 @@
 #include <fstream>
 #include <vector>
 #include <cstdlib>
+#include <sys/types.h>
 
 namespace spirit = boost::spirit;
 namespace karma = boost::spirit::karma;
@@ -206,6 +207,7 @@ bool ConfigFile::find()
 
 void ConfigFile::process(boost::shared_ptr<CommonInitEvent> event)
 {
+    DEBUG(<< "tid = " << gettid());
     mediaCommon = event->mediaCommon;
     parse();
 }

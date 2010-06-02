@@ -11,10 +11,11 @@
 
 #include <boost/make_shared.hpp>
 #include <iomanip>
+#include <sys/types.h>
 
 void AudioDecoder::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG();
+    DEBUG(<< "tid = " << gettid());
     demuxer = event->demuxer;
     audioOutput = event->audioOutput;
 }

@@ -106,6 +106,7 @@ dnl Finally check for functions.
 AC_CHECK_FUNCS([bzero])
 AC_CHECK_FUNCS([clock_gettime])
 AC_CHECK_FUNCS([memset])
+AC_CHECK_FUNCS([gettid])
 AC_TYPE_UINT8_T
 
 dnl

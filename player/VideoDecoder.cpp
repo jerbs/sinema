@@ -12,12 +12,13 @@
 
 #include <boost/make_shared.hpp>
 #include <iomanip>
+#include <sys/types.h>
 
 using namespace std;
 
 void VideoDecoder::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG();
+    DEBUG(<< "tid = " << gettid());
     mediaPlayer = event->mediaPlayer;
     demuxer = event->demuxer;
     videoOutput = event->videoOutput;

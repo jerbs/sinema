@@ -11,6 +11,7 @@
 
 #include <boost/make_shared.hpp>
 #include <stdlib.h>
+#include <sys/types.h>
 
 Demuxer* Demuxer::obj;
 
@@ -44,7 +45,7 @@ int Demuxer::interrupt_cb()
 
 void Demuxer::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG();
+    DEBUG(<< "tid = " << gettid());
     mediaPlayer = event->mediaPlayer;
     audioDecoder = event->audioDecoder;
     videoDecoder = event->videoDecoder;

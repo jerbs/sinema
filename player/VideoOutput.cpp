@@ -11,6 +11,7 @@
 
 #include <boost/make_shared.hpp>
 #include <boost/bind.hpp>
+#include <sys/types.h>
 
 using namespace std;
 
@@ -18,7 +19,7 @@ void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 {
     if (state == IDLE)
     {
-	DEBUG();
+	DEBUG(<< "tid = " << gettid());
 
 	mediaPlayer = event->mediaPlayer;
 	demuxer = event->demuxer;

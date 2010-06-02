@@ -4,9 +4,6 @@
 // Copyright (C) Joachim Erbs, 2009, 2010
 //
 
-#include <iostream>
-#include <gtkmm/main.h>
-
 #include "gui/ChannelConfigWindow.hpp"
 #include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
@@ -18,8 +15,14 @@
 #include "gui/SignalDispatcher.hpp"
 #include "gui/GtkmmMediaRecorder.hpp"
 
+#include <iostream>
+#include <gtkmm/main.h>
+#include <sys/types.h>
+
 int main(int argc, char *argv[])
 {
+    DEBUG(<< "pid = " << getpid());
+
     Gtk::Main kit(argc, argv);
 
     if (argc < 1)

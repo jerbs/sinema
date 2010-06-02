@@ -19,6 +19,7 @@
 #include <sys/time.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
 
 extern "C"
 {
@@ -92,7 +93,7 @@ Recorder::~Recorder()
 
 void Recorder::process(boost::shared_ptr<RecorderInitEvent> event)
 {
-    DEBUG();
+    DEBUG(<< "tid = " << gettid());
 
     mediaRecorder = event->mediaRecorder;
     recorderAdapter = event->recorderAdapter;

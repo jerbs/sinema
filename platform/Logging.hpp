@@ -11,6 +11,19 @@
 #include <sstream>
 #include <boost/make_shared.hpp>
 
+// -------------------------------------------------------------------
+
+#ifndef HAVE_GETTID
+
+#include <unistd.h>
+#include <sys/syscall.h>
+
+inline pid_t gettid() { return (pid_t) syscall (SYS_gettid); }
+
+#endif
+
+// -------------------------------------------------------------------
+
 class TraceUnit : public std::stringstream
 {
 public:

@@ -13,6 +13,7 @@
 #include "platform/timer.hpp"
 
 #include <boost/make_shared.hpp>
+#include <sys/types.h>
 
 AudioOutput::AudioOutput(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
@@ -36,7 +37,7 @@ void AudioOutput::process(boost::shared_ptr<InitEvent> event)
 {
     if (state == IDLE)
     {
-	DEBUG();
+	DEBUG(<< "tid = " << gettid());
 
 	audioDecoder = event->audioDecoder;
 	videoOutput = event->videoOutput;

@@ -8,10 +8,11 @@
 #include "recorder/Recorder.hpp"
 
 #include <boost/thread/future.hpp>
+#include <sys/types.h>
 
 void RecorderAdapter::process(boost::shared_ptr<RecorderInitEvent> event)
 {
-    DEBUG();
+    DEBUG(<< "tid = " << gettid());
     recorder = event->recorder;
 }
 
