@@ -26,11 +26,12 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
     : m_MainWindow(0),
       m_PlayList(playList),
       m_UiMergeIdChannels(0),
-      acceptAdjustmentPositionValueChanged(true),
-      acceptAdjustmentVolumeValueChanged(true),
+      m_acceptAdjustmentPositionValueChanged(true),
+      m_acceptAdjustmentVolumeValueChanged(true),
       m_AdjustmentPosition(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
       m_AdjustmentVolume(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
-      timeTitlePlaybackStarted(getTimespec(0)),
+      m_quit(false),
+      m_timeTitlePlaybackStarted(getTimespec(0)),
       m_visibleFullscreen(false,false,false),
       m_visibleWindow(true,true,true),
       m_visible(&m_visibleWindow),
@@ -619,8 +620,12 @@ void SignalDispatcher::on_file_close()
 
 void SignalDispatcher::on_file_quit()
 {
-    // Hiding the main window stops Gtk::Main::run():
-    hideMainWindow();
+    DEBUG();
+
+    m_quit = true;
+
+    // Explicitly stop playback. This immediately stops audio.
+    signal_close();
 }
 
 void SignalDispatcher::on_view_fullscreen()
@@ -965,12 +970,12 @@ void SignalDispatcher::on_media_stop()
 void SignalDispatcher::on_media_next()
 {
     signal_skip_forward();
-    timeTitlePlaybackStarted = timer::get_current_time();
+    m_timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_media_previous()
 {
-    if ((timer::get_current_time() - timeTitlePlaybackStarted) < getTimespec(1))
+    if ((timer::get_current_time() - m_timeTitlePlaybackStarted) < getTimespec(1))
     {
 	signal_skip_back();
     }
@@ -978,7 +983,7 @@ void SignalDispatcher::on_media_previous()
     {
 	signal_seek_absolute(0);
     }
-    timeTitlePlaybackStarted = timer::get_current_time();
+    m_timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_media_forward()
@@ -1075,7 +1080,7 @@ void SignalDispatcher::on_position_changed()
 
 void SignalDispatcher::on_position_value_changed()
 {
-    if (acceptAdjustmentPositionValueChanged)
+    if (m_acceptAdjustmentPositionValueChanged)
     {
 	// Adjustment value changed.
 	signal_seek_absolute(m_AdjustmentPosition.get_value());
@@ -1088,7 +1093,7 @@ void SignalDispatcher::on_volume_changed()
 
 void SignalDispatcher::on_volume_value_changed()
 {
-    if (acceptAdjustmentVolumeValueChanged)
+    if (m_acceptAdjustmentVolumeValueChanged)
     {
 	// Adjustment value changed.
 	signal_playback_volume(m_AdjustmentVolume.get_value());
@@ -1097,7 +1102,7 @@ void SignalDispatcher::on_volume_value_changed()
 
 void SignalDispatcher::on_mute_toggled()
 {
-    if (acceptAdjustmentVolumeValueChanged)
+    if (m_acceptAdjustmentVolumeValueChanged)
     {
 	// Mute button toggled
 	signal_playback_switch(m_refMute->get_active());
@@ -1122,19 +1127,25 @@ void SignalDispatcher::on_notification_file_closed()
 	// Select first file, but do not start playback:
 	m_PlayList.selectFirst();
     }
+
+    if (m_quit)
+    {
+	// Hiding the main window stops Gtk::Main::run():
+	hideMainWindow();
+    }
 }
 
 void SignalDispatcher::on_set_title(Glib::ustring title)
 {
     // A new title is opened.
-    timeTitlePlaybackStarted = timer::get_current_time();
+    m_timeTitlePlaybackStarted = timer::get_current_time();
 }
 
 void SignalDispatcher::on_set_time(double seconds)
 {
-    acceptAdjustmentPositionValueChanged = false;
+    m_acceptAdjustmentPositionValueChanged = false;
     m_AdjustmentPosition.set_value(seconds);
-    acceptAdjustmentPositionValueChanged = true;
+    m_acceptAdjustmentPositionValueChanged = true;
 
     // Playing, show pause, hide play buttons/menues:
     m_refActionPlay->set_visible(false);
@@ -1143,23 +1154,23 @@ void SignalDispatcher::on_set_time(double seconds)
 
 void SignalDispatcher::on_set_duration(double seconds)
 {
-    acceptAdjustmentPositionValueChanged = false;
+    m_acceptAdjustmentPositionValueChanged = false;
     m_AdjustmentPosition.set_upper(seconds);
-    acceptAdjustmentPositionValueChanged = true;
+    m_acceptAdjustmentPositionValueChanged = true;
 }
 
 void SignalDispatcher::on_set_volume(const NotificationCurrentVolume& vol)
 {
     double stepIncrement = double(vol.maxVolume - vol.minVolume) / 100;
     double pageIncrement = stepIncrement * 5;
-    acceptAdjustmentVolumeValueChanged = false;
+    m_acceptAdjustmentVolumeValueChanged = false;
     m_AdjustmentVolume.set_lower(vol.minVolume);
     m_AdjustmentVolume.set_upper(vol.maxVolume);
     m_AdjustmentVolume.set_page_increment(pageIncrement);
     m_AdjustmentVolume.set_step_increment(stepIncrement);
     m_AdjustmentVolume.set_value(vol.volume);
     m_refMute->set_active(vol.enabled);
-    acceptAdjustmentVolumeValueChanged = true;
+    m_acceptAdjustmentVolumeValueChanged = true;
 }
 
 int getTunerFrequency(const StationData& sd)

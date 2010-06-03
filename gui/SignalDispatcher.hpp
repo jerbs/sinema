@@ -160,16 +160,18 @@ private:
     ClipVideoSrcEvent getClipVideoSrcEvent43();
     ClipVideoSrcEvent getClipVideoSrcEvent169();
 
-    bool acceptAdjustmentPositionValueChanged;
-    bool acceptAdjustmentVolumeValueChanged;
+    bool m_acceptAdjustmentPositionValueChanged;
+    bool m_acceptAdjustmentVolumeValueChanged;
     Gtk::Adjustment m_AdjustmentPosition;
     Gtk::Adjustment m_AdjustmentVolume;
 
     Gtk::Statusbar m_StatusBar;
 
+    bool m_quit;
+
     NotificationVideoSize m_VideoSize;
 
-    timespec_t timeTitlePlaybackStarted;
+    timespec_t m_timeTitlePlaybackStarted;
 
     struct Visible {
 	Visible(bool menuBar, bool toolBar, bool statusBar)

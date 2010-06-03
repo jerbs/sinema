@@ -58,80 +58,85 @@ void Demuxer::process(boost::shared_ptr<StopEvent> event)
 
 void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 {
-    if (systemStreamStatus != SystemStreamClosed)
+    if (systemStreamStatus == SystemStreamClosed)
     {
-	if (systemStreamStatus == SystemStreamClosing)
+	DEBUG(<< event->fileName);
+
+	fileName = event->fileName;
+
+	int ret;
+
+	// Open a media file as input
+	ret = av_open_input_file(&avFormatContext,
+				 fileName.c_str(),
+				 0,   // don't force any format, AVInputFormat*,
+				 0,   // use default buffer size
+				 0);  // default AVFormatParameters*
+	if (ret != 0)
 	{
-	    // Directly putting the event back into the queue
-	    // would result in a busy loop.
-	    DEBUG(<< "defer");
-	    defer_event(event);
+	    ERROR(<< "av_open_input_file failed: " << ret);
+	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
+	    return;
 	}
-	return;
+
+	// Read packets of a media file to get stream information
+	ret = av_find_stream_info(avFormatContext);
+	if (ret < 0)
+	{
+	    ERROR(<< "av_find_stream_info failed: " << ret);
+	    av_close_input_file(avFormatContext);
+	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
+	    return;
+	}
+
+	systemStreamStatus = SystemStreamOpening;
+
+	// Dump information about file onto standard error
+	dump_format(avFormatContext, 0, event->fileName.c_str(), 0);
+
+	// Find the first audio and video stream
+	for (unsigned int i=0; i < avFormatContext->nb_streams; i++)
+	{
+	    if (avFormatContext->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO &&
+		audioStreamIndex < 0)
+	    {
+		audioStreamIndex = i;
+	    }
+
+	    if (avFormatContext->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO &&
+		videoStreamIndex < 0)
+	    {
+		videoStreamIndex = i;
+	    }
+	}
+
+	if (audioStreamIndex >= 0)
+	{
+	    audioDecoder->queue_event(boost::make_shared<OpenAudioStreamReq>(audioStreamIndex,
+									     avFormatContext) );
+	    audioStreamStatus = StreamOpening;
+	}
+
+	if (videoStreamIndex >= 0)
+	{
+	    videoDecoder->queue_event(boost::make_shared<OpenVideoStreamReq>(videoStreamIndex,
+									     avFormatContext) );
+	    videoStreamStatus = StreamOpening;
+	}
     }
-
-    DEBUG(<< event->fileName);
-
-    fileName = event->fileName;
-
-    int ret;
-
-    // Open a media file as input
-    ret = av_open_input_file(&avFormatContext,
-			     fileName.c_str(),
-			     0,   // don't force any format, AVInputFormat*,
-			     0,   // use default buffer size
-			     0);  // default AVFormatParameters*
-    if (ret != 0)
+    else if (systemStreamStatus == SystemStreamOpened)
     {
-	ERROR(<< "av_open_input_file failed: " << ret);
+	DEBUG(<< "opened");
 	mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
-	return;
     }
-
-    // Read packets of a media file to get stream information
-    ret = av_find_stream_info(avFormatContext);
-    if (ret < 0)
+    else if (systemStreamStatus == SystemStreamClosing ||
+	     systemStreamStatus == SystemStreamOpening)
     {
-	ERROR(<< "av_find_stream_info failed: " << ret);
-	av_close_input_file(avFormatContext);
-	mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
-	return;
-    }
-
-    systemStreamStatus = SystemStreamOpening;
-
-    // Dump information about file onto standard error
-    dump_format(avFormatContext, 0, event->fileName.c_str(), 0);
-
-    // Find the first audio and video stream
-    for (unsigned int i=0; i < avFormatContext->nb_streams; i++)
-    {
-        if (avFormatContext->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO &&
-	    audioStreamIndex < 0)
-        {
-	    audioStreamIndex = i;
-        }
-
-        if (avFormatContext->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO &&
-	    videoStreamIndex < 0)
-        {
-            videoStreamIndex = i;
-        }
-    }
-
-    if (audioStreamIndex >= 0)
-    {
-	audioDecoder->queue_event(boost::make_shared<OpenAudioStreamReq>(audioStreamIndex,
-									 avFormatContext) );
-	audioStreamStatus = StreamOpening;
-    }
-
-    if (videoStreamIndex >= 0)
-    {
-	videoDecoder->queue_event(boost::make_shared<OpenVideoStreamReq>(videoStreamIndex,
-									 avFormatContext) );
-	videoStreamStatus = StreamOpening;
+	// Wait until current procedure is finished.
+	// Directly putting the event back into the queue
+	// would result in a busy loop.
+	DEBUG(<< "defer");
+	defer_event(event);
     }
 }
 
@@ -229,7 +234,7 @@ void Demuxer::updateSystemStreamStatusOpening()
 
 void Demuxer::process(boost::shared_ptr<CloseFileReq> event)
 {
-    if (systemStreamStatus != SystemStreamClosed)
+    if (systemStreamStatus == SystemStreamOpened)
     {
 	DEBUG();
 
@@ -251,6 +256,22 @@ void Demuxer::process(boost::shared_ptr<CloseFileReq> event)
 	    videoStreamIndex = -1;
 	    queuedVideoPackets = 0;
 	}
+    }
+    else if (systemStreamStatus == SystemStreamClosed)
+    {
+	DEBUG(<< "closed");
+
+	// Is allready closed. Just send a response.
+	mediaPlayer->queue_event(boost::make_shared<CloseFileResp>());
+    }
+    else if (systemStreamStatus == SystemStreamOpening ||
+	     systemStreamStatus == SystemStreamClosing)
+    {
+	// Wait until current procedure is finished.
+	// Directly putting the event back into the queue
+	// would result in a busy loop.
+	DEBUG(<< "defer");
+	defer_event(event);
     }
 }
 
