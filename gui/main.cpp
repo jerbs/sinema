@@ -182,8 +182,10 @@ int main(int argc, char *argv[])
     mediaCommon.init();
     mediaRecorder.init();
 
+    mainWindow.show();
+
     // Enter gtkmm main loop:
-    Gtk::Main::run(mainWindow);
+    Gtk::Main::run();
 
     return 0;
 }

@@ -9,6 +9,7 @@
 #include <iostream>
 #include <list>
 #include <gtkmm/filechooserdialog.h>
+#include <gtkmm/main.h>
 #include <gtkmm/menu.h>
 #include <gtkmm/stock.h>
 #include <gdk/gdkkeysyms.h>
@@ -622,10 +623,16 @@ void SignalDispatcher::on_file_quit()
 {
     DEBUG();
 
+    // Terminate application when close procedure is finished:
     m_quit = true;
 
     // Explicitly stop playback. This immediately stops audio.
     signal_close();
+
+    // Hiding the main window to give immediate user feedback.
+    // This does not stop Gtk::Main::run(), since it is called
+    // with a window parameter:
+    hideMainWindow();
 }
 
 void SignalDispatcher::on_view_fullscreen()
@@ -815,11 +822,11 @@ bool SignalDispatcher::on_play_list_window_state_event(GdkEventWindowState* even
 
 bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
 {
-    // This method is called when fullscreen mode is entered or left. This
-    // may be triggered by the application itself or by the window manager.
-
     if (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN)
     {
+	// This branch is executed when fullscreen mode is entered or left. This
+	// may be triggered by the application itself or by the window manager.
+
 	bool fullscreen;
 	if (m_fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN)
 	{
@@ -838,6 +845,25 @@ bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
 	m_refMenuBarVisible->set_active(m_visible->menuBar);
 	m_refToolBarVisible->set_active(m_visible->toolBar);
 	m_refStatusBarVisible->set_active(m_visible->statusBar);
+    }
+
+    if (event->changed_mask & GDK_WINDOW_STATE_WITHDRAWN)
+    {
+	if (event->new_window_state & GDK_WINDOW_STATE_WITHDRAWN)
+	{
+	    // This branch is executed when the main window is closed.
+
+	    DEBUG(<< "GDK_WINDOW_STATE_WITHDRAWN");
+
+	    if (! m_quit)
+	    {
+		// Terminate application when close procedure is finished:
+		m_quit = true;
+
+		// Explicitly stop playback. This immediately stops audio.
+		signal_close();
+	    }
+	}
     }
 
     return false;
@@ -1111,9 +1137,11 @@ void SignalDispatcher::on_mute_toggled()
 
 void SignalDispatcher::on_notification_file_closed()
 {
+    DEBUG();
+
     // MediaPlayer finished playing a file.
 
-    // Playing, show play, hide pause buttons/menues:
+    // Not playing, show play, hide pause buttons/menues:
     m_refActionPlay->set_visible(true);
     m_refActionPause->set_visible(false);
     m_AdjustmentPosition.set_value(0);
@@ -1130,8 +1158,9 @@ void SignalDispatcher::on_notification_file_closed()
 
     if (m_quit)
     {
-	// Hiding the main window stops Gtk::Main::run():
-	hideMainWindow();
+	// Makes the innermost invocation of the main loop return 
+	// when it regains control:
+	Gtk::Main::quit();
     }
 }
 
