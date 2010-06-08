@@ -548,14 +548,25 @@ bool AFPCMDigitalAudioInterface::getOverallLatency(snd_pcm_sframes_t& latency)
 
 snd_pcm_sframes_t AFPCMDigitalAudioInterface::getBufferFillLevel()
 {
+    // Function returns the number of frames in the buffer.
+
     // Get number of free frames in the buffer:
     snd_pcm_sframes_t available = snd_pcm_avail(handle);
-    snd_pcm_sframes_t filled = buffer_size-available;
+    if (available >= 0)
+    {
+	snd_pcm_sframes_t filled = buffer_size-available;
 
-    DEBUG( << "fillLevel=" << filled << "/" << buffer_size
-	   << "=" << double(filled)/double(buffer_size) );
+	DEBUG( << "fillLevel=" << filled << "/" << buffer_size
+	       << "=" << double(filled)/double(buffer_size)
+	       << ", available=" << available );
 
-    return filled;
+	return filled;
+    }
+    else
+    {
+	DEBUG( << "snd_pcm_avail failed: " << snd_strerror(available));
+	return 0;
+    }
 }
 
 double AFPCMDigitalAudioInterface::getNextPTS()

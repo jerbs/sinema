@@ -390,17 +390,31 @@ void AudioOutput::startChunkTimer()
 
 bool AudioOutput::startEosTimer()
 {
-    snd_pcm_sframes_t overallLatencyInFrames;
-    if (alsa->getOverallLatency(overallLatencyInFrames))
+    // This function tries to guess when the last sample will be played by
+    // the DAC on the sound card.
+    // AFPCMDigitalAudioInterface::getOverallLatency returns the time when
+    // the next sample written to the buffer will be audible. This is not
+    // the same. According to the ALSA documentation the value will not
+    // necessarily go down to 0. For the virtual Alsa device of PulseAudio
+    // this actually is the case.
+    // As an alternative the number of samples still in the playback buffer
+    // is used to calculate the time. This does not take the additional
+    // hardware delay into account. That delay currently is ignored.
+
+    snd_pcm_sframes_t filled = alsa->getBufferFillLevel();
+    if (filled)
     {
 	// Audio device is still playing the last frames.
 	state = PLAYING;
-	double overallLatencyInSeconds = double(overallLatencyInFrames) / double(sampleRate);
-	timespec_t dt = getTimespec(overallLatencyInSeconds);
-	if (dt != getTimespec(0))
+	if (filled > 1)
 	{
+	    // When the virtual Alsa device of PulseAudio is used filled 
+	    // stays at 1. Zero is not reached. When using the Alsa device 
+	    // directly then it is.
+	    double filledInSeconds = double(filled) / double(sampleRate);
+	    timespec_t dt = getTimespec(filledInSeconds);
 	    chunkTimer.relative(dt);
-	    DEBUG(<< "start_timer overallLatencyInSeconds=" << overallLatencyInSeconds);
+	    DEBUG(<< "start_timer filledInSeconds=" << filledInSeconds);
 	    start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
 	    return true;
 	}
