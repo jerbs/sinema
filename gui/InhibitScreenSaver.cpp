@@ -71,11 +71,8 @@ const int InhibitScreenSaverImpl::numScreenSaver =
 class XScreenSaverInterface
 {
  public:
-    XScreenSaverInterface(Display* display)
-	: m_xdisplay(display)
-    {
-	findScreenSaverWindow();
-    }
+    XScreenSaverInterface(Display* display);
+    ~XScreenSaverInterface();
 
     void simulateUserActivity();
 
@@ -218,11 +215,25 @@ void InhibitScreenSaverImpl::recvSimulateUserActivityResponse()
 
 // -------------------------------------------------------------------
 
+XScreenSaverInterface::XScreenSaverInterface(Display* display)
+    : m_xdisplay(display)
+{
+    oldErrorHandler = XSetErrorHandler (errorHandler);
+    findScreenSaverWindow();
+}
+
+XScreenSaverInterface::~XScreenSaverInterface()
+{
+    XSetErrorHandler (oldErrorHandler);
+}
+
 int XScreenSaverInterface::errorHandler(Display *dpy, XErrorEvent *error)
 {
     if (error->error_code == BadWindow)
     {
+	// Catch BadWindow error.
 	gotBadWindow = true;
+	return 0;
     }
 
     if (oldErrorHandler)
@@ -255,7 +266,6 @@ void XScreenSaverInterface::findScreenSaverWindow()
 	    XSync (m_xdisplay, False);
 
 	    gotBadWindow = False;
-	    oldErrorHandler = XSetErrorHandler (errorHandler);
 
 	    Atom XA_SCREENSAVER_VERSION = XInternAtom (m_xdisplay, "_SCREENSAVER_VERSION",False);
 	    Atom actual_type;
@@ -269,9 +279,6 @@ void XScreenSaverInterface::findScreenSaverWindow()
 					     &actual_format, &nitems, &bytes_after, &prop);
 
 	    XSync(m_xdisplay, False);
-
-	    XSetErrorHandler (oldErrorHandler);
-	    oldErrorHandler = 0;
 
 	    if (gotBadWindow)
 	    {
@@ -293,7 +300,12 @@ void XScreenSaverInterface::simulateUserActivity()
 {
     if (!m_ScreenSaverWindow)
 	return;
-      
+
+    if (gotBadWindow)
+	findScreenSaverWindow();
+
+    gotBadWindow = False;
+
     Atom XA_SCREENSAVER = XInternAtom (m_xdisplay, "SCREENSAVER", False);
     Atom XA_DEACTIVATE = XInternAtom(m_xdisplay, "DEACTIVATE", False);
 
