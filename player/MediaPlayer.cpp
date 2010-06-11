@@ -1,7 +1,7 @@
 //
 // Media Player
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs
 //
 
 #include "player/MediaPlayer.hpp"
@@ -62,6 +62,8 @@ MediaPlayer::MediaPlayer(PlayList& playList)
 		concurrent_queue<receive_fct_t,
 		MediaPlayerThreadNotification> > >()),
       m_PlayList(playList),
+      hasAudioStream(false),
+      hasVideoStream(false),
       endOfAudioStream(false),
       endOfVideoStream(false)
 {
@@ -146,6 +148,10 @@ void MediaPlayer::open()
     if (!file.empty())
     {
 	demuxer->queue_event(boost::make_shared<OpenFileReq>(file));
+
+	// Assume that audio and video is available in the stream:
+	hasAudioStream = true;
+	hasVideoStream = true;
     }
 }
 
@@ -232,29 +238,37 @@ void MediaPlayer::clip(boost::shared_ptr<ClipVideoSrcEvent> event)
 
 void MediaPlayer::process(boost::shared_ptr<OpenFileResp> event)
 {
+    DEBUG();
 }
 
 void MediaPlayer::process(boost::shared_ptr<OpenFileFail> event)
 {
+    DEBUG();
     skipForward();
 }
 
 void MediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
 {
+    DEBUG();
 }
 
 void MediaPlayer::process(boost::shared_ptr<NoAudioStream> event)
 {
+    DEBUG();
+    hasAudioStream = false;
     videoOutput->queue_event(event);
 }
 
 void MediaPlayer::process(boost::shared_ptr<NoVideoStream> event)
 {
+    DEBUG();
+    hasVideoStream = false;
     audioOutput->queue_event(event);
 }
 
 void MediaPlayer::process(boost::shared_ptr<EndOfSystemStream> event)
 {
+    DEBUG();
     endOfAudioStream = false;
     endOfVideoStream = false;
 }
@@ -263,7 +277,7 @@ void MediaPlayer::process(boost::shared_ptr<EndOfAudioStream> event)
 {
     DEBUG();
     endOfAudioStream = true;
-    if (endOfVideoStream)
+    if (endOfVideoStream || ! hasVideoStream)
     {
 	close();
 	if (!skipForwardInt())
@@ -279,7 +293,7 @@ void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream> event)
 {
     DEBUG();
     endOfVideoStream = true;
-    if (endOfAudioStream)
+    if (endOfAudioStream || ! hasAudioStream)
     {
 	close();
 	if (!skipForwardInt())
@@ -293,6 +307,7 @@ void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream> event)
 
 void MediaPlayer::process(boost::shared_ptr<AudioSyncInfo> event)
 {
+    DEBUG();
     // This messeage is only received for files having an audio stream only.
     process(boost::make_shared<NotificationCurrentTime>(event->pts));
 }

@@ -1,7 +1,7 @@
 //
 // Media Player
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs
 //
 
 #ifndef MEDIA_PLAYER_HPP
@@ -96,6 +96,9 @@ private:
     void process(boost::shared_ptr<AudioSyncInfo> event);
 
     bool skipForwardInt();
+
+    bool hasAudioStream;
+    bool hasVideoStream;
 
     bool endOfAudioStream;
     bool endOfVideoStream;
