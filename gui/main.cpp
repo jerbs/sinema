@@ -1,10 +1,11 @@
 //
 // Media Player
 //
-// Copyright (C) Joachim Erbs, 2009, 2010
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
-#include "gui/ChannelConfigWindow.hpp"
+#include "gui/ConfigWindow.hpp"
+#include "gui/ChannelConfigWidget.hpp"
 #include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/GtkmmMediaReceiver.hpp"
@@ -43,17 +44,20 @@ int main(int argc, char *argv[])
     GtkmmMediaCommon mediaCommon;
     SignalDispatcher signalDispatcher(playList);
     ControlWindow controlWindow(signalDispatcher);
-    ChannelConfigWindow channelConfigWindow;
+    ConfigWindow configWindow;
+    ChannelConfigWidget channelConfigWidget;
     PlayListWindow playListWindow(playList);
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
     GtkmmMediaRecorder mediaRecorder;
     InhibitScreenSaver inhibitScreenSaver;
 
     controlWindow.set_transient_for(mainWindow);
-    channelConfigWindow.set_transient_for(mainWindow);
+    configWindow.set_transient_for(mainWindow);
     playListWindow.set_transient_for(mainWindow);
 
     signalDispatcher.setMainWindow(&mainWindow);
+
+    configWindow.addWidget(channelConfigWidget, "Channels", "Channels");
 
     // Compiler needs help to find the correct overloaded method:
     void (GtkmmMediaPlayer::*GtkmmMediaPlayer_ClipSrc)(boost::shared_ptr<ClipVideoSrcEvent> event) = &GtkmmMediaPlayer::clip;
@@ -119,30 +123,33 @@ int main(int argc, char *argv[])
     signalDispatcher.ignoreWindowResize.connect(sigc::mem_fun(mainWindow, &MainWindow::ignoreWindowResize));
 
     // ---------------------------------------------------------------
-    // Signals: GtkmmMediaReceiver -> ChannelConfigWindow
-    mediaReceiver.notificationChannelTuned.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_tuner_channel_tuned) );
-    mediaReceiver.notificationSignalDetected.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_tuner_signal_detected) );
-    mediaReceiver.notificationScanStopped.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_tuner_scan_stopped) );
-    mediaReceiver.notificationScanFinished.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_tuner_scan_finished) );
+    // Signals: GtkmmMediaReceiver -> ChannelConfigWidget
+    mediaReceiver.notificationChannelTuned.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_channel_tuned) );
+    mediaReceiver.notificationSignalDetected.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_signal_detected) );
+    mediaReceiver.notificationScanStopped.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_scan_stopped) );
+    mediaReceiver.notificationScanFinished.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_scan_finished) );
 
-    // Signals: ChannelConfigWindow -> GtkmmMediaReceiver
-    channelConfigWindow.signalSetFrequency.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::setFrequency) );
-    channelConfigWindow.signalStartScan.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::startFrequencyScan) );
-
-    // ---------------------------------------------------------------
-    // Signals: ChannelConfigWindow -> SignalDispatcher
-    channelConfigWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_channel_config_window_state_event));
-    channelConfigWindow.signalConfigurationDataChanged.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
-
-    // Signals: SignalDispatcher -> ChannelConfigWindow
-    signalDispatcher.showChannelConfigWindow.connect( sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_show_window) );
+    // Signals: ChannelConfigWidget -> GtkmmMediaReceiver
+    channelConfigWidget.signalSetFrequency.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::setFrequency) );
+    channelConfigWidget.signalStartScan.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::startFrequencyScan) );
 
     // ---------------------------------------------------------------
-    // Signals: GtkmmMediaCommon -> ChannelConfigWindow
-    mediaCommon.signal_configuration_data_loaded.connect(sigc::mem_fun(&channelConfigWindow, &ChannelConfigWindow::on_configuration_data_loaded) );
+    // Signals: ChannelConfigWidget -> SignalDispatcher
+    channelConfigWidget.signalConfigurationDataChanged.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
 
-    // Signals: ChannelConfigWindow -> GtkmmMediaCommon
-    channelConfigWindow.signalConfigurationDataChanged.connect(sigc::mem_fun(&mediaCommon, &MediaCommon::saveConfigurationData) );
+    // ---------------------------------------------------------------
+    // Signals: ConfigWindow -> SignalDispatcher
+    configWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_config_window_state_event));
+
+    // Signals: SignalDispatcher -> ConfigWindow
+    signalDispatcher.showConfigWindow.connect( sigc::mem_fun(&configWindow, &ConfigWindow::on_show_window) );
+
+    // ---------------------------------------------------------------
+    // Signals: GtkmmMediaCommon -> ChannelConfigWidget
+    mediaCommon.signal_configuration_data_loaded.connect(sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_configuration_data_loaded) );
+
+    // Signals: ChannelConfigWidget -> GtkmmMediaCommon
+    channelConfigWidget.signalConfigurationDataChanged.connect(sigc::mem_fun(&mediaCommon, &MediaCommon::saveConfigurationData) );
 
     // ---------------------------------------------------------------
     // Signals: GtkmmMediaCommon -> SignalDispatcher

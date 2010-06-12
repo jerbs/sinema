@@ -1,10 +1,10 @@
 //
-// Channel Config Window
+// Channel Config Widget
 //
 // Copyright (C) Joachim Erbs, 2010
 //
 
-#include "gui/ChannelConfigWindow.hpp"
+#include "gui/ChannelConfigWidget.hpp"
 #include "gui/ComboBoxDialog.hpp"
 #include "receiver/ChannelFrequencyTable.hpp"
 #include "platform/Logging.hpp"
@@ -20,22 +20,15 @@ extern std::string applicationName;
 // #undef DEBUG 
 // #define DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
 
-ChannelConfigWindow::ChannelConfigWindow()
+ChannelConfigWidget::ChannelConfigWidget()
     : m_FinetuneAdjustment(0, -100, 100),
-      m_shown(false),
-      m_pos_x(0),
-      m_pos_y(0),
       m_isEnabled_signalConfigurationDataChanged(true)
 {
-    set_title(applicationName + " (Channel Configuration)");
-    set_default_size(400,200);
-
     m_ScrolledWindow.add(m_TreeView);
-    m_Box.pack_start(m_ScrolledWindow, Gtk::PACK_EXPAND_WIDGET);
-    m_Box.pack_end(m_StatusBar, Gtk::PACK_SHRINK);
+    pack_start(m_ScrolledWindow, Gtk::PACK_EXPAND_WIDGET);
+    pack_end(m_StatusBar, Gtk::PACK_SHRINK);
     m_StatusBar.set_spacing(15);
     m_StatusBar.pack_start(m_StatusBarMessage, Gtk::PACK_EXPAND_WIDGET);
-    add(m_Box);
 
     // Show scrollbars only when necessary:
     m_ScrolledWindow.set_policy(Gtk::POLICY_AUTOMATIC, Gtk::POLICY_AUTOMATIC);
@@ -83,7 +76,7 @@ ChannelConfigWindow::ChannelConfigWindow()
     pRendererStandard->property_editable() = true;
     // Only allow to use values defined in combo box:
     pRendererStandard->property_has_entry() = false;
-    pRendererStandard->signal_edited().connect( sigc::mem_fun(*this, &ChannelConfigWindow::on_cellrenderer_standard_edited) );
+    pRendererStandard->signal_edited().connect( sigc::mem_fun(*this, &ChannelConfigWidget::on_cellrenderer_standard_edited) );
 
     // Column Standard:
     Gtk::TreeView::Column* pColumnStandard = Gtk::manage( new Gtk::TreeView::Column("Standard") ); 
@@ -101,7 +94,7 @@ ChannelConfigWindow::ChannelConfigWindow()
     pRendererChannel->property_editable() = true;
     // Only allow to use values defined in combo box:
     pRendererChannel->property_has_entry() = false;
-    pRendererChannel->signal_edited().connect( sigc::mem_fun(*this, &ChannelConfigWindow::on_cellrenderer_channel_edited) );
+    pRendererChannel->signal_edited().connect( sigc::mem_fun(*this, &ChannelConfigWidget::on_cellrenderer_channel_edited) );
 
     // Column Channel:
     Gtk::TreeView::Column* pColumnChannel = Gtk::manage( new Gtk::TreeView::Column("Channel") ); 
@@ -118,7 +111,7 @@ ChannelConfigWindow::ChannelConfigWindow()
     // Allow the user to edit the column:
     pRendererFinetune->property_editable() = true;
     pRendererFinetune->property_adjustment() = &m_FinetuneAdjustment;
-    pRendererFinetune->signal_edited().connect( sigc::mem_fun(*this, &ChannelConfigWindow::on_cellrenderer_finetune_edited) );
+    pRendererFinetune->signal_edited().connect( sigc::mem_fun(*this, &ChannelConfigWidget::on_cellrenderer_finetune_edited) );
 
     // Columnt FineTune:
     Gtk::TreeView::Column* pColumnFinetune = Gtk::manage( new Gtk::TreeView::Column("Fine Tune") ); 
@@ -149,15 +142,15 @@ ChannelConfigWindow::ChannelConfigWindow()
     // Create actions for menus and toolbars:
     m_refActionGroup = Gtk::ActionGroup::create();
     m_refActionGroup->add(Gtk::Action::create("TuneIntoChannel", "Tune Into Channel"),
-                          sigc::mem_fun(*this, &ChannelConfigWindow::on_tune_channel));
+                          sigc::mem_fun(*this, &ChannelConfigWidget::on_tune_channel));
     m_refActionGroup->add(Gtk::Action::create("AddEntryBefore", "Add Entry Before"),
-                          sigc::mem_fun(*this, &ChannelConfigWindow::on_add_entry_before));
+                          sigc::mem_fun(*this, &ChannelConfigWidget::on_add_entry_before));
     m_refActionGroup->add(Gtk::Action::create("AddEntryAfter", "Add Entry After"),
-                          sigc::mem_fun(*this, &ChannelConfigWindow::on_add_entry_after));
+                          sigc::mem_fun(*this, &ChannelConfigWidget::on_add_entry_after));
     m_refActionGroup->add(Gtk::Action::create("RemoveEntry", "Remove Entry"),
-                          sigc::mem_fun(*this, &ChannelConfigWindow::on_remove_entry));
+                          sigc::mem_fun(*this, &ChannelConfigWidget::on_remove_entry));
     m_refActionGroup->add(Gtk::Action::create("ScanChannels", "Scan Channels"),
-                          sigc::mem_fun(*this, &ChannelConfigWindow::on_scan_channels));
+                          sigc::mem_fun(*this, &ChannelConfigWidget::on_scan_channels));
 
     m_refUIManager = Gtk::UIManager::create();
     m_refUIManager->insert_action_group(m_refActionGroup);
@@ -194,52 +187,24 @@ ChannelConfigWindow::ChannelConfigWindow()
     }
 #endif //GLIBMM_EXCEPTIONS_ENABLED
 
-    // This only works with false. I.e. ChannelConfigWindow::on_button_press_event
+    // This only works with false. I.e. ChannelConfigWidget::on_button_press_event
     // gets the button press event before the default handler gets the event.
-    m_TreeView.signal_button_press_event().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_button_press_event), false);
-    m_TreeView.signal_row_activated().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_row_activated), false);
+    m_TreeView.signal_button_press_event().connect(sigc::mem_fun(this, &ChannelConfigWidget::on_button_press_event), false);
+    m_TreeView.signal_row_activated().connect(sigc::mem_fun(this, &ChannelConfigWidget::on_row_activated), false);
 
-    m_refTreeModel->signal_row_changed().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_row_changed), false);
-    m_refTreeModel->signal_row_inserted().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_row_inserted), false);
-    m_refTreeModel->signal_row_deleted().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_row_deleted), false);
-    m_refTreeModel->signal_rows_reordered().connect(sigc::mem_fun(this, &ChannelConfigWindow::on_rows_reordered), false);
+    m_refTreeModel->signal_row_changed().connect(sigc::mem_fun(this, &ChannelConfigWidget::on_row_changed), false);
+    m_refTreeModel->signal_row_inserted().connect(sigc::mem_fun(this, &ChannelConfigWidget::on_row_inserted), false);
+    m_refTreeModel->signal_row_deleted().connect(sigc::mem_fun(this, &ChannelConfigWidget::on_row_deleted), false);
+    m_refTreeModel->signal_rows_reordered().connect(sigc::mem_fun(this, &ChannelConfigWidget::on_rows_reordered), false);
 
     show_all_children();
 }
 
-ChannelConfigWindow::~ChannelConfigWindow()
+ChannelConfigWidget::~ChannelConfigWidget()
 {
 }
 
-void ChannelConfigWindow::on_show_window(bool pshow)
-{
-    DEBUG();
-
-    // This is the same as ControlWindow::on_show_control_window.
-
-    if (pshow)
-    {
-        // Let the window manager decide where to place the window when shown
-        // for the first time. Use previous position when shown again.
-        if (m_shown)
-        {
-            // The window manager may ignore or modify the move request.
-            // Partially visible windows are for example replaced by KDE.
-            move(m_pos_x, m_pos_y);
-        }
-        show();
-        raise();
-        deiconify();
-        m_shown = true;
-    }
-    else
-    {
-        get_position(m_pos_x, m_pos_y);
-        hide();
-    }
-}
-
-void ChannelConfigWindow::on_tuner_channel_tuned(const ChannelData& channelData)
+void ChannelConfigWidget::on_tuner_channel_tuned(const ChannelData& channelData)
 {
     DEBUG();
     std::stringstream ss;
@@ -249,7 +214,7 @@ void ChannelConfigWindow::on_tuner_channel_tuned(const ChannelData& channelData)
     m_StatusBarMessage.set_text(ss.str());
 }
 
-void ChannelConfigWindow::on_tuner_signal_detected(const ChannelData& channelData)
+void ChannelConfigWidget::on_tuner_signal_detected(const ChannelData& channelData)
 {
     if (channelData.standard.empty())
     {
@@ -302,19 +267,19 @@ void ChannelConfigWindow::on_tuner_signal_detected(const ChannelData& channelDat
     saveConfigurationData();
 }
 
-void ChannelConfigWindow::on_tuner_scan_stopped()
+void ChannelConfigWidget::on_tuner_scan_stopped()
 {
     DEBUG();
     m_StatusBarMessage.set_text("Interrupted scanning channels.");
 }
 
-void ChannelConfigWindow::on_tuner_scan_finished()
+void ChannelConfigWidget::on_tuner_scan_finished()
 {
     DEBUG();
     m_StatusBarMessage.set_text("Scanning channels finished");
 }
 
-void ChannelConfigWindow::on_configuration_data_loaded(const ConfigurationData& configurationData)
+void ChannelConfigWidget::on_configuration_data_loaded(const ConfigurationData& configurationData)
 {
     DEBUG();
 
@@ -342,7 +307,7 @@ void ChannelConfigWindow::on_configuration_data_loaded(const ConfigurationData& 
     // This function receives saved configuration data, i.e. nothing to save here.
 }
 
-void ChannelConfigWindow::on_cellrenderer_standard_edited(
+void ChannelConfigWidget::on_cellrenderer_standard_edited(
           const Glib::ustring& path_string,
 	  const Glib::ustring& new_standard)
 {
@@ -360,7 +325,7 @@ void ChannelConfigWindow::on_cellrenderer_standard_edited(
     }
 }
 
-void ChannelConfigWindow::on_cellrenderer_channel_edited(
+void ChannelConfigWidget::on_cellrenderer_channel_edited(
           const Glib::ustring& path_string,
 	  const Glib::ustring& new_channel)
 {
@@ -378,7 +343,7 @@ void ChannelConfigWindow::on_cellrenderer_channel_edited(
     }
 }
 
-void ChannelConfigWindow::on_cellrenderer_finetune_edited(
+void ChannelConfigWidget::on_cellrenderer_finetune_edited(
           const Glib::ustring& path_string,
 	  const Glib::ustring& new_text)
 {
@@ -396,7 +361,7 @@ void ChannelConfigWindow::on_cellrenderer_finetune_edited(
     }
 }
 
-void ChannelConfigWindow::on_row_activated (const Gtk::TreeModel::Path& path,
+void ChannelConfigWidget::on_row_activated (const Gtk::TreeModel::Path& path,
 					    Gtk::TreeViewColumn* column)
 {
     DEBUG();
@@ -409,7 +374,7 @@ void ChannelConfigWindow::on_row_activated (const Gtk::TreeModel::Path& path,
     }
 }
 
-bool ChannelConfigWindow::on_button_press_event(GdkEventButton* event)
+bool ChannelConfigWidget::on_button_press_event(GdkEventButton* event)
 {
     if(event->type == GDK_BUTTON_PRESS)
     {
@@ -455,27 +420,27 @@ bool ChannelConfigWindow::on_button_press_event(GdkEventButton* event)
     return false;
 }
 
-void ChannelConfigWindow::on_row_changed(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator&  iter)
+void ChannelConfigWidget::on_row_changed(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator&  iter)
 {
     saveConfigurationData();
 }
 
-void ChannelConfigWindow::on_row_inserted(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter)
+void ChannelConfigWidget::on_row_inserted(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter)
 {
     saveConfigurationData();
 }
 
-void ChannelConfigWindow::on_row_deleted(const Gtk::TreeModel::Path& path)
+void ChannelConfigWidget::on_row_deleted(const Gtk::TreeModel::Path& path)
 {
     saveConfigurationData();
 }
 
-void ChannelConfigWindow::on_rows_reordered(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter, int* new_order)
+void ChannelConfigWidget::on_rows_reordered(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter, int* new_order)
 {
     saveConfigurationData();
 }
 
-void ChannelConfigWindow::on_tune_channel()
+void ChannelConfigWidget::on_tune_channel()
 {
     DEBUG();
 
@@ -488,7 +453,7 @@ void ChannelConfigWindow::on_tune_channel()
     }
 }
 
-void ChannelConfigWindow::on_add_entry_before()
+void ChannelConfigWidget::on_add_entry_before()
 {
     DEBUG();
 
@@ -504,7 +469,7 @@ void ChannelConfigWindow::on_add_entry_before()
     }
 }
 
-void ChannelConfigWindow::on_add_entry_after()
+void ChannelConfigWidget::on_add_entry_after()
 {
     DEBUG();
 
@@ -520,7 +485,7 @@ void ChannelConfigWindow::on_add_entry_after()
     }
 }
 
-void ChannelConfigWindow::on_remove_entry()
+void ChannelConfigWidget::on_remove_entry()
 {
     DEBUG();
 
@@ -532,7 +497,7 @@ void ChannelConfigWindow::on_remove_entry()
     }
 }
 
-void ChannelConfigWindow::on_scan_channels()
+void ChannelConfigWidget::on_scan_channels()
 {
     DEBUG();
 
@@ -565,7 +530,7 @@ void ChannelConfigWindow::on_scan_channels()
     }
 }
 
-void ChannelConfigWindow::saveConfigurationData()
+void ChannelConfigWidget::saveConfigurationData()
 {
     if (!m_isEnabled_signalConfigurationDataChanged)
     {
@@ -595,7 +560,7 @@ void ChannelConfigWindow::saveConfigurationData()
     signalConfigurationDataChanged(configurationData);
 }
 
-void ChannelConfigWindow::setStandard(Gtk::TreeRow& row, const Glib::ustring& standard)
+void ChannelConfigWidget::setStandard(Gtk::TreeRow& row, const Glib::ustring& standard)
 {
     if (row[m_Columns.m_col_standard] != standard)
     {
@@ -608,7 +573,7 @@ void ChannelConfigWindow::setStandard(Gtk::TreeRow& row, const Glib::ustring& st
     }
 }
 
-void ChannelConfigWindow::setChannel(Gtk::TreeRow& row, const Glib::ustring& channel)
+void ChannelConfigWidget::setChannel(Gtk::TreeRow& row, const Glib::ustring& channel)
 {
     if (row[m_Columns.m_col_channel] != channel)
     {
@@ -623,7 +588,7 @@ void ChannelConfigWindow::setChannel(Gtk::TreeRow& row, const Glib::ustring& cha
     }
 }
 
-void ChannelConfigWindow::updateFrequency(Gtk::TreeRow& row)
+void ChannelConfigWidget::updateFrequency(Gtk::TreeRow& row)
 {
     Glib::ustring channel = row[m_Columns.m_col_channel];
     Glib::ustring standard = row[m_Columns.m_col_standard];
@@ -640,7 +605,7 @@ void ChannelConfigWindow::updateFrequency(Gtk::TreeRow& row)
     }
 }
 
-void ChannelConfigWindow::tuneChannel(const Gtk::TreeRow& row)
+void ChannelConfigWidget::tuneChannel(const Gtk::TreeRow& row)
 {
     ChannelData channelData;
 
@@ -653,7 +618,7 @@ void ChannelConfigWindow::tuneChannel(const Gtk::TreeRow& row)
     signalSetFrequency(channelData);
 }
 
-Gtk::Menu* ChannelConfigWindow::getPopupMenuWidget()
+Gtk::Menu* ChannelConfigWidget::getPopupMenuWidget()
 {
     return dynamic_cast<Gtk::Menu*>(m_refUIManager->get_widget("/PopupMenu"));
 }

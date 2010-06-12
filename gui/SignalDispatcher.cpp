@@ -1,7 +1,7 @@
 //
 // Signal Dispatcher
 //
-// Copyright (C) Joachim Erbs, 2009, 2010
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #include <boost/bind.hpp>
@@ -106,17 +106,17 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
 			  Gtk::AccelKey("<control>1"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_controlwindow) );
 
-    m_refChannelConfigWindowVisible = Gtk::ToggleAction::create("ViewChannelConfigWindow", "Channel Config Window");
-    m_refChannelConfigWindowVisible->set_active(false);
-    m_refActionGroup->add(m_refChannelConfigWindowVisible,
-			  Gtk::AccelKey("<control>2"),
-			  sigc::mem_fun(*this, &SignalDispatcher::on_view_channelconfigwindow) );
-
     m_refPlayListWindowVisible = Gtk::ToggleAction::create("ViewPlayListWindow", "Play List Window");
     m_refPlayListWindowVisible->set_active(false);
     m_refActionGroup->add(m_refPlayListWindowVisible,
-			  Gtk::AccelKey("<control>3"),
+			  Gtk::AccelKey("<control>2"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_view_playlistwindow) );
+
+    m_refConfigWindowVisible = Gtk::ToggleAction::create("ViewConfigWindow", "Config Window");
+    m_refConfigWindowVisible->set_active(false);
+    m_refActionGroup->add(m_refConfigWindowVisible,
+			  Gtk::AccelKey("<control>3"),
+			  sigc::mem_fun(*this, &SignalDispatcher::on_view_configwindow) );
 
     m_refMenuBarVisible = Gtk::ToggleAction::create("ViewMenuBar", "Menu Bar");
     m_refMenuBarVisible->set_active(true);
@@ -198,8 +198,8 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
         "      <menuitem action='ViewClipping169'/>"
         "      <separator/>"
         "      <menuitem action='ViewControlWindow'/>"
-        "      <menuitem action='ViewChannelConfigWindow'/>"
         "      <menuitem action='ViewPlayListWindow'/>"
+        "      <menuitem action='ViewConfigWindow'/>"
         "      <separator/>"
         "      <menuitem action='ViewMute'/>"
         "      <separator/>"
@@ -220,7 +220,7 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
         "      <menuitem action='MediaRecord'/>"
         "    </menu>"
 	"    <menu action='ChannelMenu'>"
-	"      <menuitem action='ViewChannelConfigWindow'/>"
+	"      <menuitem action='ViewConfigWindow'/>"
 	"      <menuitem action='ChannelPrevious'/>"
 	"      <menuitem action='ChannelNext'/>"
         "      <separator/>"
@@ -282,7 +282,7 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
         "    <menuitem action='ViewPlayListWindow'/>"
         "    <separator/>"
 	"    <menu action='ChannelMenu'>"
-	"      <menuitem action='ViewChannelConfigWindow'/>"
+	"      <menuitem action='ViewConfigWindow'/>"
 	"      <menuitem action='ChannelNext'/>"
 	"      <menuitem action='ChannelPrevious'/>"
         "      <separator/>"
@@ -799,10 +799,10 @@ void on_window_state_event(Glib::RefPtr<Gtk::ToggleAction> action, GdkEventWindo
     }
 }
 
-bool SignalDispatcher::on_channel_config_window_state_event(GdkEventWindowState* event)
+bool SignalDispatcher::on_config_window_state_event(GdkEventWindowState* event)
 {
     DEBUG();
-    on_window_state_event(m_refChannelConfigWindowVisible, event);
+    on_window_state_event(m_refConfigWindowVisible, event);
     return false;
 }
 
@@ -909,9 +909,9 @@ void SignalDispatcher::on_view_controlwindow()
     showControlWindow(m_refControlWindowVisible->get_active());
 }
 
-void SignalDispatcher::on_view_channelconfigwindow()
+void SignalDispatcher::on_view_configwindow()
 {
-    showChannelConfigWindow(m_refChannelConfigWindowVisible->get_active());
+    showConfigWindow(m_refConfigWindowVisible->get_active());
 }
 
 void SignalDispatcher::on_view_playlistwindow()

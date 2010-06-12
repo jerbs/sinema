@@ -1,7 +1,7 @@
 //
 // Signal Dispatcher
 //
-// Copyright (C) Joachim Erbs, 2009, 2010
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #ifndef SIGNAL_DISPATCHER_HPP
@@ -31,7 +31,7 @@ class SignalDispatcher
 
 public:
     sigc::signal<void, bool> showControlWindow;
-    sigc::signal<void, bool> showChannelConfigWindow;
+    sigc::signal<void, bool> showConfigWindow;
     sigc::signal<void, bool> showPlayListWindow;
     sigc::signal<void> hideMainWindow;
     sigc::signal<void, double> zoomMainWindow;
@@ -74,7 +74,7 @@ public:
     void on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context,
 			       int x, int y, const Gtk::SelectionData& selection_data,
 			       guint info, guint time);
-    bool on_channel_config_window_state_event(GdkEventWindowState* event);
+    bool on_config_window_state_event(GdkEventWindowState* event);
     bool on_control_window_state_event(GdkEventWindowState* event);
     bool on_main_window_state_event(GdkEventWindowState* event);
     bool on_play_list_window_state_event(GdkEventWindowState* event);
@@ -106,7 +106,7 @@ public:
     virtual void on_view_clipping_43();
     virtual void on_view_clipping_169();
     virtual void on_view_controlwindow();
-    virtual void on_view_channelconfigwindow();
+    virtual void on_view_configwindow();
     virtual void on_view_playlistwindow();
     virtual void on_view_menubar();
     virtual void on_view_toolbar();
@@ -150,7 +150,7 @@ private:
     Glib::RefPtr<Gtk::RadioAction> m_refClipping169;
     Glib::RefPtr<Gtk::ToggleAction> m_refMute;
     Glib::RefPtr<Gtk::ToggleAction> m_refControlWindowVisible;
-    Glib::RefPtr<Gtk::ToggleAction> m_refChannelConfigWindowVisible;
+    Glib::RefPtr<Gtk::ToggleAction> m_refConfigWindowVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refPlayListWindowVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refMenuBarVisible;
     Glib::RefPtr<Gtk::ToggleAction> m_refToolBarVisible;

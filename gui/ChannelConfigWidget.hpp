@@ -1,17 +1,16 @@
 //
-// Channel Config Window
+// Channel Config Widget
 //
 // Copyright (C) Joachim Erbs, 2010
 //
 
-#ifndef CHANNEL_CONFIG_WINDOW_HPP
-#define CHANNEL_CONFIG_WINDOW_HPP
+#ifndef CHANNEL_CONFIG_WIDGET_HPP
+#define CHANNEL_CONFIG_WIDGET_HPP
 
 #include "receiver/GeneralEvents.hpp"
 #include "common/GeneralEvents.hpp"
 
 #include <gtkmm/actiongroup.h>
-#include <gtkmm/window.h>
 #include <gtkmm/treemodel.h>
 #include <gtkmm/treeview.h>
 #include <gtkmm/uimanager.h>
@@ -25,18 +24,17 @@
 #include <map>
 #include <string>
 
-class ChannelConfigWindow : public Gtk::Window
+class ChannelConfigWidget : public Gtk::VBox
 {
 public:
     sigc::signal<void, const ChannelData&> signalSetFrequency;
     sigc::signal<void, std::string> signalStartScan;
     sigc::signal<void, const ConfigurationData&> signalConfigurationDataChanged;
 
-    ChannelConfigWindow();
-    virtual ~ChannelConfigWindow();
+    ChannelConfigWidget();
+    virtual ~ChannelConfigWidget();
 
     //Signal handlers:
-    virtual void on_show_window(bool show);
 
     virtual void on_tuner_channel_tuned(const ChannelData& channelData);
     virtual void on_tuner_signal_detected(const ChannelData& channelData);
@@ -120,7 +118,6 @@ private:
     ModelColumnsCombo m_ColumnsCombo;
 
     // Child widgets:
-    Gtk::VBox m_Box;
     Gtk::ScrolledWindow m_ScrolledWindow;
     Gtk::TreeView m_TreeView;
     Gtk::Statusbar m_StatusBar;
@@ -137,10 +134,6 @@ private:
     // Popup menu:
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
-
-    bool m_shown;
-    int m_pos_x;
-    int m_pos_y;
 
     // saveConfigurationData() is enabled when this flag is true. The flag 
     // is used to avoid saving the configuration file unnecessarily. Writing 
