@@ -18,6 +18,17 @@ public:
 	m_event_processor->queue_event(event, static_cast<most_derived*>(this));
     }
 
+    template<class Event>
+    void start_timer(boost::shared_ptr<Event> event, timer& t)
+    {
+	m_event_processor->start_timer(event, static_cast<most_derived*>(this), t);
+    }
+
+    void stop_timer(timer& t)
+    {
+	m_event_processor->stop_timer(t);
+    }
+
 protected:
     typedef event_receiver<MostDerived> base_type;
     typedef boost::shared_ptr<event_processor> event_processor_ptr_type;

@@ -57,4 +57,6 @@ void MediaPlayer::operator()()
 
     demuxer->queue_event(boost::make_shared<Start>());
     demuxer->queue_event(boost::make_shared<Stop>());
+
+    sleep(10);
 }

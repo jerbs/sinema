@@ -2,6 +2,7 @@
 #define EVENT_PROCESSOR_HPP
 
 #include "concurrent_queue.hpp"
+#include "timer.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -9,7 +10,10 @@
 
 class event_processor
 {
+    friend class timer;
+
     typedef boost::function<void ()> receive_fct_t;
+    typedef boost::function<void ()> timeout_fct_t;
     typedef concurrent_queue<receive_fct_t> events_queue_t;
 
     events_queue_t m_events_queue;
@@ -43,6 +47,22 @@ public:
 	m_events_queue.push(fct);
     }
 
+    template<class Event, class EventReceiver>
+    void start_timer(boost::shared_ptr<Event> event, EventReceiver* obj, timer& tmr)
+    {
+	typedef void (EventReceiver::*process_fct_t)(boost::shared_ptr<Event>);
+	// tmp variable avoids a static_cast<>
+	process_fct_t tmp = &EventReceiver::process;
+	receive_fct_t fct = boost::bind(tmp, obj, event);
+	timeout_fct_t fct2 = boost::bind(&event_processor::timeout, this, fct);
+	tmr.start_timer(fct2);
+    }
+
+    void stop_timer(timer& tmr)
+    {
+	tmr.stop_timer();
+    }
+
     // This allows to also send events to the event_processor itself:
     template<class Event>
     void queue_event(boost::shared_ptr<Event> event)
@@ -54,6 +74,14 @@ public:
     {
 	DEBUG();
 	terminate();
+    }
+
+private:
+
+
+    void timeout(timeout_fct_t fct)
+    {
+	m_events_queue.push(fct);
     }
 };
 
