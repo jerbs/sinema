@@ -19,8 +19,31 @@ void logfunc(void* p, int i, const char* format, va_list ap)
     vprintf(format, ap);
 }
 
+// ===================================================================
+
+MediaPlayerThreadNotification::MediaPlayerThreadNotification()
+{
+    // Here the GUI thread is notified to call MediaPlayer::processEventQueue();
+    if (m_fct)
+    {
+	m_fct();
+    }
+}
+
+void MediaPlayerThreadNotification::setCallback(fct_t fct)
+{
+    m_fct = fct;
+}
+
+MediaPlayerThreadNotification::fct_t MediaPlayerThreadNotification::m_fct;
+
+// ===================================================================
+
 MediaPlayer::MediaPlayer(boost::shared_ptr<PlayList> playList)
-    : playList(playList)
+    : base_type(boost::make_shared<event_processor<
+		concurrent_queue<receive_fct_t,
+		MediaPlayerThreadNotification> > >()),
+      playList(playList)
 {
     av_log_set_callback(logfunc);
 
@@ -37,7 +60,7 @@ MediaPlayer::MediaPlayer(boost::shared_ptr<PlayList> playList)
     videoOutput = boost::make_shared<VideoOutput>(outputEventProcessor);
     audioOutput = boost::make_shared<AudioOutput>(outputEventProcessor);
 
-    // Start each event_processor in an own thread.
+    // Start all event_processor instance except the own one in an separate thread.
     // Demuxer has a custom main loop:
     demuxerThread = boost::thread( demuxerEventProcessor->get_callable(demuxer) );
     decoderThread = boost::thread( decoderEventProcessor->get_callable() );
@@ -75,6 +98,7 @@ void MediaPlayer::sendInitEvents()
 {
      boost::shared_ptr<InitEvent> initEvent(new InitEvent());
 
+     initEvent->mediaPlayer = this;
      initEvent->fileReader = fileReader;
      initEvent->demuxer = demuxer;
      initEvent->videoDecoder = videoDecoder;
@@ -88,6 +112,14 @@ void MediaPlayer::sendInitEvents()
      audioDecoder->queue_event(initEvent);
      videoOutput->queue_event(initEvent);
      audioOutput->queue_event(initEvent);
+}
+
+void MediaPlayer::processEventQueue()
+{
+    while(!get_event_processor()->empty())
+    {
+	get_event_processor()->dequeue_and_process();
+    }
 }
 
 void MediaPlayer::open()

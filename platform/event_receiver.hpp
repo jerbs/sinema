@@ -17,7 +17,12 @@ class event_receiver
 
     typedef MostDerived most_derived;
 
-    boost::shared_ptr<event_processor<concurrent_queue> > m_event_processor;
+protected:
+    typedef event_receiver<MostDerived, concurrent_queue> base_type;
+    typedef boost::shared_ptr<event_processor<concurrent_queue> > event_processor_ptr_type;
+
+private:
+    event_processor_ptr_type m_event_processor;
 
 public:
     template<class Event>
@@ -49,14 +54,15 @@ public:
     }
 
 protected:
-    typedef event_receiver<MostDerived, concurrent_queue> base_type;
-
-    typedef boost::shared_ptr<event_processor<concurrent_queue> > event_processor_ptr_type;
-
     event_receiver(event_processor_ptr_type evt_proc)
 	: m_event_processor(evt_proc)
     {}
     ~event_receiver() {}
+
+    event_processor_ptr_type get_event_processor()
+    {
+	return m_event_processor;
+    }
 };
 
 #endif

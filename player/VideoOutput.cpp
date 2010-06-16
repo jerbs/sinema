@@ -6,6 +6,7 @@
 
 #include "player/VideoOutput.hpp"
 #include "player/VideoDecoder.hpp"
+#include "player/MediaPlayer.hpp"
 
 #ifdef SYNCTEST
 #include "SyncTest.hpp"
@@ -21,6 +22,7 @@ void VideoOutput::process(boost::shared_ptr<InitEvent> event)
     {
 	DEBUG();
 
+	mediaPlayer = event->mediaPlayer;
 #ifdef SYNCTEST
 	syncTest = event->syncTest;
 #else
@@ -208,6 +210,13 @@ void VideoOutput::displayNextFrame()
     }
 
     boost::shared_ptr<XFVideoImage> previousImage = xfVideo->show(image);
+
+    int currentTime = image->getPTS();
+    if (currentTime != lastNotifiedTime)
+    {
+	mediaPlayer->queue_event(boost::make_shared<NotificationCurrentTime>(currentTime));
+	lastNotifiedTime = currentTime;
+    }
    
     if (previousImage)
     {

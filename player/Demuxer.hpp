@@ -50,6 +50,8 @@ class Demuxer : public event_receiver<Demuxer>
     int targetQueuedAudioPackets;
     int targetQueuedVideoPackets;
 
+    std::string fileName;
+
 public:
     Demuxer(event_processor_ptr_type evt_proc);
     ~Demuxer();
@@ -58,6 +60,7 @@ public:
     void operator()();
 
 private:
+    MediaPlayer* mediaPlayer;
     boost::shared_ptr<FileReader> fileReader;
     boost::shared_ptr<AudioDecoder> audioDecoder;
     boost::shared_ptr<VideoDecoder> videoDecoder;

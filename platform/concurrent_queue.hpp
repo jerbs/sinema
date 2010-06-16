@@ -11,7 +11,9 @@
 #include <boost/thread/condition_variable.hpp>
 #include <queue>
 
-template<typename T>
+class NoTrigger{};
+
+template<typename T, class Trigger = NoTrigger>
 class concurrent_queue
 {
 private:
@@ -26,6 +28,7 @@ public:
 	m_queue.push(data);
 	lock.unlock();
         m_condition_variable.notify_one();
+	Trigger();
     }
 
     bool empty() const

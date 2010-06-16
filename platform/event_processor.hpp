@@ -83,6 +83,7 @@ public:
 
     // Callbacks needed to implement a custom main loop:
     bool terminating() {return m_quit;}
+    bool empty() {return m_events_queue.empty();}
 
     void terminate() {m_quit = true;}
 

@@ -19,6 +19,9 @@ extern "C"
 #include <libswscale/swscale.h>
 }
 
+#include <string>
+
+class MediaPlayer;
 class FileReader;
 class Demuxer;
 class VideoDecoder;
@@ -34,6 +37,7 @@ class SyncTest;
 
 struct InitEvent
 {
+    MediaPlayer* mediaPlayer;
     boost::shared_ptr<FileReader> fileReader;
     boost::shared_ptr<Demuxer> demuxer;
     boost::shared_ptr<VideoDecoder> videoDecoder;
@@ -233,6 +237,24 @@ struct CommandPause{};
 
 struct CommandRewind{};
 struct CommandForward{};
+
+// ===================================================================
+
+struct NotificationCurrentTitle
+{
+    NotificationCurrentTitle(std::string title)
+	: title(title)
+    {}
+    std::string title;
+};
+
+struct NotificationCurrentTime
+{
+    NotificationCurrentTime(double time)
+	: time(time)
+    {}
+    double time;
+};
 
 // ===================================================================
 

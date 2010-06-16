@@ -6,16 +6,15 @@
 
 #include <gtkmm/main.h>
 #include "gui/ControlWindow.hpp"
+#include "gui/GtkmmMediaPlayer.hpp"
 
-#ifndef SYNCTEST
-#include "player/MediaPlayer.hpp"
-#else
+#ifdef SYNCTEST
 #include "player/SyncTest.hpp"
 #endif
 
 #include <iostream>
 #include <boost/make_shared.hpp>
-
+ 
 int main(int argc, char *argv[])
 {
     Gtk::Main kit(argc, argv);
@@ -32,7 +31,7 @@ int main(int argc, char *argv[])
     for (int i=1; i<argc; i++)
 	playList->append(std::string(argv[i]));
 
-    MediaPlayer mediaPlayer(playList);
+    GtkmmMediaPlayer mediaPlayer(playList);
     mediaPlayer.init();
     mediaPlayer.open();
 

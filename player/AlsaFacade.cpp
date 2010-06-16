@@ -8,9 +8,6 @@
 
 #include <iostream>
 
-#undef DEBUG
-#define DEBUG(x) std::cout << __PRETTY_FUNCTION__  x << std::endl
-
 static char const * deviceName = "plug:default";
 //static char const * deviceName = "plughw:Intel";
 //static char const * deviceName = "plug:SLAVE=hw";

@@ -15,12 +15,31 @@
 #include "player/AudioOutput.hpp"
 #include "player/PlayList.hpp"
 
+#include "platform/event_receiver.hpp"
+
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-class MediaPlayer
+class MediaPlayerThreadNotification
 {
+public:
+    typedef void (*fct_t)();
+
+    MediaPlayerThreadNotification();
+    static void setCallback(fct_t fct);
+
+private:
+    static fct_t m_fct;
+};
+
+class MediaPlayer : public event_receiver<MediaPlayer,
+					  concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >
+{
+    // The friend declaration allows to define the process methods private:
+    friend class event_processor<concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >;
+    friend class MediaPlayerThreadNotification;
+
 public:
     MediaPlayer(boost::shared_ptr<PlayList> playList);
     ~MediaPlayer();
@@ -35,6 +54,9 @@ public:
 
     void skipBack();
     void skipForward();
+
+    // protected:
+    void processEventQueue();
 
 private:
     // EventReceiver
@@ -63,7 +85,9 @@ private:
     boost::shared_ptr<PlayList> playList;
 
     void sendInitEvents();
-    
+
+    virtual void process(boost::shared_ptr<NotificationCurrentTitle> event) = 0;
+    virtual void process(boost::shared_ptr<NotificationCurrentTime> event) = 0;
 };
 
 #endif

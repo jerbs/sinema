@@ -35,7 +35,8 @@ public:
 	: base_type(evt_proc),
 	  state(IDLE),
 	  audioSync(false),
-	  audioSnapshotPTS(0)
+	  audioSnapshotPTS(0),
+	  lastNotifiedTime(-1)
     {
 	audioSnapshotTime.tv_sec  = 0; 
 	audioSnapshotTime.tv_nsec = 0;
@@ -45,6 +46,7 @@ public:
     }
 
 private:
+    MediaPlayer* mediaPlayer;
 #ifdef SYNCTEST
     boost::shared_ptr<SyncTest> syncTest;
 #else
@@ -72,6 +74,8 @@ private:
     bool audioSync;
     double audioSnapshotPTS;
     timespec_t audioSnapshotTime;
+
+    int lastNotifiedTime;
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<OpenVideoOutputReq> event);

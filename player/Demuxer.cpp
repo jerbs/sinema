@@ -8,6 +8,7 @@
 #include "player/FileReader.hpp"
 #include "player/AudioDecoder.hpp"
 #include "player/VideoDecoder.hpp"
+#include "player/MediaPlayer.hpp"
 
 #include <boost/make_shared.hpp>
 #include <stdlib.h>
@@ -44,6 +45,7 @@ int Demuxer::interrupt_cb()
 void Demuxer::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG();
+    mediaPlayer = event->mediaPlayer;
     fileReader = event->fileReader;
     audioDecoder = event->audioDecoder;
     videoDecoder = event->videoDecoder;
@@ -70,11 +72,13 @@ void Demuxer::process(boost::shared_ptr<OpenFileEvent> event)
 
     DEBUG(<< event->fileName);
 
+    fileName = event->fileName;
+
     int ret;
 
     // Open a media file as input
     ret = av_open_input_file(&avFormatContext,
-			     event->fileName.c_str(),
+			     fileName.c_str(),
 			     0,   // don't force any format, AVInputFormat*,
 			     0,   // use default buffer size
 			     0);  // default AVFormatParameters*
@@ -186,6 +190,7 @@ void Demuxer::updateSystemStreamStatusOpening()
 	{
 	    // Successfully opened audio and video stream.
 	    systemStreamStatus = SystemStreamOpened;
+	    mediaPlayer->queue_event(boost::make_shared<NotificationCurrentTitle>(fileName));
 	}
 	else
 	{
