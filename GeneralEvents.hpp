@@ -1,8 +1,10 @@
 #ifndef GENERAL_EVENTS_HPP
 #define GENERAL_EVENTS_HPP
 
+#include "Logging.hpp"
+
 #include <boost/shared_ptr.hpp>
-#include <iostream>
+#include <time.h>
 
 extern "C"
 {
@@ -10,10 +12,6 @@ extern "C"
 #include <libavcodec/avcodec.h>
 #include <libswscale/swscale.h>
 }
-
-#define DEBUG(x)
-// #define DEBUG(x) std::cout << __PRETTY_FUNCTION__  x << std::endl
-#define ERROR(x) std::cerr << "Error: " << __PRETTY_FUNCTION__  x << std::endl
 
 class FileReader;
 class Demuxer;
@@ -106,8 +104,18 @@ struct OpenVideoStreamFail
 
 struct AudioPacketEvent
 {
-    AudioPacketEvent(AVPacket* avp) : avPacket(avp) {}
-    AVPacket* avPacket;
+    AudioPacketEvent(AVPacket* avp)
+	: avPacket(*avp)
+    {
+	av_dup_packet(&avPacket);
+	DEBUG();
+    }
+    ~AudioPacketEvent()
+    {
+	DEBUG();
+	av_free_packet(&avPacket);
+    }
+    AVPacket avPacket;
 };
 
 struct VideoPacketEvent
@@ -132,8 +140,9 @@ struct ConfirmPacketEvent
 
 struct OpenAudioOutputReq
 {
-    int sample_rate;
-    int channels;
+    unsigned int sample_rate;
+    unsigned int channels;
+    unsigned int frame_size;
 };
 
 struct OpenVideoOutputReq

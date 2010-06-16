@@ -2,8 +2,21 @@
 
 #include <boost/make_shared.hpp>
 
+extern "C"
+{
+#include <libavutil/log.h>
+}
+
+void logfunc(void* p, int i, const char* format, va_list ap)
+{
+    printf("FFmpeg: ");
+    vprintf(format, ap);
+}
+
 MediaPlayer::MediaPlayer()
 {
+    av_log_set_callback(logfunc);
+
     // Create event_processor instances:
     demuxerEventProcessor = boost::make_shared<event_processor>();
     decoderEventProcessor = boost::make_shared<event_processor>();

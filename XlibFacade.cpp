@@ -6,6 +6,10 @@
 
 using namespace std;
 
+#define DEBUG(x)
+// #define DEBUG(x) std::cout << __PRETTY_FUNCTION__  x << std::endl
+#define ERROR(x) std::cerr << "Error: " << __PRETTY_FUNCTION__  x << std::endl
+
 // -------------------------------------------------------------------
 
 XFDisplay::XFDisplay()
@@ -61,9 +65,9 @@ XFWindow::XFWindow(unsigned int width, unsigned int height)
 			     visualInfo[i].c_class,
 			     &xVisualInfo))
 	{
-	    cout << "Found " << visualInfo[i].depth << " bit "
-		 << visualInfo[i].className << endl;
-	    cout << xVisualInfo << endl;
+	    DEBUG( << "Found " << visualInfo[i].depth << " bit "
+		   << visualInfo[i].className );
+	    DEBUG( << xVisualInfo );
 	    break;
 	}
 
@@ -183,7 +187,7 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
     
     for (unsigned int i=0; i<num_ai; i++)
     {
-	cout << "XvAdaptorInfo[" << i << "]:\n" << ai[i] << endl;
+	DEBUG( << "XvAdaptorInfo[" << i << "]:\n" << ai[i] );
 
 	for (XvPortID adaptorPort = ai[i].base_id;
 	     adaptorPort < ai[i].base_id+ai[i].num_ports;
@@ -200,8 +204,8 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
 			xvPortId = adaptorPort;
 			break;
 		    default:
-			cerr << "XvGrabPort failed for adaptorPort " 
-			     << adaptorPort << "." << endl;
+			ERROR( << "XvGrabPort failed for adaptorPort " 
+			       << adaptorPort << "." );
 		    }
 		}
 	    }
@@ -220,7 +224,7 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
 
 	    for (unsigned int j=0; j<num_ei; j++)
 	    {
-		cout << "XvEncodingInfo[" << j << "]:\n" << ei[j] << endl;
+		DEBUG( << "XvEncodingInfo[" << j << "]:\n" << ei[j] );
 	    }
 
 	    XvFreeEncodingInfo(ei);
@@ -232,7 +236,7 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
 	    {
 		for (int k=0; k<num_att; k++)
 		{
-		    cout << "XvAttribute[" << k << "]\n" << att[k]<< endl;
+		    DEBUG( << "XvAttribute[" << k << "]\n" << att[k] );
 		}
 		XFree(att);
 	    }
@@ -244,7 +248,7 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
 	    {
 		for (int l=0; l<num_ifv; l++)
 		{
-		    cout << "XvImageFormatValues[" << l << "]\n" << ifv[l]<< endl;
+		    DEBUG( << "XvImageFormatValues[" << l << "]\n" << ifv[l] );
 		    // if (ifv[l].id == GUID_UYVY_PLANAR)
 		    if (ifv[l].id == GUID_YUV12_PLANAR)
 		    {
@@ -409,7 +413,7 @@ XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
 	throw XFException("XShmAttach failed !");
     }
 
-    cout << "yuvImage data_size = " << std::dec << yuvImage->data_size << endl;
+    DEBUG( "yuvImage data_size = " << std::dec << yuvImage->data_size );
 }
 
 XFVideoImage::~XFVideoImage()

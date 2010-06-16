@@ -3,6 +3,7 @@
 
 #include "GeneralEvents.hpp"
 #include "event_receiver.hpp"
+#include "AlsaFacade.hpp"
 
 class AudioDecoder : public event_receiver<AudioDecoder>
 {
@@ -15,6 +16,14 @@ class AudioDecoder : public event_receiver<AudioDecoder>
 
     int audioStreamIndex;
 
+    uint64_t audio_pkt_pts;
+
+    double pts;
+    std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
+    std::queue<boost::shared_ptr<AudioPacketEvent> > packetQueue;
+
+    int posCurrentPacket;
+
 public:
     AudioDecoder(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc),
@@ -22,9 +31,13 @@ public:
 	  avCodecContext(0),
 	  avCodec(0),
 	  avStream(0),
-	  audioStreamIndex(-1)
+	  audioStreamIndex(-1),
+	  audio_pkt_pts(AV_NOPTS_VALUE),
+	  pts(0),
+	  posCurrentPacket(0)
     {}
-    ~AudioDecoder() {}
+    ~AudioDecoder()
+    {}
 
 private:
     boost::shared_ptr<Demuxer> demuxer;
@@ -34,6 +47,9 @@ private:
     void process(boost::shared_ptr<StartEvent> event);
     void process(boost::shared_ptr<OpenAudioStreamReq> event);
     void process(boost::shared_ptr<AudioPacketEvent> event);
+    void process(boost::shared_ptr<AFAudioFrame> event);
+
+    void decode();
 };
 
 #endif

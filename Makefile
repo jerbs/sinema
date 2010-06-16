@@ -3,7 +3,7 @@
 PROGRAM=vplay
 
 # all flags for the preprocessor
-CPPFLAGS=$(shell sdl-config --cflags)
+CPPFLAGS=
 
 # may be overwritten from environment
 CFLAGS=-g -Wall
@@ -11,6 +11,7 @@ CFLAGS=-g -Wall
 # linker
 LDFLAGS=-lavutil -lavformat -lavcodec -lswscale -lz -lm -lboost_thread-mt
 LDFLAGS+= -L/usr/X11R6/lib -lX11 -lXext -lXv
+LDFLAGS+= -lasound
 
 # CFLAGS should be the last
 ALL_CFLAGS=$(CFLAGS)

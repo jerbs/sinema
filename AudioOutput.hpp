@@ -3,35 +3,53 @@
 
 #include "GeneralEvents.hpp"
 #include "event_receiver.hpp"
+#include "AlsaFacade.hpp"
+
+#include <queue>
+
+#include <boost/shared_ptr.hpp>
+
+struct PlayNextChunk{};
 
 class AudioOutput : public event_receiver<AudioOutput>
 {
     friend class event_processor;
 
 public:
-    AudioOutput(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc)
-    {}
-    ~AudioOutput() {}
+    AudioOutput(event_processor_ptr_type evt_proc);
+    ~AudioOutput();
 
 private:
-    boost::shared_ptr<InitEvent> config;
+    boost::shared_ptr<AudioDecoder> audioDecoder;
 
-    void process(boost::shared_ptr<InitEvent> event)
-    {
-	DEBUG();
-	config = event;
-    }
+    timer chunkTimer;
 
-    void process(boost::shared_ptr<StartEvent> event)
-    {
-	DEBUG();
-    }
+    boost::shared_ptr<AFPCMDigitalAudioInterface> alsa;
+    std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
 
-    void process(boost::shared_ptr<OpenAudioOutputReq> event)
-    {
-	DEBUG();
-    }
+    typedef enum {
+        IDLE,
+        INIT,
+        RUNNING
+    } state_t;
+
+    unsigned int sampleRate;
+    unsigned int channels;
+    unsigned int frameSize;
+
+    state_t state;
+    double displayedPTS;
+    timespec_t displayedTime;
+
+    void process(boost::shared_ptr<InitEvent> event);
+    void process(boost::shared_ptr<StartEvent> event);
+    void process(boost::shared_ptr<OpenAudioOutputReq> event);
+    void process(boost::shared_ptr<AFAudioFrame> event);
+    void process(boost::shared_ptr<PlayNextChunk> event);
+
+    void createAudioFrame();
+    void playNextChunk();
+    void startChunkTimer();
 };
 
 #endif
