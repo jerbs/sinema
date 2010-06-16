@@ -1,7 +1,7 @@
 //
 // X11 and Xv Extension Interface
 //
-// Copyright (C) Joachim Erbs, 2009, 2010
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #include "player/XlibFacade.hpp"
@@ -275,10 +275,13 @@ XFVideo::XFVideo(Display* display, Window window,
 		for (int l=0; l<num_ifv; l++)
 		{
 		    DEBUG( << "XvImageFormatValues[" << l << "]\n" << ifv[l] );
-		    // if (ifv[l].id == GUID_UYVY_PLANAR)
-		    if (ifv[l].id == GUID_YUV12_PLANAR)
+		    // NxM Y plane followed by (N/2)x(M/2) V and U planes.
+		    // if (ifv[l].id == GUID_YUV12_PLANAR)
+		    // 32 bit macro pixel: (lowest byte) Y0 U0 Y0 V0 (highest byte)
+		    if (ifv[l].id == GUID_YUY2_PACKED)
 		    {
 			imageFormat = ifv[l].id;
+			DEBUG(<< "xvImageFormatValues: " << std::endl << ifv[l]);
 		    }
 		}
 		XFree(ifv);
@@ -548,37 +551,58 @@ void XFVideo::clip(boost::shared_ptr<XFVideoImage> in,
     XvImage* yuvImageIn  = in->yuvImage;
     XvImage* yuvImageOut = out->yuvImage;
 
-    char* Yin = yuvImageIn->data + yuvImageIn->offsets[0];
-    char* Vin = yuvImageIn->data + yuvImageIn->offsets[1];
-    char* Uin = yuvImageIn->data + yuvImageIn->offsets[2];
-
-    int pYin = yuvImageIn->pitches[0];
-    int pVin = yuvImageIn->pitches[1];
-    int pUin = yuvImageIn->pitches[2];
-
-    int wOut = yuvImageOut->width;
-    int hOut = yuvImageOut->height;
-
-    char* Yout = yuvImageOut->data + yuvImageOut->offsets[0];
-    char* Vout = yuvImageOut->data + yuvImageOut->offsets[1];
-    char* Uout = yuvImageOut->data + yuvImageOut->offsets[2];
-
-    int pYout = yuvImageOut->pitches[0];
-    int pVout = yuvImageOut->pitches[1];
-    int pUout = yuvImageOut->pitches[2];
-
-    for (int y=0; y<hOut; y++)
-	memcpy(&Yout[y*pYout], &Yin[leftSrc+ (topSrc+y)*pYin], wOut);
-
-    int wOut2 = wOut/2;
-    int hOut2 = hOut/2;
-    int leftSrc2 = leftSrc/2;
-    int topSrc2  = topSrc/2;
-	
-    for (int y=0; y<hOut2; y++)
+    if (yuvImageIn->id == GUID_YUV12_PLANAR)
     {
-	memcpy(&Uout[y*pUout], &Uin[leftSrc2+ (topSrc2+y)*pUin], wOut2);
-	memcpy(&Vout[y*pVout], &Vin[leftSrc2+ (topSrc2+y)*pVin], wOut2);
+	char* Yin = yuvImageIn->data + yuvImageIn->offsets[0];
+	char* Vin = yuvImageIn->data + yuvImageIn->offsets[1];
+	char* Uin = yuvImageIn->data + yuvImageIn->offsets[2];
+
+	int pYin = yuvImageIn->pitches[0];
+	int pVin = yuvImageIn->pitches[1];
+	int pUin = yuvImageIn->pitches[2];
+
+	int wOut = yuvImageOut->width;
+	int hOut = yuvImageOut->height;
+
+	char* Yout = yuvImageOut->data + yuvImageOut->offsets[0];
+	char* Vout = yuvImageOut->data + yuvImageOut->offsets[1];
+	char* Uout = yuvImageOut->data + yuvImageOut->offsets[2];
+
+	int pYout = yuvImageOut->pitches[0];
+	int pVout = yuvImageOut->pitches[1];
+	int pUout = yuvImageOut->pitches[2];
+
+	for (int y=0; y<hOut; y++)
+	    memcpy(&Yout[y*pYout], &Yin[leftSrc+ (topSrc+y)*pYin], wOut);
+
+	int wOut2 = wOut/2;
+	int hOut2 = hOut/2;
+	int leftSrc2 = leftSrc/2;
+	int topSrc2  = topSrc/2;
+	
+	for (int y=0; y<hOut2; y++)
+	{
+	    memcpy(&Uout[y*pUout], &Uin[leftSrc2+ (topSrc2+y)*pUin], wOut2);
+	    memcpy(&Vout[y*pVout], &Vin[leftSrc2+ (topSrc2+y)*pVin], wOut2);
+	}
+    }
+    else if (yuvImageIn->id == GUID_YUY2_PACKED)
+    {
+	char* Pin  = yuvImageIn->data + yuvImageIn->offsets[0];
+	int  pPin  = yuvImageIn->pitches[0];
+
+	char* Pout = yuvImageOut->data + yuvImageOut->offsets[0];
+	int  pPout = yuvImageOut->pitches[0];
+
+	int wOut2 = yuvImageOut->width * 2;
+	int hOut  = yuvImageOut->height;
+
+	for (int y=0; y<hOut; y++)
+	    memcpy(&Pout[y*pPout], &Pin[2*leftSrc+ (topSrc+y)*pPin], wOut2);
+    }
+    else
+    {
+	ERROR(<< "unsupported format 0x" << std::hex << yuvImageIn->id);
     }
 }
 
@@ -703,20 +727,40 @@ XFVideoImage::~XFVideoImage()
 
 void XFVideoImage::createBlackImage()
 {
-    int h  = height();
-    int h2 = h/2;
+    if (yuvImage->id == GUID_YUV12_PLANAR)
+    {
+	int h  = height();
 
-    char* Y = data() + yuvImage->offsets[0];
-    char* V = data() + yuvImage->offsets[1];
-    char* U = data() + yuvImage->offsets[2];
+	char* Y = data() + yuvImage->offsets[0];
+	char* V = data() + yuvImage->offsets[1];
+	char* U = data() + yuvImage->offsets[2];
 
-    int pYin = yuvImage->pitches[0];
-    int pVin = yuvImage->pitches[1];
-    int pUin = yuvImage->pitches[2];
+	int pYin = yuvImage->pitches[0];
+	int pVin = yuvImage->pitches[1];
+	int pUin = yuvImage->pitches[2];
 
-    memset(Y,   0, pYin*h);
-    memset(U, 128, pUin*h2);
-    memset(V, 128, pVin*h2);
+	memset(Y,   0, pYin*h);
+	memset(U, 128, pUin*h/2);
+	memset(V, 128, pVin*h/2);
+    }
+    else if (yuvImage->id == GUID_YUY2_PACKED)
+    {
+	int w = width();
+	int h = height();
+
+	char* Packed = data() + yuvImage->offsets[0];
+
+	for (int x=0; x<w; x++)
+	    for (int y=0; y<h; y++)
+	    {
+		Packed[2*x   + y*yuvImage->pitches[0]] = 0;    // Y
+		Packed[2*x+1 + y*yuvImage->pitches[0]] = 0x80; // U,V
+	    }
+    }
+    else
+    {
+	ERROR(<< "unsupported format 0x" << std::hex << yuvImage->id);
+    }
 }
 
 void XFVideoImage::createPatternImage()
@@ -724,45 +768,94 @@ void XFVideoImage::createPatternImage()
     int w = width();
     int h = height();
 
-    char* Y = data() + yuvImage->offsets[0];
-    char* V = data() + yuvImage->offsets[1];
-    char* U = data() + yuvImage->offsets[2];
+    if (yuvImage->id == GUID_YUV12_PLANAR)
+    {
+	char* Y = data() + yuvImage->offsets[0];
+	char* V = data() + yuvImage->offsets[1];
+	char* U = data() + yuvImage->offsets[2];
 
-    for (int x=0; x<w; x++)
-	for (int y=0; y<h; y++)
-	{
-	    Y[x + y*yuvImage->pitches[0]] = 0xff & ((x/32 + y/32)*20);
-	}
+	for (int x=0; x<w; x++)
+	    for (int y=0; y<h; y++)
+	    {
+		Y[x + y*yuvImage->pitches[0]] = 0xff & (((x/32 + y/32) % 8) *20);
+	    }
 
-    for (int x=0; x<w/2; x++)
-	for (int y=0; y<h/2; y++)
-	{
-	    U[x + y*yuvImage->pitches[2]] = 0xff & ((x/16 + y/16)*20);
-	    V[x + y*yuvImage->pitches[1]] = 0xff & ((x/16 + y/16)*20);
-	}
+	for (int x=0; x<w/2; x++)
+	    for (int y=0; y<h/2; y++)
+	    {
+		U[x + y*yuvImage->pitches[2]] = 0xff & (0x80 +((x/16 - y/16) % 8) *10);
+		V[x + y*yuvImage->pitches[1]] = 0xff & (0x80 -((x/16 + y/16) % 8) *10);
+	    }
+    }
+    else if (yuvImage->id == GUID_YUY2_PACKED)
+    {
+	char* Packed = data() + yuvImage->offsets[0];
+
+	for (int x=0; x<w; x++)
+	    for (int y=0; y<h; y++)
+	    {
+		Packed[2*x + y*yuvImage->pitches[0]] = 0xff & (((x/32 + y/32) % 8) *20);
+	    }
+
+	for (int x=0; x<w/2; x++)
+	    for (int y=0; y<h; y++)
+	    {
+		Packed[4*x+1 + y*yuvImage->pitches[0]] = 0xff & (0x80 +((x/16 - y/32) % 8) *10);
+		Packed[4*x+3 + y*yuvImage->pitches[0]] = 0xff & (0x80 -((x/16 + y/32) % 8) *10);
+	    }
+    }
+    else
+    {
+	ERROR(<< "unsupported format 0x" << std::hex << yuvImage->id);
+    }
 }
 
 void XFVideoImage::createDemoImage()
 {
     int w = width();
     int h = height();
+    std::cout << "size = " << w << ", " << h << std::endl;
 
-    char* Y = data() + yuvImage->offsets[0];
-    char* V = data() + yuvImage->offsets[1];
-    char* U = data() + yuvImage->offsets[2];
+    if (yuvImage->id == GUID_YUV12_PLANAR)
+    {
+	char* Y = data() + yuvImage->offsets[0];
+	char* V = data() + yuvImage->offsets[1];
+	char* U = data() + yuvImage->offsets[2];
 
-    for (int x=0; x<w; x++)
-	for (int y=0; y<h; y++)
-	{
-	    Y[x + y*yuvImage->pitches[0]] = 128;
-	}
+	for (int x=0; x<w; x++)
+	    for (int y=0; y<h; y++)
+	    {
+		Y[x + y*yuvImage->pitches[0]] = 128;
+	    }
 
-    for (int x=0; x<w/2; x++)
-	for (int y=0; y<h/2; y++)
-	{
-	    U[x + y*yuvImage->pitches[2]] = x * 255/ (w/2);
-	    V[x + y*yuvImage->pitches[1]] = y * 255/ (h/2);
-	}
+	for (int x=0; x<w/2; x++)
+	    for (int y=0; y<h/2; y++)
+	    {
+		U[x + y*yuvImage->pitches[2]] = x * 255/ (w/2);
+		V[x + y*yuvImage->pitches[1]] = y * 255/ (h/2);
+	    }
+    }
+    else if (yuvImage->id == GUID_YUY2_PACKED)
+    {
+	char* Packed = data() + yuvImage->offsets[0];
+
+	for (int x=0; x<w; x++)
+	    for (int y=0; y<h; y++)
+	    {
+		Packed[2*x + y*yuvImage->pitches[0]] = 128;  // Y
+	    }
+
+	for (int x=0; x<w/2; x++)
+	    for (int y=0; y<h; y++)
+	    {
+		Packed[4*x+1 + y*yuvImage->pitches[0]] = x * 255/ (w/2); // U
+		Packed[4*x+3 + y*yuvImage->pitches[0]] = y * 255/ (h);   // V
+	    }
+    }
+    else
+    {
+	ERROR(<< "unsupported format 0x" << std::hex << yuvImage->id);
+    }
 }
 
 // YUV in fact is YCbCr.

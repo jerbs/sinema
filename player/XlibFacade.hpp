@@ -1,7 +1,7 @@
 //
 // X11 and Xv Extension Interface
 //
-// Copyright (C) Joachim Erbs, 2009, 2010
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #ifndef XLIB_FACADE_HPP
@@ -109,6 +109,7 @@ private:
     
     XvPortID xvPortId;
     int imageFormat;
+    // XvImageFormatValues xvImageFormatValues;
     GC gc;
 
     // video size:

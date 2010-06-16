@@ -1,7 +1,7 @@
 //
 // Video Decoder
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #include "player/VideoDecoder.hpp"
@@ -9,6 +9,7 @@
 #include "player/Demuxer.hpp"
 #include "player/MediaPlayer.hpp"
 #include "player/XlibFacade.hpp"
+#include "player/XlibHelpers.hpp"
 
 #include <boost/make_shared.hpp>
 #include <iomanip>
@@ -51,7 +52,11 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 
 		    int width = avCodecContext->width;
 		    int height = avCodecContext->height;
-		    enum PixelFormat dstPixFmt = PIX_FMT_YUV420P;
+		    // planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
+		    // enum PixelFormat dstPixFmt = PIX_FMT_YUV420P;
+		    // packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr (needed by deinterlacers)
+		    enum PixelFormat dstPixFmt = PIX_FMT_YUYV422;
+
 		    swsContext = sws_getContext(width, height,            // Source Size
 						avCodecContext->pix_fmt,  // Source Format
 						width, height,            // Destination Size
@@ -393,23 +398,44 @@ void VideoDecoder::queue()
     XvImage* yuvImage = xfVideoImage->xvImage();
     char* data = yuvImage->data;
 
-    char* Y = data + yuvImage->offsets[0];
-    char* V = data + yuvImage->offsets[1];
-    char* U = data + yuvImage->offsets[2];
-
-    int Yp = yuvImage->pitches[0];
-    int Vp = yuvImage->pitches[1];
-    int Up = yuvImage->pitches[2];
-
     AVPicture avPicture;
-    avPicture.data[0] = (uint8_t*)Y;
-    avPicture.data[1] = (uint8_t*)U;
-    avPicture.data[2] = (uint8_t*)V;
-    avPicture.data[3] = 0;
-    avPicture.linesize[0] = Yp;
-    avPicture.linesize[1] = Up;
-    avPicture.linesize[2] = Vp;
-    avPicture.linesize[3] = 0;
+
+    if (yuvImage->id == GUID_YUV12_PLANAR)
+    {
+	char* Y = data + yuvImage->offsets[0];
+	char* V = data + yuvImage->offsets[1];
+	char* U = data + yuvImage->offsets[2];
+
+	int Yp = yuvImage->pitches[0];
+	int Vp = yuvImage->pitches[1];
+	int Up = yuvImage->pitches[2];
+
+	avPicture.data[0] = (uint8_t*)Y;
+	avPicture.data[1] = (uint8_t*)U;
+	avPicture.data[2] = (uint8_t*)V;
+	avPicture.data[3] = 0;
+	avPicture.linesize[0] = Yp;
+	avPicture.linesize[1] = Up;
+	avPicture.linesize[2] = Vp;
+	avPicture.linesize[3] = 0;
+    }
+    else if (yuvImage->id == GUID_YUY2_PACKED)
+    {
+	char* P = data + yuvImage->offsets[0];
+	int Pp = yuvImage->pitches[0];
+	avPicture.data[0] = (uint8_t*)P;
+	avPicture.data[1] = 0;
+	avPicture.data[2] = 0;
+	avPicture.data[3] = 0;
+	avPicture.linesize[0] = Pp;
+	avPicture.linesize[1] = 0;
+	avPicture.linesize[2] = 0;
+	avPicture.linesize[3] = 0;
+    }
+    else
+    {
+	ERROR(<< "unsupported format 0x" << std::hex << yuvImage->id);
+    }
 
     // Convert image into YUV format:
     sws_scale(swsContext,

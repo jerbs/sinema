@@ -1,7 +1,7 @@
 //
 // X11 Helpers and Debug Functions
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #ifndef XV_HELPERS_HPP
@@ -28,13 +28,22 @@
 // http://www.fourcc.org/yuv.php#UYVY
 // Label: UYVY (Packed)
 // 0x59565955
-// 16
+// Bits per pixel: 16
 // YUV 4:2:2 (Y sample at every pixel, U and V sampled at every second 
 // pixel horizontally on each line). A macropixel contains 2 pixels 
 // in 1 u_int32.
 // UYVY is probably the most popular of the various YUV 4:2:2 formats.
 // Macropixel: (lowest byte) U0 Y0 V0 Y1 (highest byte)
-#define GUID_UYVY_PLANAR  0x59565955
+#define GUID_UYVY_PACKED  0x59565955
+
+// http://www.fourcc.org/yuv.php#YUY2
+// Label: YUY2 (Packed)
+// 0x32595559
+// Bits per pixel: 16
+// YUV 4:2:2 similar to the UYVY format, but with a different component 
+// ordering within the u_int32 macropixel.
+// Macropixel: (lowest byte) Y0 U0 Y0 V0 (highest byte)
+#define GUID_YUY2_PACKED  0x32595559
 
 struct XvVersionInfo
 {

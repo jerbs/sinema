@@ -1,7 +1,7 @@
 //
 // Video Output
 //
-// Copyright (C) Joachim Erbs, 2009, 2010
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #include "player/VideoOutput.hpp"
@@ -451,6 +451,8 @@ void VideoOutput::showBlackFrame()
 {
     boost::shared_ptr<XFVideoImage> yuvImage(new XFVideoImage(xfVideo));
     yuvImage->createBlackImage();
+    // yuvImage->createPatternImage();
+    // yuvImage->createDemoImage();
     xfVideo->show(yuvImage);
 }
 
