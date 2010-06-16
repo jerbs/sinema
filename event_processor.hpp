@@ -8,6 +8,10 @@
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
+struct QuitEvent
+{
+};
+
 class event_processor
 {
     friend class timer;

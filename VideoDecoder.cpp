@@ -161,13 +161,11 @@ void VideoDecoder::decode()
 
 	    static int64_t lastDts = 0;
 
-#if 0
-	    std::cout << "V: pts=" << std::fixed << std::setprecision(2) << pts 
-		      << ", pts=" << avFrame->pts
-		      << ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
-		      << ", time_base=" << avStream->time_base
-		      << ", frameFinished=" << frameFinished << std::endl;
-#endif
+	    INFO( << "VDEC: pts=" << std::fixed << std::setprecision(2) << pts 
+		  << ", pts=" << avFrame->pts
+		  << ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
+		  << ", time_base=" << avStream->time_base
+		  << ", frameFinished=" << frameFinished );
 
 	    lastDts = avPacket.dts;
 	    

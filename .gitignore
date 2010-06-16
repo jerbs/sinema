@@ -2,4 +2,6 @@
 *.i
 *.dep
 *~
+#*#
 vplay
+log

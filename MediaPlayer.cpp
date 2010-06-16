@@ -49,12 +49,11 @@ MediaPlayer::~MediaPlayer()
     outputThread.join();
 }
 
-void MediaPlayer::operator()()
+void MediaPlayer::operator()(std::string file)
 {
     sendInitEvents();
 
-    demuxer->queue_event(boost::make_shared<OpenFileEvent>("/vol/3sat.mpg"));
-    // fileReader->queue_event(boost::make_shared<OpenFileEvent>("/dev/video0"));
+    demuxer->queue_event(boost::make_shared<OpenFileEvent>(file));
 
     // Use a Smart Pointer:
     // http://www.boost.org/doc/libs/1_39_0/libs/smart_ptr/smart_ptr.htm

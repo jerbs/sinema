@@ -28,22 +28,22 @@ public:
     VideoOutput(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc),
 	  state(IDLE),
-	  displayedPTS(0)
+	  audioSync(false),
+	  audioSnapshotPTS(0)
     {
-#if 0
-	// Periodic timer, every 0.1 seconds:
-	timespec_t period;
-	period.tv_sec  = 0;       
-	period.tv_nsec = 100*1000*1000;  
-	frameTimer.relative(period).periodic(period);
-#endif
+	audioSnapshotTime.tv_sec  = 0; 
+	audioSnapshotTime.tv_nsec = 0;
     }
     ~VideoOutput()
     {
     }
 
 private:
+#ifdef SYNCTEST
+    boost::shared_ptr<SyncTest> syncTest;
+#else
     boost::shared_ptr<VideoDecoder> videoDecoder;
+#endif
 
     timer frameTimer;
 
@@ -57,8 +57,10 @@ private:
     } state_t;
 
     state_t state;
-    double displayedPTS;
-    timespec_t displayedTime;
+
+    bool audioSync;
+    double audioSnapshotPTS;
+    timespec_t audioSnapshotTime;
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<StartEvent> event);
@@ -67,6 +69,7 @@ private:
     void process(boost::shared_ptr<XFVideoImage> event);
     void process(boost::shared_ptr<DeleteXFVideoImage> event);
     void process(boost::shared_ptr<ShowNextFrame> event);
+    void process(boost::shared_ptr<AudioSyncInfo> event);
 
     void createVideoImage();
     void displayNextFrame();

@@ -62,7 +62,7 @@ public:
 
     void selectEvents();
     void resize(unsigned int width, unsigned int height);
-    void show(boost::shared_ptr<XFVideoImage> xfVideoImage);
+    boost::shared_ptr<XFVideoImage> show(boost::shared_ptr<XFVideoImage> xfVideoImage);
     Display* display() {return m_display;}
     Window window() {return m_window;}
     
@@ -70,6 +70,9 @@ private:
     XFVideo();
     XFVideo(const XFVideo&);
 
+    void calculateDestinationArea();
+
+    boost::shared_ptr<XFVideoImage> m_displayedImage;
     boost::shared_ptr<XFWindow> m_xfWindow;
     Display* m_display;
     Window m_window;
@@ -80,8 +83,14 @@ private:
 
     unsigned int yuvWidth;
     unsigned int yuvHeight;
-    double ratio;   // w/h
-    double iratio;  // h/w
+    double ratio;   //  yuvWidth / yuvHeight
+    double iratio;  //  yuvHeight / yuvWidth
+
+    // sub area of window displaying the video:
+    unsigned int topDest;
+    unsigned int leftDest;
+    unsigned int widthDest;
+    unsigned int heightDest;
 };
 
 class XFVideoImage

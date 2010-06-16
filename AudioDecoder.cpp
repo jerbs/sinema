@@ -5,9 +5,6 @@
 #include <boost/make_shared.hpp>
 #include <iomanip>
 
-// #undef DEBUG
-// #define DEBUG(x) std::cout << __PRETTY_FUNCTION__  x << std::endl
-
 void AudioDecoder::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG();
@@ -97,35 +94,6 @@ void AudioDecoder::process(boost::shared_ptr<AFAudioFrame> event)
 
 extern std::ostream& operator<<(std::ostream& strm, AVRational r);
 
-
-inline unsigned char lowerNibble(unsigned char c)
-{
-    return c & 0x0F;
-}
-
-inline unsigned char upperNibble(unsigned char c)
-{
-    return (c & 0xF0) >> 4;
-}
-
-template<typename PTR>
-void hexDump(PTR data, int len)
-{
-    char hex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-    // char* pos = reinterpret_cast<char*>(data);  // static cast fails to cast from unsigned to signed
-    char* pos = (char*)data;
-    char* end = pos + len;
-
-    while(pos < end)
-    {
-	unsigned char c = *pos;
-	std::cout << hex[upperNibble(c)] << hex[lowerNibble(c)];
-	pos++;
-    }
-
-    std::cout << std::endl;
-}
-
 void AudioDecoder::decode()
 {
     while ( !packetQueue.empty() &&
@@ -138,8 +106,6 @@ void AudioDecoder::decode()
 
 	if (avPacket.size)
 	{
-	    audio_pkt_pts = avPacket.pts;
-
 	    int16_t* samples = (int16_t*)audioFrame->data();
 	    int frameByteSize = audioFrame->numAllocatedBytes();
 	    int ret = avcodec_decode_audio2(avCodecContext,
@@ -150,7 +116,39 @@ void AudioDecoder::decode()
 
 	    if (ret>=0)
 	    {
+		double packetPTS;
+
+		// ret contains number of bytes used from avPacket.
+		// Maybe avcodec_decode_audio2 has to be called again.
+
+		if (avPacket.pts != (int64_t)AV_NOPTS_VALUE)
+		{
+		    packetPTS = avPacket.pts;
+		}
+		else if (avPacket.dts != (int64_t)AV_NOPTS_VALUE)
+		{
+		    packetPTS = avPacket.dts;
+		}
+		else
+		{
+		    packetPTS = 0;
+		}
+
+		packetPTS *= av_q2d(avStream->time_base);
+
+		double sampleRate = double(avCodecContext->sample_rate);
+		double framePTS = packetPTS + numFramesCurrentPacket / sampleRate;
+
+		int numChannels = avCodecContext->channels;
 		posCurrentPacket += ret;
+		numFramesCurrentPacket += frameByteSize / (2*numChannels);
+
+		INFO( << "ADEC: framePTS=" << framePTS
+		      << ", packetPTS=" << packetPTS
+		      << ", pts=" << avPacket.pts
+		      << ", dts=" << avPacket.dts
+		      << ", time_base=" << avStream->time_base
+		      << ", finished=" << (posCurrentPacket == avPacket.size) );
 
 		if (posCurrentPacket == avPacket.size)
 		{
@@ -158,42 +156,16 @@ void AudioDecoder::decode()
 		    packetQueue.pop();
 		    demuxer->queue_event(boost::make_shared<ConfirmPacketEvent>());
 		    posCurrentPacket = 0;
+		    numFramesCurrentPacket = 0;
 		}
 
 		if (frameByteSize > 0)
 		{
 		    // Decoded samples are available
 		    frameQueue.pop();
+		    audioFrame->setPTS(framePTS);
 		    audioOutput->queue_event(audioFrame);
 		}
-
-#if 0
-		// ret contains number of bytes used from avPacket.
-		// Maybe avcodec_decode_audio2 has to be called again.
-
-		if (avPacket.pts != (int64_t)AV_NOPTS_VALUE)
-		{
-		    pts = avPacket.pts;
-		}
-		else if (avPacket.dts != (int64_t)AV_NOPTS_VALUE)
-		{
-		    pts = avPacket.dts;
-		}
-		else
-		{
-		    pts = 0;
-		}
-		pts *= av_q2d(avStream->time_base);
-		
-		static int64_t lastDts = 0;
-
-		std::cout << "A: pts=" << std::fixed << std::setprecision(2) << pts
-			  << ", pts=" << avPacket.pts
-			  << ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
-			  << ", time_base=" << avStream->time_base << std::endl;
-
-		lastDts = avPacket.dts;
-#endif
 	    }
 	    else
 	    {

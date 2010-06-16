@@ -4,6 +4,7 @@ PROGRAM=vplay
 
 # all flags for the preprocessor
 CPPFLAGS=
+# CPPFLAGS+=-DSYNCTEST
 
 # may be overwritten from environment
 CFLAGS=-g -Wall
@@ -42,8 +43,12 @@ clean:
 	-rm -f $(PROGRAM)
 	-rm -f $(OBJECTS)
 	-rm -f $(DEPENDENCIES)
+	-rm -f *.i
 	-rm -f *~
 	-rm -f .*~
+	-rm -f \#*\#
+	-rm -f log
+	-rm -f core
 
 show:
 	@echo DEPENDENCIES: $(DEPENDENCIES)

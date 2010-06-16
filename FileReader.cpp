@@ -94,8 +94,6 @@ void FileReader::completed(sigval_t& sigval)
     {
 	// Request completed successfully
 	int ret = aio_return(&m_aiocb);
-	// std::cout.setf(std::ios::showbase);
-	// std::cout << "aio_return: " << std::hex << ret << std::dec << std::endl;
 
 	if (ret > 0)
 	{
@@ -111,7 +109,7 @@ void FileReader::completed(sigval_t& sigval)
 	    if (ret < 0)
 	    {
 		// Error occurred:
-		perror("aio_return");
+		ERROR(<< "aio_return: " << ret);
 	    }
 	    else  // ret == 0
 	    {

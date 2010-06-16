@@ -11,10 +11,10 @@ public:
     ~TraceUnit();
 };
 
-#define INFO(s)                                \
-{                                               \
-   TraceUnit traceUnit;                         \
-   traceUnit s;	\
+#define INFO(s)          \
+{                        \
+   TraceUnit traceUnit;  \
+   traceUnit s;          \
 }
 
 #define DEBUG(s)                                \
@@ -27,6 +27,7 @@ public:
 {                                                           \
    TraceUnit traceUnit;                                     \
    traceUnit << "Error: " << __PRETTY_FUNCTION__ << " " s;  \
+   std::cout << "Error: " << __PRETTY_FUNCTION__ << " " s;  \
 }
 
 // -------------------------------------------------------------------

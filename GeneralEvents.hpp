@@ -19,6 +19,9 @@ class VideoDecoder;
 class AudioDecoder;
 class VideoOutput;
 class AudioOutput;
+#ifdef SYNCTEST
+class SyncTest;
+#endif
 
 struct InitEvent
 {
@@ -28,12 +31,9 @@ struct InitEvent
     boost::shared_ptr<AudioDecoder> audioDecoder;
     boost::shared_ptr<VideoOutput> videoOutput;
     boost::shared_ptr<AudioOutput> audioOutput;
-};
-
-struct QuitEvent
-{
-    QuitEvent(){DEBUG();}
-    ~QuitEvent(){DEBUG();}
+#ifdef SYNCTEST
+    boost::shared_ptr<SyncTest> syncTest;
+#endif
 };
 
 struct StartEvent
@@ -155,6 +155,17 @@ struct ResizeVideoOutputReq
 {
     int width;
     int height;
+};
+
+struct AudioSyncInfo
+{
+    AudioSyncInfo(double pts, 
+		  struct timespec abstime)
+	: pts(pts),
+	  abstime(abstime)
+    {}
+    double pts;
+    struct timespec abstime;
 };
 
 class XFVideoImage;

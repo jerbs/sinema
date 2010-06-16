@@ -20,24 +20,22 @@ public:
     ~AudioOutput();
 
 private:
+#ifdef SYNCTEST
+    boost::shared_ptr<SyncTest> syncTest;
+#else
     boost::shared_ptr<AudioDecoder> audioDecoder;
+#endif
+    boost::shared_ptr<VideoOutput> videoOutput;
 
     timer chunkTimer;
 
     boost::shared_ptr<AFPCMDigitalAudioInterface> alsa;
     std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
 
-    typedef enum {
-        IDLE,
-        INIT,
-        RUNNING
-    } state_t;
-
     unsigned int sampleRate;
     unsigned int channels;
     unsigned int frameSize;
 
-    state_t state;
     double displayedPTS;
     timespec_t displayedTime;
 
@@ -50,6 +48,8 @@ private:
     void createAudioFrame();
     void playNextChunk();
     void startChunkTimer();
+
+    void sendAudioSyncInfo(double nextPTS);
 };
 
 #endif

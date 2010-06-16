@@ -1,6 +1,10 @@
 #include "VideoOutput.hpp"
 #include "VideoDecoder.hpp"
 
+#ifdef SYNCTEST
+#include "SyncTest.hpp"
+#endif
+
 #include <boost/make_shared.hpp>
 
 using namespace std;
@@ -8,7 +12,11 @@ using namespace std;
 void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG();
+#ifdef SYNCTEST
+    syncTest = event->syncTest;
+#else
     videoDecoder = event->videoDecoder;
+#endif
 }
 
 void VideoOutput::process(boost::shared_ptr<StartEvent> event)
@@ -36,6 +44,7 @@ void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
 
 void VideoOutput::process(boost::shared_ptr<XFVideoImage> event)
 {
+    DEBUG();
     frameQueue.push(event);
 
     switch (state)
@@ -67,13 +76,34 @@ void VideoOutput::process(boost::shared_ptr<ShowNextFrame> event)
     displayNextFrame();
 }
 
+void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
+{
+    audioSync = true;
+    audioSnapshotPTS = event->pts;
+    audioSnapshotTime = event->abstime;
+
+    DEBUG(<< "audioSnapshotPTS << " << audioSnapshotPTS
+	  << ", audioSnapshotTime=" << audioSnapshotTime);
+
+    if (state == INIT)
+    {
+	startFrameTimer();
+    }
+}
+
 void VideoOutput::createVideoImage()
 {
+#ifdef SYNCTEST
+    syncTest->queue_event(boost::make_shared<XFVideoImage>(xfVideo));
+#else
     videoDecoder->queue_event(boost::make_shared<XFVideoImage>(xfVideo));
+#endif
 }
 
 void VideoOutput::displayNextFrame()
 {
+    DEBUG();
+
     if (frameQueue.empty())
     {
 	// No frame available to display.
@@ -84,55 +114,75 @@ void VideoOutput::displayNextFrame()
     boost::shared_ptr<XFVideoImage> image(frameQueue.front());
     frameQueue.pop();
 
-    xfVideo->show(image);
-    displayedPTS = image->getPTS();
-    displayedTime = frameTimer.get_current_time();
-    
-    videoDecoder->queue_event(image);
+    {
+	// For debugging only:
+	double displayedFramePTS = image->getPTS();
+	timespec_t currentTime = frameTimer.get_current_time();
+	timespec_t audioDeltaTime = currentTime - audioSnapshotTime;
+	double currentAudioPTS = audioSnapshotPTS + getSeconds(audioDeltaTime);
+
+#ifdef SYNCTEST
+	std::cout << "displayedFramePTS=" << displayedFramePTS << std::endl;
+#endif
+
+	INFO(<< "VOUT: currentTime=" <<  currentTime
+	     << ", displayedFramePTS=" << displayedFramePTS
+	     << ", currentAudioPTS=" << currentAudioPTS
+	     << ", AVoffsetPTS=" << displayedFramePTS-currentAudioPTS
+	     << ", audioDeltaTime=" << audioDeltaTime);
+    }
+
+    boost::shared_ptr<XFVideoImage> previousImage = xfVideo->show(image);
+   
+    if (previousImage)
+    {
+#ifdef SYNCTEST
+	syncTest->queue_event(previousImage);
+#else
+	videoDecoder->queue_event(previousImage);
+#endif
+    }
 
     startFrameTimer();
 }
 
 void VideoOutput::startFrameTimer()
 {
-    if (frameQueue.empty())
+    DEBUG();
+
+    if (frameQueue.empty() || !audioSync)
     {
 	// No frame available to calculate time.
 	state = INIT;
 	return;
     }
 
-    boost::shared_ptr<XFVideoImage> image(frameQueue.front());
+    boost::shared_ptr<XFVideoImage> nextFrame(frameQueue.front());
 
-#if 0
-    // Single shot relative timer:
-    double imagePTS = image->getPTS();
     timespec_t currentTime = frameTimer.get_current_time();
-    double period = imagePTS-displayedPTS;
-    timespec_t dt = displayedTime-currentTime+getTimespec(period);
+    timespec_t audioDeltaTime = currentTime - audioSnapshotTime;
+    double currentPTS = audioSnapshotPTS + getSeconds(audioDeltaTime);
+    double nextFrameVideoPTS = nextFrame->getPTS();
+    double videoDeltaPTS = nextFrameVideoPTS - currentPTS;
 
-    std::cout << "dt=" << dt
-	
-	      << ", currentTime=" << currentTime 
-	      << ", displayedTime=" << displayedTime
-	      << ", period="<<period<< getTimespec(period)
-	
-	      << ", imagePTS=" << imagePTS
-	      << ", displayedPTS=" << displayedPTS << std::endl;
-
-    frameTimer.relative(dt);
-    std::cout << "starting ShowNextFrame timer: sec=" << dt << std::endl;
-    start_timer(boost::make_shared<ShowNextFrame>(), frameTimer);
-#else
-    // Periodic timer:
-    if (state != RUNNING)
+    if (videoDeltaPTS > 0)
     {
-	double imagePTS = image->getPTS();
-	double period = imagePTS-displayedPTS;
-	timespec_t dt = getTimespec(period);
-	frameTimer.relative(dt).periodic(dt);
+	timespec_t videoDeltaTime = getTimespec(videoDeltaPTS);
+
+#if 1
+	INFO( << "VOUT: startFrameTimer: currentTime=" << currentTime
+	      << ", currentPTS=" << currentPTS
+	      << ", nextFrameVideoPTS=" << nextFrameVideoPTS
+	      << ", waitTime=" << videoDeltaTime << videoDeltaPTS );
+#endif
+
+	frameTimer.relative(videoDeltaTime);
 	start_timer(boost::make_shared<ShowNextFrame>(), frameTimer);
     }
-#endif
+    else
+    {
+	queue_event(boost::make_shared<ShowNextFrame>());
+    }
+
     state = RUNNING;
 }

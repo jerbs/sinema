@@ -21,7 +21,7 @@ AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAud
       frameSize(req->frame_size),
       format(SND_PCM_FORMAT_S16),  // sample format
       buffer_size(0),
-      period_size(0),
+      period_size(4096),
       buffer_time(500000), // ring buffer length in us
       period_time(100000), // period time in us
       first(true)
@@ -162,6 +162,13 @@ void AFPCMDigitalAudioInterface::setPcmHwParams()
 	exit(-1);
     }
 
+    err = snd_pcm_hw_params_set_period_size_near(handle, hwparams, &period_size, &dir);
+    if (err < 0)
+    {
+	ERROR(<< "snd_pcm_hw_params_set_period_size_near failed: " << snd_strerror(err));
+	exit(-1);
+    }
+
     err = snd_pcm_hw_params_get_period_size(hwparams, &size, &dir);
     if (err < 0)
     {
@@ -239,7 +246,7 @@ void AFPCMDigitalAudioInterface::dump()
 
 int AFPCMDigitalAudioInterface::xrun_recovery(int err)
 {
-    DEBUG();
+    DEBUG(<< "err=" << snd_strerror(err));
 
     if (err == -EPIPE)
     {
@@ -277,80 +284,85 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 {
     DEBUG();
 
-    snd_pcm_state_t state;
-    snd_pcm_sframes_t avail;
-    int err;
+    bool finished;
 
     while(1)
     {
-    state = snd_pcm_state(handle);
-    if (state == SND_PCM_STATE_XRUN)
-    {
-	err = xrun_recovery(-EPIPE);
-	if (err < 0)
+	snd_pcm_state_t state = snd_pcm_state(handle);
+	if (state == SND_PCM_STATE_XRUN)
 	{
-	    printf("XRUN recovery failed: %s\n", snd_strerror(err));
-	    exit(EXIT_FAILURE);
-	}
-	first = true;
-    }
-    else if (state == SND_PCM_STATE_SUSPENDED)
-    {
-	err = xrun_recovery(-ESTRPIPE);
-	if (err < 0)
-	{
-	    printf("SUSPEND recovery failed: %s\n", snd_strerror(err));
-	    exit(EXIT_FAILURE);
-	}
-    }
-
-    avail = snd_pcm_avail_update(handle);
-
-    if (avail < 0)
-    {
-	err = xrun_recovery(avail);
-	if (err < 0)
-	{
-	    printf("avail update recovery failed: %s\n", snd_strerror(err));
-	    exit(EXIT_FAILURE);
-	}
-	first = true;
-	continue;
-    }
-
-    if (avail < period_size)
-    {
-	if (first)
-	{
-	    first = false;
-	    err = snd_pcm_start(handle);
+	    int err = xrun_recovery(-EPIPE);
 	    if (err < 0)
 	    {
-		printf("snd_pcm_start failed: %s\n", snd_strerror(err));
+		printf("XRUN recovery failed: %s\n", snd_strerror(err));
+		exit(EXIT_FAILURE);
+	    }
+	    first = true;
+	}
+	else if (state == SND_PCM_STATE_SUSPENDED)
+	{
+	    int err = xrun_recovery(-ESTRPIPE);
+	    if (err < 0)
+	    {
+		printf("SUSPEND recovery failed: %s\n", snd_strerror(err));
 		exit(EXIT_FAILURE);
 	    }
 	}
-	else
+
+	snd_pcm_sframes_t avail = snd_pcm_avail_update(handle);
+
+	if (avail < 0)
 	{
-	    break;
+	    int err = xrun_recovery(avail);
+	    if (err < 0)
+	    {
+		printf("avail update recovery failed: %s\n", snd_strerror(err));
+		exit(EXIT_FAILURE);
+	    }
+	    first = true;
+	    continue;
 	}
-	continue;
-    }
-    break;
+
+	DEBUG(<< "avail=" << avail << ", period_size=" << period_size);
+
+	finished = directWrite(frame);
+
+	// if (0 && avail > 0)
+	{
+	    if (first)
+	    {
+		first = false;
+		DEBUG(<< "snd_pcm_start");
+		int err = snd_pcm_start(handle);
+		if (err < 0)
+		{
+		    ERROR(<< "snd_pcm_start failed: " << snd_strerror(err));
+		    exit(EXIT_FAILURE);
+		}
+	    }
+	    else
+	    {
+		break;
+	    }
+	    continue;
+	}
+	break;
     }
 
-    return directWrite(frame);
+    return finished;
 }
 
 bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> frame)
 {
+    DEBUG();
+
     const snd_pcm_channel_area_t *my_areas;
     snd_pcm_uframes_t offset;
     snd_pcm_sframes_t commitres;
     int err;
 
     // snd_pcm_uframes_t frames = period_size;
-    snd_pcm_uframes_t frames = frame->getFrameByteSize()/4;
+    snd_pcm_uframes_t frames = frame->getFrameByteSize()/ (channels * 2);
     err = snd_pcm_mmap_begin(handle, &my_areas, &offset, &frames);
     if (err < 0)
     {
@@ -381,9 +393,9 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
 
 bool AFPCMDigitalAudioInterface::copyFrame(const snd_pcm_channel_area_t *areas,
 					   snd_pcm_uframes_t offset,
-					   int count, boost::shared_ptr<AFAudioFrame> frame)
+					   int frames, boost::shared_ptr<AFAudioFrame> frame)
 {
-    u_int16_t* src = (u_int16_t*)frame->consume(count*4);
+    u_int16_t* src = (u_int16_t*)frame->consume(frames*2*channels);
 
     unsigned char *samples[channels];
     int steps[channels]; 
@@ -411,7 +423,7 @@ bool AFPCMDigitalAudioInterface::copyFrame(const snd_pcm_channel_area_t *areas,
 
 
     /* fill the channel areas */
-    while (count-- > 0)
+    while (frames-- > 0)
     {
 	union
 	{
@@ -430,19 +442,35 @@ bool AFPCMDigitalAudioInterface::copyFrame(const snd_pcm_channel_area_t *areas,
 	}
     }
 
-    return frame->finished();
+    return frame->atEnd();
 }
 
-snd_pcm_sframes_t AFPCMDigitalAudioInterface::getOverallLatency()
+bool AFPCMDigitalAudioInterface::getOverallLatency(snd_pcm_sframes_t& latency)
 {
-    snd_pcm_sframes_t delay;
-    int err = snd_pcm_delay(handle, &delay);
-    
-    if (err<0)
+    DEBUG();
+
+    snd_pcm_state_t state = snd_pcm_state(handle);
+    if (state == SND_PCM_STATE_RUNNING)
     {
-	ERROR(<< "snd_pcm_delay failed: " << snd_strerror(err));
-	exit(-1);
+	DEBUG(<< "RUNNING");
+	int err = snd_pcm_delay(handle, &latency);
+    
+	if (err<0)
+	{
+	    ERROR(<< "snd_pcm_delay failed: " << snd_strerror(err));	    
+
+	    snd_pcm_state_t state = snd_pcm_state(handle);
+	    if (state == SND_PCM_STATE_RUNNING)
+	    {
+		exit(-1);
+	    }
+
+	    return false;
+	}
+
+	DEBUG(<< "latency=" << latency);
+	return true;
     }
 
-    return delay;
+    return false;
 }

@@ -1,14 +1,11 @@
 #include "XlibFacade.hpp"
 #include "XlibHelpers.hpp"
+#include "Logging.hpp"
 
 #include <sys/ipc.h>  // to allocate shared memory
 #include <sys/shm.h>  // to allocate shared memory
 
 using namespace std;
-
-#define DEBUG(x)
-// #define DEBUG(x) std::cout << __PRETTY_FUNCTION__  x << std::endl
-#define ERROR(x) std::cerr << "Error: " << __PRETTY_FUNCTION__  x << std::endl
 
 // -------------------------------------------------------------------
 
@@ -108,7 +105,7 @@ XFWindow::XFWindow(unsigned int width, unsigned int height)
     // Set title used for icon:
     XSetIconName(m_display, m_window, "Xv Demo");
 
-    // Request events from server (This overwrites xswa.event_mask):
+    // Request events from server (This overwrites the event mask):
     XSelectInput(m_display, m_window, StructureNotifyMask);
 
     // Requst the server to show the window:
@@ -125,6 +122,9 @@ XFWindow::XFWindow(unsigned int width, unsigned int height)
     while( evt.type != MapNotify );
 
     // Now the window is visible on the screen.
+
+    // Setting previous event mask again:
+    XSelectInput(m_display, m_window, xswa.event_mask);
 }
 
 XFWindow::~XFWindow()
@@ -275,6 +275,8 @@ XFVideo::XFVideo(unsigned int width, unsigned int height)
 
     // Create a graphics context
     gc = XCreateGC(display(), window(), 0, 0);
+
+    calculateDestinationArea();
 }
 
 XFVideo::~XFVideo()
@@ -298,85 +300,100 @@ void XFVideo::resize(unsigned int width, unsigned int height)
 
     XResizeWindow(m_display, m_window, width, height);
     // XMoveResizeWindow(m_display, m_window, left, top, width, height);
+
+    calculateDestinationArea();
 }
 
-void XFVideo::show(boost::shared_ptr<XFVideoImage> yuvImage)
+void XFVideo::calculateDestinationArea()
 {
+    Window root;
+    int x, y;
+    unsigned int width, height;
+    unsigned int border_width, depth;
+
+    XGetGeometry(m_display, m_window, &root,
+		 &x, &y, &width, &height,
+		 &border_width, &depth);
+
+    topDest = 0;
+    leftDest = 0;
+
+    // Keep aspect ratio:
+    widthDest = ratio * double(height);
+    heightDest = iratio * double(width);
+
+    if (widthDest<=width)
+    {
+	heightDest = height;
+	leftDest = (width-widthDest)>>1;
+    }
+    else if (heightDest<=height)
+    {
+	widthDest = width;
+	topDest = (height-heightDest)>>1;
+    }
+    else
+    {
+	heightDest = height;
+	widthDest = width;
+    }
+}
+
+boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yuvImage)
+{    
     bool update = true;
 
-    if (update)
+    while (update)
     {
 	update = false;
-
-	Window root;
-	int x, y;
-	unsigned int width, height;
-	unsigned int border_width, depth;
-
-	XGetGeometry(m_display, m_window, &root,
-		     &x, &y, &width, &height,
-		     &border_width, &depth);
-
-	unsigned int top = 0;
-	unsigned int left = 0;
-
-	// Keep aspect ratio:
-	unsigned int widthDest = ratio * double(height);
-	unsigned int heightDest = iratio * double(width);
-
-	if (widthDest<=width)
-	{
-	    heightDest = height;
-	    left = (width-widthDest)>>1;
-	}
-	else if (heightDest<=height)
-	{
-	    widthDest = width;
-	    top = (height-heightDest)>>1;
-	}
-	else
-	{
-	    heightDest = height;
-	    widthDest = width;
-	}
 
 	// Display srcArea of yuvImage on destArea of Drawable window:
 	XvShmPutImage(m_display, xvPortId, m_window, gc, yuvImage->xvImage(),
 		      0, 0, yuvImage->width(), yuvImage->height(), // srcArea  (x,y,w,h)
-		      left, top, widthDest, heightDest,            // destArea (x,y,w,h)
+		      leftDest, topDest, widthDest, heightDest,    // destArea (x,y,w,h)
 		      True);
 
-	/* XFlush(display); */
+	// Explicitly calling XFlush to ensure that the image is visible:
+	XFlush(m_display);
+
+	XEvent xevent;
+	while (XCheckMaskEvent(m_display,
+			       KeyPressMask | ExposureMask | StructureNotifyMask,
+			       &xevent))
+	{
+	    // See 'man XEvent' for a list of events.
+	    // Wait until an event occurs is possible with:
+	    // XNextEvent( m_display, &xevent );
+
+	    DEBUG(<< "xevent.type = " << xevent.type);
+
+	    switch ( xevent.type )
+	    {
+	    case MapNotify:
+	    case ConfigureNotify:
+		calculateDestinationArea();
+		break;
+	    case Expose:
+		// Window is damaged. X server may send several Expose events.
+		if (xevent.xexpose.count == 0)  // The last Expose event.
+		    update = true;
+		break;
+	    case KeyPress:
+		DEBUG( << "KeyPress = " << xevent.xkey.keycode );
+		// exit(0);
+		if ( xevent.xkey.keycode == 0x09 )
+		    // quit = true;   FIXME
+		    break;
+	    default:
+		break;
+	    }
+	}
     }
+ 
+    boost::shared_ptr<XFVideoImage> previousImage = m_displayedImage;
+    m_displayedImage = yuvImage;
 
-    // Wait until an event occurs (see 'man XEvent' for a list of events):
-    XEvent xevent;
-    XNextEvent( m_display, &xevent );
-    // cout << "xevent.type = " << xevent.type << endl;
-
-    // Polling events is possible with:
-    // if ( XCheckMaskEvent( display,
-    //                       KeyPressMask | ExposureMask | StructureNotifyMask,
-    //			 &xevent ) )
-
-    switch ( xevent.type )
-    {
-    case MapNotify:
-    case ConfigureNotify:
-	break;
-    case Expose:
-	// Window is damaged. X server may send several Expose events.
-	if (xevent.xexpose.count == 0)  // The last Expose event.
-	    update = true;
-	break;
-    case KeyPress:
-	cout << "KeyPress = " << xevent.xkey.keycode << endl;
-	if ( xevent.xkey.keycode == 0x09 )
-	    // quit = true;   FIXME
-	break;
-    default:
-	break;
-    }
+    return previousImage;
 }
 
 // -------------------------------------------------------------------

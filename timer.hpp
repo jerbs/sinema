@@ -158,7 +158,7 @@ private:
 
 inline double getSeconds(const timespec_t& t)
 {
-    double d = t.tv_sec + t.tv_nsec / (1000*1000*1000);
+    double d = t.tv_sec + double(t.tv_nsec) / double(1000*1000*1000);
     return d;
 }
 

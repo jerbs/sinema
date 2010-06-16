@@ -45,15 +45,23 @@ public:
     void setPTS(double pts_) {pts = pts_;}
     double getPTS() {return pts;}
 
-    bool finished()
+    void reset()
     {
-	if (offset == frameByteSize)
-	{
-	    offset = 0;
-	    return true;
-	}
-	return false;
+	frameByteSize = 0;
+	pts = 0;
+	offset = 0;
     }
+
+    bool atBegin()
+    {
+	return (offset == 0) ? true : false;
+    }
+
+    bool atEnd()
+    {
+	return (offset == frameByteSize) ? true : false;
+    }
+
 
 private:
     AFAudioFrame();
@@ -73,7 +81,7 @@ public:
     ~AFPCMDigitalAudioInterface();
 
     bool play(boost::shared_ptr<AFAudioFrame> frame);
-    snd_pcm_sframes_t getOverallLatency();
+    bool getOverallLatency(snd_pcm_sframes_t& delay);
 
 private:
     AFPCMDigitalAudioInterface();
@@ -96,7 +104,7 @@ private:
     unsigned int bytesPerSample;
 
     snd_pcm_sframes_t buffer_size;
-    snd_pcm_sframes_t period_size;
+    snd_pcm_uframes_t period_size;
     unsigned int buffer_time;        // ring buffer length in us
     unsigned int period_time;        // period time in us
     
@@ -107,7 +115,7 @@ private:
     bool directWrite(boost::shared_ptr<AFAudioFrame> frame);
     bool copyFrame(const snd_pcm_channel_area_t *areas,
 		   snd_pcm_uframes_t offset,
-		   int count, boost::shared_ptr<AFAudioFrame> frame);
+		   int frames, boost::shared_ptr<AFAudioFrame> frame);
 };
 
 #endif

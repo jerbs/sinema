@@ -10,6 +10,7 @@
 
 #include <boost/thread/thread.hpp>
 #include <boost/shared_ptr.hpp>
+#include <string>
 
 class MediaPlayer
 {
@@ -17,7 +18,7 @@ public:
     MediaPlayer();
     ~MediaPlayer();
 
-    void operator()();
+    void operator()(std::string file);
 
 private:
     // EventReceiver

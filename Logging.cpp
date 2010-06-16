@@ -5,6 +5,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
+#include <fstream>
 
 class TraceReceiver : public event_receiver<TraceReceiver>
 {
@@ -13,15 +14,18 @@ class TraceReceiver : public event_receiver<TraceReceiver>
 public:
     
     TraceReceiver(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc)
+	: base_type(evt_proc),
+	  log("log")
     {
     }
 
 private:
     void process(boost::shared_ptr<std::string> event)
     {
-	std::cout << *event << std::endl;
+	log << *event << std::endl;
     }
+
+    std::ofstream log;
 };
 
 class SystemTrace

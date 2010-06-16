@@ -13,16 +13,13 @@ class AudioDecoder : public event_receiver<AudioDecoder>
     AVCodecContext* avCodecContext;
     AVCodec* avCodec;
     AVStream* avStream;  // audio_st
-
     int audioStreamIndex;
+    int posCurrentPacket;
+    int numFramesCurrentPacket;
 
-    uint64_t audio_pkt_pts;
-
-    double pts;
     std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
     std::queue<boost::shared_ptr<AudioPacketEvent> > packetQueue;
 
-    int posCurrentPacket;
 
 public:
     AudioDecoder(event_processor_ptr_type evt_proc)
@@ -32,9 +29,8 @@ public:
 	  avCodec(0),
 	  avStream(0),
 	  audioStreamIndex(-1),
-	  audio_pkt_pts(AV_NOPTS_VALUE),
-	  pts(0),
-	  posCurrentPacket(0)
+	  posCurrentPacket(0),
+	  numFramesCurrentPacket(0)
     {}
     ~AudioDecoder()
     {}
