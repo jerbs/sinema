@@ -11,14 +11,16 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-#include "player/Demuxer.hpp"
-#include "player/VideoDecoder.hpp"
-#include "player/AudioDecoder.hpp"
-#include "player/VideoOutput.hpp"
-#include "player/AudioOutput.hpp"
-
+#include "platform/Logging.hpp"
 #include "platform/event_receiver.hpp"
+#include "player/GeneralEvents.hpp"
 
+class Demuxer;
+class VideoDecoder;
+class AudioDecoder;
+class VideoOutput;
+class AudioOutput;
+class Deinterlacer;
 class PlayList;
 
 class MediaPlayer : public event_receiver<MediaPlayer,
@@ -61,6 +63,7 @@ protected:
     boost::shared_ptr<AudioDecoder> audioDecoder;
     boost::shared_ptr<VideoOutput> videoOutput;
     boost::shared_ptr<AudioOutput> audioOutput;
+    boost::shared_ptr<Deinterlacer> deinterlacer;
 
 private:
     // Boost threads:

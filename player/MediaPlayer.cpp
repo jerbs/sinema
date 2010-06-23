@@ -5,6 +5,13 @@
 //
 
 #include "player/MediaPlayer.hpp"
+#include "player/Demuxer.hpp"
+#include "player/VideoDecoder.hpp"
+#include "player/AudioDecoder.hpp"
+#include "player/VideoOutput.hpp"
+#include "player/AudioOutput.hpp"
+#include "player/Deinterlacer.hpp"
+
 #include "player/PlayList.hpp"
 
 #include <boost/make_shared.hpp>
@@ -81,6 +88,7 @@ MediaPlayer::MediaPlayer(PlayList& playList)
     // Execute VideoOutput in GUI thread:
     videoOutput = boost::make_shared<VideoOutput>(get_event_processor());
     audioOutput = boost::make_shared<AudioOutput>(outputEventProcessor);
+    deinterlacer = boost::make_shared<Deinterlacer>(decoderEventProcessor);
 
     // Start all event_processor instance except the own one in an separate thread.
     // Demuxer has a custom main loop:
@@ -126,12 +134,14 @@ void MediaPlayer::sendInitEvents()
      initEvent->audioDecoder = audioDecoder;
      initEvent->videoOutput = videoOutput;
      initEvent->audioOutput = audioOutput;
+     initEvent->deinterlacer = deinterlacer;
 
      demuxer->queue_event(initEvent);
      videoDecoder->queue_event(initEvent);
      audioDecoder->queue_event(initEvent);
      videoOutput->queue_event(initEvent);
      audioOutput->queue_event(initEvent);
+     deinterlacer->queue_event(initEvent);
 }
 
 void MediaPlayer::processEventQueue()

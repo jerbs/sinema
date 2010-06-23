@@ -8,6 +8,7 @@
 #include "player/VideoOutput.hpp"
 #include "player/Demuxer.hpp"
 #include "player/MediaPlayer.hpp"
+#include "player/Deinterlacer.hpp"
 #include "player/XlibFacade.hpp"
 #include "player/XlibHelpers.hpp"
 
@@ -23,6 +24,7 @@ void VideoDecoder::process(boost::shared_ptr<InitEvent> event)
     mediaPlayer = event->mediaPlayer;
     demuxer = event->demuxer;
     videoOutput = event->videoOutput;
+    deinterlacer = event->deinterlacer;
 }
 
 void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
@@ -369,6 +371,11 @@ void VideoDecoder::queue()
 	return;
     }
 
+    if (avFrame->interlaced_frame && frameQueue.size() < 2)
+    {
+	return;
+    }
+
     boost::shared_ptr<XFVideoImage> xfVideoImage(frameQueue.front());
     frameQueue.pop();
 
@@ -394,6 +401,9 @@ void VideoDecoder::queue()
 
 	return;
     }
+
+    DEBUG( << "interlaced_frame = " << avFrame->interlaced_frame
+	   << ", top_field_first = " << avFrame->top_field_first);
 
     XvImage* yuvImage = xfVideoImage->xvImage();
     char* data = yuvImage->data;
@@ -447,8 +457,23 @@ void VideoDecoder::queue()
 	      avPicture.linesize);           // dstStride: Array with strides of each plane
 
     xfVideoImage->setPTS(pts);
-    videoOutput->queue_event(xfVideoImage);
+
+    if (avFrame->interlaced_frame && yuvImage->id == GUID_YUY2_PACKED)
+    {
+	// The deinterlacer needs two frames.
+	deinterlacer->queue_event(xfVideoImage);
+
+	boost::shared_ptr<XFVideoImage> xfVideoImage2(frameQueue.front());
+	frameQueue.pop();
+
+	// FIXME: Size check is missing.
+	deinterlacer->queue_event(xfVideoImage2);
+    }
+    else
+    {
+	videoOutput->queue_event(xfVideoImage);
+    }
+
     avFrameIsFree = true;
     DEBUG(<< "Queueing XFVideoImage");
 }
-

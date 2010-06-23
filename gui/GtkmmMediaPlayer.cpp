@@ -6,6 +6,7 @@
 
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "platform/timer.hpp"
+#include "player/VideoOutput.hpp"
 
 #include <gdk/gdkx.h>
 

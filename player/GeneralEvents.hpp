@@ -50,6 +50,7 @@ class VideoDecoder;
 class AudioDecoder;
 class VideoOutput;
 class AudioOutput;
+class Deinterlacer;
 
 // ===================================================================
 // General Events
@@ -62,6 +63,7 @@ struct InitEvent
     boost::shared_ptr<AudioDecoder> audioDecoder;
     boost::shared_ptr<VideoOutput> videoOutput;
     boost::shared_ptr<AudioOutput> audioOutput;
+    boost::shared_ptr<Deinterlacer> deinterlacer;
 };
 
 struct StartEvent

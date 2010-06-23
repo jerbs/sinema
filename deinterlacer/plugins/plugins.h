@@ -26,7 +26,11 @@
  * executable.
  */
 
-#include <deinterlace.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <deinterlacer/src/deinterlace.h>
 
 deinterlace_method_t *linear_get_method( void );
 deinterlace_method_t *scalerbob_get_method( void );
@@ -38,5 +42,9 @@ deinterlace_method_t *greedy_get_method( void );
 deinterlace_method_t *weave_get_method( void );
 deinterlace_method_t *weavetff_get_method( void );
 deinterlace_method_t *weavebff_get_method( void );
+
+#ifdef __cplusplus
+};
+#endif
 
 #endif /* TVTIME_PLUGINS_H_INCLUDED */

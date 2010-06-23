@@ -78,6 +78,7 @@ private:
     MediaPlayer* mediaPlayer;
     boost::shared_ptr<Demuxer> demuxer;
     boost::shared_ptr<VideoOutput> videoOutput;
+    boost::shared_ptr<Deinterlacer> deinterlacer;
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<OpenVideoStreamReq> event);
