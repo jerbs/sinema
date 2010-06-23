@@ -17,6 +17,9 @@ class XFVideoImage;
 struct deinterlace_method_s;
 typedef struct deinterlace_method_s deinterlace_method_t;
 
+struct TopFieldFirst {};
+struct BottomFieldFirst {};
+
 class Deinterlacer : public event_receiver<Deinterlacer>
 {
     friend class event_processor<>;
@@ -37,6 +40,8 @@ private:
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<XFVideoImage> event);
+    void process(boost::shared_ptr<TopFieldFirst> event);
+    void process(boost::shared_ptr<BottomFieldFirst> event);
 
     void deinterlace();
 };

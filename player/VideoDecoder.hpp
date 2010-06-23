@@ -1,7 +1,7 @@
 //
 // Video Decoder
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #ifndef VIDEO_DECODER_HPP
@@ -45,6 +45,8 @@ class VideoDecoder : public event_receiver<VideoDecoder>
 
     struct SwsContext* swsContext;
 
+    bool m_topFieldFirst;
+
 public:
     VideoDecoder(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc),
@@ -59,7 +61,8 @@ public:
 	  avFrameIsFree(true),
 	  pts(0),
 	  eos(false),
-	  swsContext(0)
+	  swsContext(0),
+	  m_topFieldFirst(true)
     {}
     ~VideoDecoder()
     {

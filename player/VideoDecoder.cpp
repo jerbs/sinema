@@ -460,6 +460,20 @@ void VideoDecoder::queue()
 
     if (avFrame->interlaced_frame && yuvImage->id == GUID_YUY2_PACKED)
     {
+	bool tff = avFrame->top_field_first ? true : false;
+	if (m_topFieldFirst != tff)
+	{
+	    // Deinterlacer needs an update.
+	    if (tff)
+	    {
+		deinterlacer->queue_event(boost::make_shared<TopFieldFirst>());
+	    }
+	    else
+	    {
+		deinterlacer->queue_event(boost::make_shared<BottomFieldFirst>());
+	    }
+	}
+
 	// The deinterlacer needs two frames.
 	deinterlacer->queue_event(xfVideoImage);
 

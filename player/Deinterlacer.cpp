@@ -14,8 +14,8 @@
 #include "deinterlacer/src/copyfunctions.h"
 #include "deinterlacer/src/mm_accel.h"
 
-#undef DEBUG
-#define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+// #undef DEBUG
+// #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 Deinterlacer::Deinterlacer(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
@@ -53,6 +53,24 @@ void Deinterlacer::process(boost::shared_ptr<XFVideoImage> event)
     {
 	deinterlace();
     }
+}
+
+void Deinterlacer::process(boost::shared_ptr<TopFieldFirst> event)
+{
+    DEBUG();
+    m_topFieldFirst = true;
+
+    // Continue with top field:
+    m_topField = true;
+}
+
+void Deinterlacer::process(boost::shared_ptr<BottomFieldFirst> event)
+{
+    DEBUG();
+    m_topFieldFirst = false;
+
+    // Continue with bottom field:
+    m_topField = false;
 }
 
 // -------------------------------------------------------------------
@@ -194,16 +212,32 @@ void Deinterlacer::deinterlace()
     deinterlace_interp_scanline_t intp = m_deinterlacer->interpolate_scanline;
     deinterlace_copy_scanline_t   copy = m_deinterlacer->copy_scanline;
 
+    XvImage *field0, *field1, *field2, *field3;
+
+    if (m_topField == m_topFieldFirst)
+    {
+	pts = (*it)->getPTS();
+	field0 = (*it)->xvImage();
+	field1 = (*it)->xvImage();
+	it++;
+	field2 = (*it)->xvImage();
+	field3 = (*it)->xvImage();
+    }
+    else
+    {
+	pts = (*it)->getPTS();
+	field0 = (*it)->xvImage();
+	it++;
+	pts = (pts + (*it)->getPTS()) / 2;
+	field1 = (*it)->xvImage();
+	field2 = (*it)->xvImage();
+	it++;
+	field3 = (*it)->xvImage();
+    }
+
     if (m_topField)
     {
 	// Field 0 is a top field:
-	pts = (*it)->getPTS();
-	XvImage* field0 = (*it)->xvImage();
-	XvImage* field1 = (*it)->xvImage();
-	it++;
-	XvImage* field2 = (*it)->xvImage();
-	XvImage* field3 = (*it)->xvImage();
-
 	int line = 0;
 	copyLine<-2>(copy, line, yuvImage, field0, field1, field2, field3, false);
 	line++;
@@ -233,15 +267,6 @@ void Deinterlacer::deinterlace()
     else
     {
 	// Field 0 is a bottom field:
-	pts = (*it)->getPTS();
-	XvImage* field0 = (*it)->xvImage();
-	it++;
-	pts = (pts + (*it)->getPTS()) / 2;
-	XvImage* field1 = (*it)->xvImage();
-	XvImage* field2 = (*it)->xvImage();
-	it++;
-	XvImage* field3 = (*it)->xvImage();
-
 	int line = 0;
 	intpLine<-2>(intp, line, yuvImage, field0, field1, field2, field3, true);
 	line++;
@@ -269,8 +294,9 @@ void Deinterlacer::deinterlace()
 	}
     }
 
-    if (!m_topField)
+    if (m_topField != m_topFieldFirst)
     {
+	// Processed both fields of the image.
 	boost::shared_ptr<XFVideoImage> img(m_interlacedImages.front());
 	m_interlacedImages.pop_front();
 	m_emptyImages.push(img);
