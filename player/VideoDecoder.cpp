@@ -33,87 +33,86 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
     {
 	DEBUG(<< "streamIndex = " << event->streamIndex);
 
-    videoStreamIndex = event->streamIndex;
-    avFormatContext = event->avFormatContext;
+	videoStreamIndex = event->streamIndex;
+	avFormatContext = event->avFormatContext;
 
-    if (videoStreamIndex >= 0 &&
-	videoStreamIndex <= (int)avFormatContext->nb_streams)
-    {
-	// Get a pointer to the codec context for the stream
-	avCodecContext = avFormatContext->streams[videoStreamIndex]->codec;
-
-	if (avCodecContext->codec_type == CODEC_TYPE_VIDEO)
+	if (videoStreamIndex >= 0 &&
+	    videoStreamIndex <= (int)avFormatContext->nb_streams)
 	{
-	    avCodec = avcodec_find_decoder(avCodecContext->codec_id);
-	    if (avCodec)
+	    // Get a pointer to the codec context for the stream
+	    avCodecContext = avFormatContext->streams[videoStreamIndex]->codec;
+
+	    if (avCodecContext->codec_type == CODEC_TYPE_VIDEO)
 	    {
-		int ret = avcodec_open(avCodecContext, avCodec);
-		if (ret == 0)
+		avCodec = avcodec_find_decoder(avCodecContext->codec_id);
+		if (avCodec)
 		{
-		    avStream = avFormatContext->streams[videoStreamIndex];
-
-		    int width = avCodecContext->width;
-		    int height = avCodecContext->height;
-		    // planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
-		    // enum PixelFormat dstPixFmt = PIX_FMT_YUV420P;
-		    // packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr (needed by deinterlacers)
-		    enum PixelFormat dstPixFmt = PIX_FMT_YUYV422;
-
-		    swsContext = sws_getContext(width, height,            // Source Size
-						avCodecContext->pix_fmt,  // Source Format
-						width, height,            // Destination Size
-						PixelFormat(dstPixFmt),   // Destination Format
-						SWS_BICUBIC,              // Flags
-						NULL, NULL, NULL);        // SwsFilter*
-		    if (swsContext)
+		    int ret = avcodec_open(avCodecContext, avCodec);
+		    if (ret == 0)
 		    {
-			int w = avCodecContext->width;
-			int h = avCodecContext->height;
-			AVRational& par = avCodecContext->sample_aspect_ratio;
-			int pn = par.num;
-			int pd = par.den;
-			DEBUG( << "size = " << w << ":" << h);
-			DEBUG( << "par  = " << pn << ":" << pd);
-			if (pn == 0 || pd == 0) {pn = pd = 1;}
+			avStream = avFormatContext->streams[videoStreamIndex];
 
-			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd));
+			int width = avCodecContext->width;
+			int height = avCodecContext->height;
+			// planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
+			// enum PixelFormat dstPixFmt = PIX_FMT_YUV420P;
+			// packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr (needed by deinterlacers)
+			enum PixelFormat dstPixFmt = PIX_FMT_YUYV422;
 
-			state = Opening;
+			swsContext = sws_getContext(width, height,            // Source Size
+						    avCodecContext->pix_fmt,  // Source Format
+						    width, height,            // Destination Size
+						    PixelFormat(dstPixFmt),   // Destination Format
+						    SWS_BICUBIC,              // Flags
+						    NULL, NULL, NULL);        // SwsFilter*
+			if (swsContext)
+			{
+			    int w = avCodecContext->width;
+			    int h = avCodecContext->height;
+			    AVRational& par = avCodecContext->sample_aspect_ratio;
+			    int pn = par.num;
+			    int pd = par.den;
+			    DEBUG( << "size = " << w << ":" << h);
+			    DEBUG( << "par  = " << pn << ":" << pd);
+			    if (pn == 0 || pd == 0) {pn = pd = 1;}
 
-			return;
+			    videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd));
+
+			    state = Opening;
+
+			    return;
+			}
+			else
+			{
+			    ERROR(<< "sws_getContext failed");
+			}
 		    }
 		    else
 		    {
-			ERROR(<< "sws_getContext failed");
+			ERROR(<< "avcodec_open failed: ret = " << ret);
 		    }
 		}
 		else
 		{
-		    ERROR(<< "avcodec_open failed: ret = " << ret);
+		    ERROR(<< "avcodec_find_decoder failed");
 		}
 	    }
 	    else
 	    {
-		ERROR(<< "avcodec_find_decoder failed");
+		ERROR(<< "expected video stream");
 	    }
 	}
 	else
 	{
-	    ERROR(<< "expected video stream");
+	    ERROR(<< "Invalid streamIndex = " << videoStreamIndex);
 	}
-    }
-    else
-    {
-	ERROR(<< "Invalid streamIndex = " << videoStreamIndex);
-    }
 
-    avFormatContext = 0;
-    avCodecContext = 0;
-    avCodec = 0;
-    avStream = 0;
-    videoStreamIndex = -1;
-    eos = false;
-
+	avFormatContext = 0;
+	avCodecContext = 0;
+	avCodec = 0;
+	avStream = 0;
+	videoStreamIndex = -1;
+	eos = false;
     }
 
     demuxer->queue_event(boost::make_shared<OpenVideoStreamFail>(videoStreamIndex));
