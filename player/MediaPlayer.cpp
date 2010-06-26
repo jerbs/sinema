@@ -23,24 +23,50 @@ extern "C"
 
 void logfunc(void* p, int i, const char* format, va_list ap)
 {
-    TraceUnit traceUnit;
-
     const size_t size = 1024;
-    char buffer[size];
-    int needed = vsnprintf (buffer, size, format, ap);
+    static char buffer[size];
+    static int pos = 0;
+
+    int needed = vsnprintf (&buffer[pos], size-pos, format, ap);
     if (needed < 0)
     {
 	ERROR(<< "vsnprintf failed: " << needed);
     }
-    else if (needed > size)
+    else if (needed > size-pos)
     {
+	// Buffer is too small.
+
+	if (pos)
+	{
+	    // Print the old fragment:
+	    TraceUnit traceUnit;
+	    traceUnit << "FFmpeg: " << buffer;
+	    pos = 0;
+	}
+
+	// Print the new fragment:
 	char buffer[needed];
-	int needed = vsnprintf (buffer, needed, format, ap);
+	vsnprintf (buffer, needed, format, ap);
+	if (buffer[needed-1] == '\n') buffer[needed-1] = 0;
+	TraceUnit traceUnit;
 	traceUnit << "FFmpeg: " << buffer;
     }
     else
     {
-	traceUnit << "FFmpeg: " << buffer;
+	while(buffer[pos] != 0)
+	{
+	    if (buffer[pos] == '\n')
+	    {
+		// buffer may contain multiple lines:
+		int l = strlen(buffer);
+		if (buffer[l-1] == '\n') buffer[l-1] = 0;
+		TraceUnit traceUnit;
+		traceUnit << "FFmpeg: " << buffer;
+		pos = 0;
+		break;
+	    }
+	    pos++;
+	}
     }
 }
 
@@ -75,6 +101,7 @@ MediaPlayer::MediaPlayer(PlayList& playList)
       endOfVideoStream(false)
 {
     av_log_set_callback(logfunc);
+    av_log_set_level(AV_LOG_INFO);
 
     // Create event_processor instances:
     demuxerEventProcessor = boost::make_shared<event_processor<> >();
