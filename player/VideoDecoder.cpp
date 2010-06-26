@@ -175,7 +175,11 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq> event)
 	    videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
 	}
 
-	videoOutput->queue_event(boost::make_shared<CloseVideoOutputReq>());
+	// Do the same as the Deinterlacer when receiving CloseVideoOutputReq:
+	m_topFieldFirst = true;
+
+	// Send event via Deinterlacer to VideoOutput:
+	deinterlacer->queue_event(boost::make_shared<CloseVideoOutputReq>());
 
 	state = Closing;
     }
@@ -250,8 +254,8 @@ void VideoDecoder::process(boost::shared_ptr<FlushReq> event)
 	video_pkt_pts = AV_NOPTS_VALUE;
 	pts = 0;
 
-	// Forward event to VideoOutput:
-	videoOutput->queue_event(event);
+	// Forward event via Deinterlacer to VideoOutput:
+	deinterlacer->queue_event(event);
     }
 }
 
@@ -265,7 +269,9 @@ void VideoDecoder::process(boost::shared_ptr<EndOfVideoStream> event)
 	if (packetQueue.empty())
 	{
 	    // Decoded everything in this stream.
-	    videoOutput->queue_event(boost::make_shared<EndOfVideoStream>());
+
+	    // Forward event via Deinterlacer to VideoOutput:
+	    deinterlacer->queue_event(event);
 	    eos = false;
 	}
     }
@@ -349,8 +355,10 @@ void VideoDecoder::decode()
     if (eos && avFrameIsFree && packetQueue.empty())
     {
 	// Decoded everything in this stream.
+
+	// Forward event via Deinterlacer to VideoOutput:
 	DEBUG(<< "forwarding EndOfVideoStream");
-	videoOutput->queue_event(boost::make_shared<EndOfVideoStream>());
+	deinterlacer->queue_event(boost::make_shared<EndOfVideoStream>());
 	eos = false;
     }
 

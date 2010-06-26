@@ -37,11 +37,17 @@ public:
 
 private:
     boost::shared_ptr<VideoOutput> videoOutput;
+    boost::shared_ptr<VideoDecoder> videoDecoder;
 
     void process(boost::shared_ptr<InitEvent> event);
+    void process(boost::shared_ptr<CloseVideoOutputReq> event);
+
     void process(boost::shared_ptr<XFVideoImage> event);
     void process(boost::shared_ptr<TopFieldFirst> event);
     void process(boost::shared_ptr<BottomFieldFirst> event);
+
+    void process(boost::shared_ptr<FlushReq> event);
+    void process(boost::shared_ptr<EndOfVideoStream> event);
 
     void deinterlace();
 };

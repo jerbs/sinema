@@ -6,6 +6,7 @@
 
 #include "player/Deinterlacer.hpp"
 #include "player/VideoOutput.hpp"
+#include "player/VideoDecoder.hpp"
 #include "player/XlibFacade.hpp"
 #include "player/XlibHelpers.hpp"
 
@@ -35,6 +36,34 @@ void Deinterlacer::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG(<< "tid = " << gettid());
     videoOutput = event->videoOutput;
+    videoDecoder = event->videoDecoder;
+}
+
+void Deinterlacer::process(boost::shared_ptr<CloseVideoOutputReq> event)
+{
+    // Throw away all queued empty frames:
+    while(!m_emptyImages.empty())
+    {
+	boost::shared_ptr<XFVideoImage> xfVideoImage(m_emptyImages.front());
+	m_emptyImages.pop();
+	videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
+    }
+
+    // Throw away all queued interlaced images:
+    while(!m_interlacedImages.empty())
+    {
+	boost::shared_ptr<XFVideoImage> xfVideoImage(m_interlacedImages.front());
+	m_interlacedImages.pop_front();
+	videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
+    }
+
+    // Reset member data:
+    m_topFieldFirst = true;
+    m_nextImageHasContent = true;
+    m_topField = true;
+
+    // Forward CloseVideoOutputReq to VideoOutput:
+    videoOutput->queue_event(event);
 }
 
 void Deinterlacer::process(boost::shared_ptr<XFVideoImage> event)
@@ -71,6 +100,65 @@ void Deinterlacer::process(boost::shared_ptr<BottomFieldFirst> event)
 
     // Continue with bottom field:
     m_topField = false;
+}
+
+void Deinterlacer::process(boost::shared_ptr<FlushReq> event)
+{
+    // The XFVideoImage objects are still needed, do not throw them away here.
+    // Here seek is used to jump to another file position.
+
+    // Remove everything from the incoming queues without showing it on the
+    // output device.
+
+    // Send all queued empty frames pack to VideoDecoder:
+    while(!m_emptyImages.empty())
+    {
+	boost::shared_ptr<XFVideoImage> image(m_emptyImages.front());
+	m_emptyImages.pop();
+	videoDecoder->queue_event(image);
+    }
+
+    // Send all queued interlaced images pack to VideoDecoder:
+    while(!m_interlacedImages.empty())
+    {
+	boost::shared_ptr<XFVideoImage> image(m_interlacedImages.front());
+	m_interlacedImages.pop_front();
+	videoDecoder->queue_event(image);
+    }
+
+    // Do not reset member data here.
+
+    // Forward FlushReq to VideoOutput:
+    videoOutput->queue_event(event);
+}
+
+void Deinterlacer::process(boost::shared_ptr<EndOfVideoStream> event)
+{
+    // The XFVideoImage objects are still needed, do not throw them away here.
+    // It is still posible that seek is used to jump to another file position.
+
+    // Remove everything from the incoming queues and show it on the
+    // output device.
+
+    // Send all queued empty frames pack to VideoDecoder:
+    while(!m_emptyImages.empty())
+    {
+	boost::shared_ptr<XFVideoImage> image(m_emptyImages.front());
+	m_emptyImages.pop();
+	videoDecoder->queue_event(image);
+    }
+
+    // Forward all queued interlaced images to VideoOutput. It is not possible
+    // to deinterlace the last frames:
+    while(!m_interlacedImages.empty())
+    {
+	boost::shared_ptr<XFVideoImage> image(m_interlacedImages.front());
+	m_interlacedImages.pop_front();
+	videoOutput->queue_event(image);
+    }
+
+    // Finally forward EndOfVideoStream indication to VideoOutput:
+    videoOutput->queue_event(event);
 }
 
 // -------------------------------------------------------------------
