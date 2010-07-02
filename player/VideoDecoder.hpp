@@ -48,35 +48,11 @@ class VideoDecoder : public event_receiver<VideoDecoder>
 
     bool m_topFieldFirst;
 
-public:
-    VideoDecoder(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc),
-	  state(Closed),
-	  avFormatContext(0),
-	  avCodecContext(0),
-	  avCodec(0),
-	  avStream(0),
-	  videoStreamIndex(-1),
-	  video_pkt_pts(AV_NOPTS_VALUE),
-	  avFrame(avcodec_alloc_frame()),
-	  avFrameIsFree(true),
-	  pts(0),
-	  eos(false),
-	  swsContext(0),
-	  m_topFieldFirst(true)
-    {}
-    ~VideoDecoder()
-    {
-	if (avFrame)
-	{
-	    av_free(avFrame);
-	}
+    bool m_useOptimumImageFormat;
 
-	if (swsContext)
-	{
-	    sws_freeContext(swsContext);
-	}
-    }
+public:
+    VideoDecoder(event_processor_ptr_type evt_proc);
+    ~VideoDecoder();
 
 private:
     MediaPlayer* mediaPlayer;

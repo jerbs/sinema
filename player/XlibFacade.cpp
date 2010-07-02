@@ -165,7 +165,8 @@ XFVideo::XFVideo(Display* display, Window window,
       heightSrc(height),
       parNum(16),
       parDen(15),
-      useXvClipping(true),
+      m_noClippingNeeded(true),
+      m_useXvClipping(true),
       sendNotificationVideoSize(fct),
       sendNotificationClipping(fct2)
 {
@@ -360,7 +361,7 @@ void XFVideo::resize(unsigned int width, unsigned int height,
     topSrc = 0;
     widthSrc  = width;
     heightSrc = height;
-    useXvClipping = true;
+    m_noClippingNeeded = true;
 
     // Sample aspect ratio:
     this->parNum = parNum;
@@ -433,7 +434,7 @@ boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yu
     boost::shared_ptr<XFVideoImage> previousImage = m_displayedImage;
     m_displayedImage = yuvImage;
 
-    if (useXvClipping)
+    if (m_noClippingNeeded || m_useXvClipping)
     {
 	show();
     }
@@ -459,7 +460,7 @@ void XFVideo::show()
 
     if (m_displayedImage)
     {
-	if (useXvClipping)
+	if (m_noClippingNeeded || m_useXvClipping)
 	{
 	    // Display srcArea of yuvImage on destArea of Drawable window:
 	    XvShmPutImage(m_display, xvPortId, m_window, gc, m_displayedImage->xvImage(),
@@ -557,17 +558,17 @@ void XFVideo::clipSrc(int videoLeft, int videoRight, int videoTop, int videoBott
 	widthSrc  = 0xfffffffe & (videoRight  - videoLeft);
 	topSrc    = 0xfffffffe & (videoTop);
 	heightSrc = 0xfffffffe & (videoBottom - videoTop);
-
+	
 	if (leftSrc == 0 &&
 	    widthSrc == widthVid &&
 	    topSrc == 0 &&
 	    heightSrc == heightVid)
 	{
-	    useXvClipping = true;
+	    m_noClippingNeeded = true;
 	}
 	else
 	{
-	    useXvClipping = false;
+	    m_noClippingNeeded = false;
 	}
 
 	sendNotificationClipping(boost::make_shared<NotificationClipping>

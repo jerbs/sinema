@@ -141,7 +141,11 @@ private:
     unsigned int parNum;
     unsigned int parDen;
 
-    bool useXvClipping;
+    // calculated value:
+    bool m_noClippingNeeded;
+
+    // configuration value:
+    bool m_useXvClipping;
 
     send_notification_video_size_fct_t sendNotificationVideoSize;
     send_notification_clipping_fct_t sendNotificationClipping;

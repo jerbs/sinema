@@ -18,6 +18,38 @@
 
 using namespace std;
 
+VideoDecoder::VideoDecoder(event_processor_ptr_type evt_proc)
+    : base_type(evt_proc),
+      state(Closed),
+      avFormatContext(0),
+      avCodecContext(0),
+      avCodec(0),
+      avStream(0),
+      videoStreamIndex(-1),
+      video_pkt_pts(AV_NOPTS_VALUE),
+      avFrame(avcodec_alloc_frame()),
+      avFrameIsFree(true),
+      pts(0),
+      m_imageFormat(GUID_YUY2_PACKED),
+      eos(false),
+      swsContext(0),
+      m_topFieldFirst(true),
+      m_useOptimumImageFormat(true)
+{}
+
+VideoDecoder::~VideoDecoder()
+{
+    if (avFrame)
+    {
+	av_free(avFrame);
+    }
+    
+    if (swsContext)
+    {
+	sws_freeContext(swsContext);
+    }
+}
+
 void VideoDecoder::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG(<< "tid = " << gettid());
@@ -81,7 +113,10 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 			DEBUG( << "size = " << w << ":" << h);
 			DEBUG( << "par  = " << pn << ":" << pd);
 			if (pn == 0 || pd == 0) {pn = pd = 1;}
-			m_imageFormat = getFormatId(avCodecContext->pix_fmt);
+			if (m_useOptimumImageFormat)
+			{
+			    m_imageFormat = getFormatId(avCodecContext->pix_fmt);
+			}
 			getSwsContext();
 			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd,
 											m_imageFormat));
