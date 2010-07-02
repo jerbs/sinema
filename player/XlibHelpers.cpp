@@ -89,19 +89,15 @@ std::ostream& operator<<(std::ostream& strm, const XvAttribute& att)
 std::ostream& operator<<(std::ostream& strm, const XvImageFormatValues& ifv)
 {
     strm.setf(ios::showbase);
-    strm << "id      = " << ifv.id << endl;
+    strm << "id      = " << std::hex << ifv.id << std::dec << endl;
     strm << "type    = " << ifv.type << " = "
 	 << ((ifv.type & XvRGB) ? "XvRGB" : "" )
 	 << ((ifv.type & XvYUV) ? "XvYUV" : "" ) << endl;
     strm << "byte_order = " << ifv.byte_order << " = "
 	 << ((ifv.byte_order & LSBFirst) ? "LSBFirst" : "" )
 	 << ((ifv.byte_order & MSBFirst) ? "MSBFirst" : "" ) << endl;
-    strm.unsetf(ios::showbase);
-    strm << "guid       = 0x";
-    for (int i=0; i<16; i++)
-	strm << int(ifv.guid[i]);
-    strm << endl;
-    strm.setf(ios::showbase);
+    // Globally Unique IDentifier (char guid[16];)
+    strm << "guid       = " << &ifv.guid[0] << endl;
     strm << "bits_per_pixel = " << ifv.bits_per_pixel << endl;
     strm << "format     = " << ifv.format << " = "
 	 << ((ifv.format & XvPacked) ? "XvPacked" : "" )

@@ -23,6 +23,7 @@ struct StartTest
 
     int width;
     int height;
+    int imageFormat;
 };
 
 class SyncTest : public event_receiver<SyncTest>
@@ -85,6 +86,7 @@ public:
 private:
     int m_width;
     int m_heigth;
+    int m_imageFormat;
     boost::shared_ptr<XFWindow> m_window;
 
     // EventReceiver

@@ -15,6 +15,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
+#include <list>
 #include <string>
 
 #include "player/GeneralEvents.hpp"
@@ -77,7 +78,9 @@ public:
     ~XFVideo();
 
     void selectEvents();
-    void resize(unsigned int width, unsigned int height, unsigned int sarNom, unsigned int sarDen);
+    void resize(unsigned int width, unsigned int height,
+		unsigned int sarNom, unsigned int sarDen,
+		int imageFormat);
     boost::shared_ptr<XFVideoImage> show(boost::shared_ptr<XFVideoImage> xfVideoImage);
     void show();
     void handleConfigureEvent(boost::shared_ptr<WindowConfigureEvent> event);
@@ -102,6 +105,8 @@ private:
     int xVideo(int xWindow);
     int yVideo(int yWindow);
 
+    bool isImageFormatValid(int imageFormat);
+
     boost::shared_ptr<XFVideoImage> m_displayedImage;
     boost::shared_ptr<XFVideoImage> m_displayedImageClipped;
     Display* m_display;
@@ -109,7 +114,7 @@ private:
     
     XvPortID xvPortId;
     int imageFormat;
-    // XvImageFormatValues xvImageFormatValues;
+    std::list<int> imageFormatList;
     GC gc;
 
     // video size:
@@ -148,8 +153,7 @@ class XFVideoImage
 
 public:
     XFVideoImage(boost::shared_ptr<XFVideo> xfVideo);
-    XFVideoImage(XFVideo* xfVideo, int width, int height);
-    void init(XFVideo* xfVideo, int width, int height);
+    XFVideoImage(XFVideo* xfVideo, int width, int height, int imageFormat);
     ~XFVideoImage();
 
     void createPatternImage();
@@ -165,6 +169,9 @@ public:
     double getPTS() {return pts;}
 
 private:
+    XFVideoImage();  // No implementation.
+    void init(XFVideo* xfVideo, int width, int height, int imageFormat);
+
     XShmSegmentInfo yuvShmInfo;
     XvImage* yuvImage;
     void* shmAddr;

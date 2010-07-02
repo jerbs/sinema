@@ -14,8 +14,8 @@
 #include <string.h>   // memcpy, strerror
 #include <math.h>
 
-#undef DEBUG
-#define DEBUG(s)
+// #undef DEBUG
+// #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 #undef INFO
 #define INFO(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
@@ -275,18 +275,25 @@ XFVideo::XFVideo(Display* display, Window window,
 		for (int l=0; l<num_ifv; l++)
 		{
 		    DEBUG( << "XvImageFormatValues[" << l << "]\n" << ifv[l] );
-		    // NxM Y plane followed by (N/2)x(M/2) V and U planes.
-		    // if (ifv[l].id == GUID_YUV12_PLANAR)
-		    // 32 bit macro pixel: (lowest byte) Y0 U0 Y0 V0 (highest byte)
-		    if (ifv[l].id == GUID_YUY2_PACKED)
-		    {
-			imageFormat = ifv[l].id;
-			DEBUG(<< "xvImageFormatValues: " << std::endl << ifv[l]);
-		    }
 		}
 		XFree(ifv);
 	    }
 
+	}
+
+	if (xvPortId != INVALID_XV_PORT_ID)
+	{
+	    int num_ifv;
+	    XvImageFormatValues* ifv = XvListImageFormats(m_display, xvPortId, &num_ifv);
+	    if (ifv)
+	    {
+		for (int l=0; l<num_ifv; l++)
+		{
+		    DEBUG(<< "adding image format id " << std::hex << ifv[l].id)
+		    imageFormatList.push_back(ifv[l].id);
+		}
+		XFree(ifv);
+	    }
 	}
     }
 
@@ -297,9 +304,15 @@ XFVideo::XFVideo(Display* display, Window window,
 	THROW(XFException, << "No XvAdaptorPort found.");
     }
 
-    if (!imageFormat)
+    // Initialize image format:
+    imageFormat = GUID_YUV12_PLANAR;     // Best performance for non-interlaced video.
+    if (!isImageFormatValid(imageFormat))
     {
-	THROW(XFException, << "Needed image format not found.");
+	imageFormat = GUID_YUY2_PACKED;  // Works with interlaced and non-interlaced video.
+	if (!isImageFormatValid(imageFormat))
+	{
+	    THROW(std::string, << "None of the supported video formats is implemented.");
+	}
     }
 
     // Create a graphics context
@@ -321,7 +334,19 @@ void XFVideo::selectEvents()
     XSelectInput(m_display, m_window, StructureNotifyMask | ExposureMask | KeyPressMask);
 }
 
-void XFVideo::resize(unsigned int width, unsigned int height, unsigned int parNum, unsigned int parDen)
+bool XFVideo::isImageFormatValid(int imageFormat)
+{
+    for (std::list<int>::iterator it = imageFormatList.begin(); it != imageFormatList.end(); it++)
+    {
+	if (*it == imageFormat)
+	    return true;
+    }
+    return false;
+}
+
+void XFVideo::resize(unsigned int width, unsigned int height,
+		     unsigned int parNum, unsigned int parDen,
+		     int imageFormat)
 {
     // This method is called when the video size changes.
     // It is not called when the widget is resized.
@@ -342,6 +367,14 @@ void XFVideo::resize(unsigned int width, unsigned int height, unsigned int parNu
     this->parDen = parDen;
 
     calculateDestinationArea(NotificationVideoSize::VideoSizeChanged);
+
+    // Video format:
+    this->imageFormat = imageFormat;
+
+    if (!isImageFormatValid(imageFormat))
+    {
+	THROW(std::string, << "Unsupported format id: " << std::hex << imageFormat);
+    }
 }
 
 void XFVideo::calculateDestinationArea(NotificationVideoSize::Reason reason)
@@ -408,7 +441,9 @@ boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yu
     {
 	boost::shared_ptr<XFVideoImage> tmp = m_displayedImageClipped;
 	m_displayedImageClipped.reset();
-	m_displayedImageClipped = boost::make_shared<XFVideoImage>(this, widthSrc,  heightSrc);	
+	// FIXME: Do not allocate a new image each time:
+	m_displayedImageClipped = boost::make_shared<XFVideoImage>(this, widthSrc,  heightSrc,
+								   m_displayedImage->yuvImage->id);
 
 	clip(m_displayedImage, m_displayedImageClipped);
 
@@ -420,6 +455,8 @@ boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yu
 
 void XFVideo::show()
 {
+    DEBUG(<< std::hex << m_displayedImage->yuvImage->id);
+
     if (m_displayedImage)
     {
 	if (useXvClipping)
@@ -602,7 +639,7 @@ void XFVideo::clip(boost::shared_ptr<XFVideoImage> in,
     }
     else
     {
-	ERROR(<< "unsupported format 0x" << std::hex << yuvImageIn->id);
+	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImageIn->id);
     }
 }
 
@@ -645,32 +682,44 @@ void XFVideo::paintBorder()
 
     XFillRectangles(m_display, m_window, gc, rec, 8);
 }
- 
+
 // -------------------------------------------------------------------
 
 XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
     : pts(0)
 {
-    init(xfVideo.get(), xfVideo->widthVid, xfVideo->heightVid);
+    init(xfVideo.get(), xfVideo->widthVid, xfVideo->heightVid, xfVideo->imageFormat);
 }
 
-XFVideoImage::XFVideoImage(XFVideo* xfVideo, int width, int height)
+XFVideoImage::XFVideoImage(XFVideo* xfVideo, int width, int height, int imageFormat)
     : pts(0)
 {
-    init(xfVideo, width, height);
+    init(xfVideo, width, height, imageFormat);
 }
 
-void XFVideoImage::init(XFVideo* xfVideo, int width, int height)
+void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int imageFormat)
 {
+    if (imageFormat == 0)
+    {
+	THROW(std::string, << "No valid format id set.");
+    }
+
     yuvImage = XvShmCreateImage(xfVideo->display(),
 				xfVideo->xvPortId,
-				xfVideo->imageFormat,
+				imageFormat,
 				0, // char* data
 				width, height,
 				&yuvShmInfo);
 
     DEBUG(<< std::dec << "requested: " << width << "*" << height
 	  << " got: " << yuvImage->width << "*" << yuvImage->height);
+    DEBUG(<< "yuvImage = " << std::hex << uint64_t(yuvImage));
+    DEBUG(<< "imageFormat  = " << std::hex << imageFormat);
+    DEBUG(<< "yuvImage->id = " << std::hex << yuvImage->id);
+    for (int i=0; i<yuvImage->num_planes; i++)
+    {
+	DEBUG(<< "yuvImage->offsets[" << std::dec << i << "] = " << yuvImage->offsets[i]);
+    }
 
     // Allocate the shared memory requested by the server:
     yuvShmInfo.shmid = shmget(IPC_PRIVATE,
@@ -759,7 +808,7 @@ void XFVideoImage::createBlackImage()
     }
     else
     {
-	ERROR(<< "unsupported format 0x" << std::hex << yuvImage->id);
+	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
     }
 }
 
@@ -806,7 +855,7 @@ void XFVideoImage::createPatternImage()
     }
     else
     {
-	ERROR(<< "unsupported format 0x" << std::hex << yuvImage->id);
+	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
     }
 }
 
@@ -814,7 +863,7 @@ void XFVideoImage::createDemoImage()
 {
     int w = width();
     int h = height();
-    std::cout << "size = " << w << ", " << h << std::endl;
+    std::cout << "size = " << std::dec << w << ", " << h << ", 0x" << std::hex << yuvImage->id << std::endl;
 
     if (yuvImage->id == GUID_YUV12_PLANAR)
     {
@@ -854,7 +903,7 @@ void XFVideoImage::createDemoImage()
     }
     else
     {
-	ERROR(<< "unsupported format 0x" << std::hex << yuvImage->id);
+	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
     }
 }
 

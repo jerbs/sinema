@@ -27,6 +27,28 @@ void VideoDecoder::process(boost::shared_ptr<InitEvent> event)
     deinterlacer = event->deinterlacer;
 }
 
+static int getFormatId(enum PixelFormat pfm)
+{
+    switch(pfm)
+    {
+    case PIX_FMT_YUV420P: return GUID_YUV12_PLANAR;
+    case PIX_FMT_YUYV422: return GUID_YUY2_PACKED;
+    default: THROW(std::string, << "Unsupported FFmpeg pixel format: " << pfm);
+    }
+    return 0;
+}
+
+static enum PixelFormat getFFmpegFormat(int fid)
+{
+    switch(fid)
+    {
+    case GUID_YUV12_PLANAR: return PIX_FMT_YUV420P;
+    case GUID_YUY2_PACKED: return PIX_FMT_YUYV422;
+    default: THROW(std::string, << "Unsupported format id: " << fid);
+    }
+    return PIX_FMT_NONE;
+}
+
 void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 {
     if (state == Closed)
@@ -51,41 +73,22 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 		    if (ret == 0)
 		    {
 			avStream = avFormatContext->streams[videoStreamIndex];
+			int w = avCodecContext->width;
+			int h = avCodecContext->height;
+			AVRational& par = avCodecContext->sample_aspect_ratio;
+			int pn = par.num;
+			int pd = par.den;
+			DEBUG( << "size = " << w << ":" << h);
+			DEBUG( << "par  = " << pn << ":" << pd);
+			if (pn == 0 || pd == 0) {pn = pd = 1;}
+			m_imageFormat = getFormatId(avCodecContext->pix_fmt);
+			getSwsContext();
+			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd,
+											m_imageFormat));
 
-			int width = avCodecContext->width;
-			int height = avCodecContext->height;
-			// planar YUV 4:2:0, 12bpp, (1 Cr & Cb sample per 2x2 Y samples)
-			// enum PixelFormat dstPixFmt = PIX_FMT_YUV420P;
-			// packed YUV 4:2:2, 16bpp, Y0 Cb Y1 Cr (needed by deinterlacers)
-			enum PixelFormat dstPixFmt = PIX_FMT_YUYV422;
+			state = Opening;
 
-			swsContext = sws_getContext(width, height,            // Source Size
-						    avCodecContext->pix_fmt,  // Source Format
-						    width, height,            // Destination Size
-						    PixelFormat(dstPixFmt),   // Destination Format
-						    SWS_BICUBIC,              // Flags
-						    NULL, NULL, NULL);        // SwsFilter*
-			if (swsContext)
-			{
-			    int w = avCodecContext->width;
-			    int h = avCodecContext->height;
-			    AVRational& par = avCodecContext->sample_aspect_ratio;
-			    int pn = par.num;
-			    int pd = par.den;
-			    DEBUG( << "size = " << w << ":" << h);
-			    DEBUG( << "par  = " << pn << ":" << pd);
-			    if (pn == 0 || pd == 0) {pn = pd = 1;}
-
-			    videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd));
-
-			    state = Opening;
-
-			    return;
-			}
-			else
-			{
-			    ERROR(<< "sws_getContext failed");
-			}
+			return;
 		    }
 		    else
 		    {
@@ -202,6 +205,12 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp> event)
 	avFrameIsFree = true;
 	pts = 0;
 
+	if (swsContext)
+	{
+	    sws_freeContext(swsContext);
+	    swsContext = 0;
+	}
+
 	demuxer->queue_event(boost::make_shared<CloseVideoStreamResp>());
 
 	state = Closed;
@@ -226,6 +235,29 @@ void VideoDecoder::process(boost::shared_ptr<XFVideoImage> event)
     {
 	DEBUG();
 
+	unsigned int width = event->width();
+	unsigned int height = event->height();
+	int imageFormat = event->xvImage()->id;
+
+	if (avCodecContext->width != int(width) ||
+	    avCodecContext->height != int(height) ||
+	    m_imageFormat != imageFormat)
+	{
+	    DEBUG(<< "Frame buffer with wrong size/format."
+		  << " needed:"
+		  << avCodecContext->width << "*" << avCodecContext->height
+		  << std::hex << ", 0x" << m_imageFormat
+		  << std::dec << " got: " << width << "*" << height
+		  << std::hex << ", 0x" << imageFormat );
+
+	    videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(event));
+
+	    requestNewFrame();
+
+	    return;
+	}
+
+	// Add XFVideoImage with correct size and format to frameQueue:
 	frameQueue.push(event);
 	queue();
 	decode();
@@ -378,36 +410,32 @@ void VideoDecoder::queue()
 	return;
     }
 
-    if (avFrame->interlaced_frame && frameQueue.size() < 2)
+    if (avFrame->interlaced_frame)
     {
-	return;
+	if (frameQueue.size() < 2)
+	{
+	    return;
+	}
+
+	if (m_imageFormat != GUID_YUY2_PACKED)
+	{
+	    // The deinterlacer needs the packed YUY2 format.
+	    // This format is not the default.
+	    m_imageFormat = GUID_YUY2_PACKED;
+	    getSwsContext();
+
+	    while(!frameQueue.empty())
+	    {
+		frameQueue.pop();
+		requestNewFrame();
+	    }
+	
+	    return;
+	}
     }
 
     boost::shared_ptr<XFVideoImage> xfVideoImage(frameQueue.front());
     frameQueue.pop();
-
-    unsigned int width = xfVideoImage->width();
-    unsigned int height = xfVideoImage->height();
-
-    if (avCodecContext->width != int(width) ||
-	avCodecContext->height != int(height))
-    {
-	DEBUG(<< "Frame buffer with wrong size."
-	      << " needed:" << avCodecContext->width << "*" << avCodecContext->height
-	      << " got: " << width << "*" << height);
-
-	videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
-
-	int w = avCodecContext->width;
-	int h = avCodecContext->height;
-	AVRational& par = avCodecContext->sample_aspect_ratio;
-	int pn = par.num;
-	int pd = par.den;
-	if (pn == 0 || pd == 0) {pn = pd = 1;}
-	videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(w,h,pn,pd));
-
-	return;
-    }
 
     DEBUG( << "interlaced_frame = " << avFrame->interlaced_frame
 	   << ", top_field_first = " << avFrame->top_field_first);
@@ -416,6 +444,8 @@ void VideoDecoder::queue()
     char* data = yuvImage->data;
 
     AVPicture avPicture;
+
+    DEBUG(<< "yuvImage->id = " << std::hex << yuvImage->id);
 
     if (yuvImage->id == GUID_YUV12_PLANAR)
     {
@@ -451,7 +481,8 @@ void VideoDecoder::queue()
     }
     else
     {
-	ERROR(<< "unsupported format 0x" << std::hex << yuvImage->id);
+	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
+	return;
     }
 
     // Convert image into YUV format:
@@ -487,7 +518,6 @@ void VideoDecoder::queue()
 	boost::shared_ptr<XFVideoImage> xfVideoImage2(frameQueue.front());
 	frameQueue.pop();
 
-	// FIXME: Size check is missing.
 	deinterlacer->queue_event(xfVideoImage2);
     }
     else
@@ -498,3 +528,46 @@ void VideoDecoder::queue()
     avFrameIsFree = true;
     DEBUG(<< "Queueing XFVideoImage");
 }
+
+void VideoDecoder::getSwsContext()
+{
+    if (swsContext)
+    {
+	sws_freeContext(swsContext);
+    }
+
+    enum PixelFormat dstPixFmt = getFFmpegFormat(m_imageFormat);
+
+    int width = avCodecContext->width;
+    int height = avCodecContext->height;
+
+    int flags =
+	SWS_BICUBIC |
+	SWS_CPU_CAPS_MMX | SWS_CPU_CAPS_MMX2 | // SWS_CPU_CAPS_3DNOW |
+	SWS_PRINT_INFO;
+
+    swsContext = sws_getContext(width, height,            // Source Size
+				avCodecContext->pix_fmt,  // Source Format
+				width, height,            // Destination Size
+				dstPixFmt,                // Destination Format
+				flags,                    // Flags
+				NULL, NULL, NULL);        // SwsFilter*
+    if (!swsContext)
+    {
+	THROW(std::string, << "sws_getContext failed");
+    }
+}
+
+void VideoDecoder::requestNewFrame()
+{
+    int w = avCodecContext->width;
+    int h = avCodecContext->height;
+    AVRational& par = avCodecContext->sample_aspect_ratio;
+    int pn = par.num;
+    int pd = par.den;
+    if (pn == 0 || pd == 0) {pn = pd = 1;}
+
+    videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(w,h,pn,pd,m_imageFormat));
+}
+
+// -------------------------------------------------------------------

@@ -9,6 +9,7 @@
 #include "player/VideoOutput.hpp"
 #include "player/AlsaFacade.hpp"
 #include "player/XlibFacade.hpp"
+#include "player/XlibHelpers.hpp"
 
 #include <string.h>
 #include <math.h>
@@ -31,9 +32,8 @@ void SyncTest::process(boost::shared_ptr<StartTest> event)
     audiReq->frame_size = event->sample_rate * event->channels * 2;
     audioOutput->queue_event(audiReq);
 
-    boost::shared_ptr<OpenVideoOutputReq> videoReq(new OpenVideoOutputReq(event->width, event->height, 1, 1));
-    videoReq->width = event->width;
-    videoReq->height = event->height;
+    boost::shared_ptr<OpenVideoOutputReq> videoReq(new OpenVideoOutputReq(m_conf.width, m_conf.height,
+									  1, 1, m_conf.imageFormat));
     videoOutput->queue_event(videoReq);
 }
 
@@ -46,11 +46,13 @@ void SyncTest::process(boost::shared_ptr<AFAudioFrame> event)
 void SyncTest::process(boost::shared_ptr<XFVideoImage> event)
 {
     if (event->width() != m_conf.width ||
-	event->height() != m_conf.height)
+	event->height() != m_conf.height ||
+	event->xvImage()->id != m_conf.imageFormat )
     {
-	// Delete frame with wrong size by not queuing it
-	// and request a new frame with correct size.
-	videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(m_conf.width, m_conf.height, 1, 1));
+	// Delete frame with wrong size and or format by not queuing it
+	// and request a new frame with correct size and format.
+	videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(m_conf.width, m_conf.height,
+									  1, 1, m_conf.imageFormat));
 	return;
     }
 
@@ -134,32 +136,58 @@ void SyncTest::generateVideoFrame(boost::shared_ptr<XFVideoImage> videoFrame)
     int lum = 25 + (num) * 25;
 
     XvImage* yuvImage = videoFrame->xvImage();
+
+    DEBUG(<< "yuvImage = " << std::hex << uint64_t(yuvImage));
+    DEBUG(<< "yuvImage->id = 0x" << std::hex << yuvImage->id);
+    for (int i=0; i<yuvImage->num_planes; i++)
+	DEBUG(<< "yuvImage->offsets["<< i <<"] = " << yuvImage->offsets[i]);
+
     char* data = yuvImage->data;
 
-    char* Y = data + yuvImage->offsets[0];
-    char* V = data + yuvImage->offsets[1];
-    char* U = data + yuvImage->offsets[2];
-
-    int Yp = yuvImage->pitches[0];
-    int Vp = yuvImage->pitches[1];
-    int Up = yuvImage->pitches[2];
-
-    memset(Y, lum, Yp * height);
-    memset(V, 100, Vp * height/2);
-    memset(U, 160, Up * height/2);
-
-    for (int i=0; i<=num; i++)
+    if (yuvImage->id == GUID_YUV12_PLANAR)
     {
-	Y[2*width+10+i*10] = 0;
-	Y[2*width+11+i*10] = 0;
-	Y[3*width+10+i*10] = 0;
-	Y[3*width+11+i*10] = 0;
-	Y[4*width+10+i*10] = 255;
-	Y[4*width+11+i*10] = 255;
-	Y[5*width+10+i*10] = 255;
-	Y[5*width+11+i*10] = 255;
-    }
+	char* Y = data + yuvImage->offsets[0];
+	char* V = data + yuvImage->offsets[1];
+	char* U = data + yuvImage->offsets[2];
 
+	int Yp = yuvImage->pitches[0];
+	int Vp = yuvImage->pitches[1];
+	int Up = yuvImage->pitches[2];
+
+	videoFrame->createDemoImage();
+
+	for (int i=0; i<=num; i++)
+	{
+	    Y[2*Yp+10+i*10] = 0;
+	    Y[2*Yp+11+i*10] = 0;
+	    Y[3*Yp+10+i*10] = 0;
+	    Y[3*Yp+11+i*10] = 0;
+	    Y[4*Yp+10+i*10] = 255;
+	    Y[4*Yp+11+i*10] = 255;
+	    Y[5*Yp+10+i*10] = 255;
+	    Y[5*Yp+11+i*10] = 255;
+	}
+    }
+    else if (yuvImage->id == GUID_YUY2_PACKED)
+    {
+	videoFrame->createDemoImage();
+
+	char* P = data + yuvImage->offsets[0];
+	int p = yuvImage->pitches[0];
+
+	for (int i=0; i<=num; i++)
+	{
+	    P[2*p+20+i*20] = 0;
+	    P[2*p+22+i*20] = 0;
+	    P[3*p+20+i*20] = 0;
+	    P[3*p+22+i*20] = 0;
+	    P[4*p+20+i*20] = 255;
+	    P[4*p+22+i*20] = 255;
+	    P[5*p+20+i*20] = 255;
+	    P[5*p+22+i*20] = 255;
+	}
+	
+    }
 }
 
 // -------------------------------------------------------------------
@@ -167,6 +195,8 @@ void SyncTest::generateVideoFrame(boost::shared_ptr<XFVideoImage> videoFrame)
 SyncTestApp::SyncTestApp()
     : m_width(400),
       m_heigth(200),
+      m_imageFormat(GUID_YUV12_PLANAR),
+      // m_imageFormat(GUID_YUY2_PACKED),
       m_window(new XFWindow(m_width, m_heigth))
 {
     // Create event_processor instances:
@@ -197,6 +227,7 @@ void SyncTestApp::operator()()
     startTest->channels = 2;
     startTest->width  = m_width;
     startTest->height = m_heigth;
+    startTest->imageFormat = m_imageFormat;
 
     test->queue_event(startTest);
 

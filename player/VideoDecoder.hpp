@@ -38,6 +38,7 @@ class VideoDecoder : public event_receiver<VideoDecoder>
     AVFrame* avFrame;
     bool avFrameIsFree;
     double pts;
+    int m_imageFormat;
     std::queue<boost::shared_ptr<XFVideoImage> > frameQueue;
     std::queue<boost::shared_ptr<VideoPacketEvent> > packetQueue;
 
@@ -96,6 +97,9 @@ private:
 
     void decode();
     void queue();
+
+    void getSwsContext();
+    void requestNewFrame();
 };
 
 #endif
