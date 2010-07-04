@@ -63,10 +63,10 @@ struct config_parser : qi::grammar<ForwardIterator, station_list(), ascii::space
 
         station_ %= lit("station")
             >> '{'
-            >>  lit("name") >> '=' >> quoted_string >> ';'
-            >>  lit("standard") >> '=' >> quoted_string >> ';'
-            >>  lit("channel") >> '=' >> quoted_string >> ';'
-            >>  lit("fine") >> '=' >> int_ >> ';'
+            >> ( ( lit("name") >> '=' >> quoted_string >> ';' ) ^
+		 ( lit("standard") >> '=' >> quoted_string >> ';' ) ^
+		 ( lit("channel") >> '=' >> quoted_string >> ';' ) ^
+		 ( lit("fine") >> '=' >> int_ >> ';' ) )
             >>  '}' >> ";";
 
         station_list_ %= *(station_);
