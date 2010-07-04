@@ -21,6 +21,11 @@
 #include <cstdlib>
 #include <sys/types.h>
 
+#ifdef CONFIG_FILE_TEST
+#undef DEBUG
+#define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+#endif
+
 namespace spirit = boost::spirit;
 namespace karma = boost::spirit::karma;
 namespace qi = boost::spirit::qi;
@@ -48,6 +53,18 @@ BOOST_FUSION_ADAPT_STRUCT(
     (std::string, channel)
     (int, fine)
 )
+
+template <typename Attrib, typename Context>
+void fa(Attrib& attr, Context& context, bool& pass)
+{
+    DEBUG();
+}
+
+template <typename Attrib>
+void fb(Attrib const& i)
+{
+    DEBUG();
+}
 
 template <typename ForwardIterator>
 struct config_parser : qi::grammar<ForwardIterator, station_list(), ascii::space_type>
@@ -162,7 +179,11 @@ void ConfigFile::generate(ConfigurationData& configurationData)
 
     // Opening output file:
 
+#ifndef CONFIG_FILE_TEST
     std::ofstream out(fileName.c_str());
+#else
+    std::ofstream out((fileName+"out").c_str());
+#endif
     if (!out.is_open())
     {
 	ERROR( << "Opening config file \'" << fileName << "\' failed.");
@@ -178,6 +199,8 @@ void ConfigFile::generate(ConfigurationData& configurationData)
 	ERROR( << "generate failed");
 	return;
     }
+
+    mediaCommon->queue_event(boost::make_shared<ConfigurationFileWritten>());
 }
 
 bool ConfigFile::find()

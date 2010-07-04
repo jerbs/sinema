@@ -26,6 +26,7 @@ m4/l*.m4
 Makefile
 Makefile.in
 player/synctest
+common/configFileTest
 gui/player
 stamp-h1
 typescript

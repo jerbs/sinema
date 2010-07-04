@@ -15,6 +15,8 @@
 #include <string>
 
 struct ConfigurationData;
+struct ConfigurationFileWritten;
+
 class ConfigFile;
 
 class MediaCommonThreadNotification
@@ -58,6 +60,7 @@ private:
     boost::shared_ptr<event_processor<> > commonEventProcessor;
 
     virtual void process(boost::shared_ptr<ConfigurationData> event) = 0;
+    virtual void process(boost::shared_ptr<ConfigurationFileWritten> event) {}
 
     void sendInitEvents();
 };
