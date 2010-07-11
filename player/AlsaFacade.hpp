@@ -19,6 +19,8 @@ extern "C"
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
 
+class CopyLog;
+
 class AFAudioFrame
 {
 public:
@@ -145,6 +147,8 @@ private:
     bool copyFrame(const snd_pcm_channel_area_t *areas,
 		   snd_pcm_uframes_t offset,
 		   int frames, boost::shared_ptr<AFAudioFrame> frame);
+
+    boost::shared_ptr<CopyLog> m_CopyLog;
 };
 
 #endif

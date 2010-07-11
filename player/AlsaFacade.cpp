@@ -6,7 +6,9 @@
 
 #include "player/AlsaFacade.hpp"
 
+#include <boost/thread/thread.hpp>
 #include <iostream>
+#include <stdio.h>
 
 static char const * deviceName = "plug:default";
 //static char const * deviceName = "plughw:Intel";
@@ -15,6 +17,106 @@ static char const * deviceName = "plug:default";
 
 // ./amixer -D default scontents
 
+// ===================================================================
+// CopyLog copies the ALSA log into application log file:
+
+class CopyLog
+{
+public:
+    CopyLog();
+    ~CopyLog();
+
+    FILE* getWriteFilePointer();
+
+private:
+    void operator()();
+
+    boost::thread copyLogThread;
+    void copyLog();
+    int& rfd;
+    int& wfd;
+    int filedes[2];
+};
+
+CopyLog::CopyLog()
+    : rfd(filedes[0]),
+      wfd(filedes[1])
+{
+    copyLogThread = boost::thread(boost::bind(&CopyLog::operator(), this));
+
+    if (pipe(filedes) < 0)
+    {
+	TRACE_ERROR(<< "pipe failed: " << errno);
+	exit(-1);
+    }
+}
+
+CopyLog::~CopyLog()
+{
+    // Close write file descriptor to terminate the copy thread:
+    close(wfd);
+}
+
+FILE* CopyLog::getWriteFilePointer()
+{
+    FILE* fd = fdopen(wfd, "w");
+    setlinebuf(fd);
+    return fd;
+}
+
+void CopyLog::operator()()
+{
+    TRACE_DEBUG(<< "tid = " << gettid());
+
+    const size_t buffer_size = 1024;
+    char buffer[buffer_size];
+    while(1)
+    {
+	int ret = read(rfd, buffer, buffer_size-1);
+
+	if (ret < 0)
+	{
+	    TRACE_ERROR(<< "read failed: " << ret);
+	}
+	else if (ret == 0)
+	{
+	    // End of file. Terminate thread:
+	    return;
+	}
+	else
+	{
+      	    buffer[ret] = 0;
+	    char* pos = buffer;
+
+	    // Print each line with ALSA prefix:
+	    while(*pos != 0)
+	    {
+		char* end = pos;
+		while(1)
+		{
+		    if (*end == 0)
+		    {
+			break;
+		    }
+		    if (*end == '\n')
+		    {
+			*end = 0;
+			end++;
+			break;
+		    }
+		    end++;
+		}
+
+		TraceUnit traceUnit;
+		traceUnit << "ALSA: " << pos;
+
+		pos = end;
+	    }
+	}
+    }
+}
+
+// ===================================================================
 
 AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAudioOutputReq> req)
     : device(deviceName),
@@ -30,11 +132,12 @@ AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAud
       period_size(4096),
       buffer_time(500000), // ring buffer length in us
       period_time(100000), // period time in us
-      nextPTS(0)
+      nextPTS(0),
+      m_CopyLog(new CopyLog())
 {
     int ret;
 
-    ret = snd_output_stdio_attach(&output, stdout, 0);
+    ret = snd_output_stdio_attach(&output, m_CopyLog->getWriteFilePointer(), 0);
     if (ret < 0)
     {
 	TRACE_ERROR(<< "snd_output_stdio_attach failed: " << snd_strerror(ret));
