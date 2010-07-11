@@ -28,8 +28,8 @@ extern "C"
 #include <libswscale/swscale.h>
 }
 
-// #undef DEBUG
-// #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+// #undef TRACE_DEBUG
+// #define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 // ===================================================================
 
@@ -67,13 +67,13 @@ Recorder::Recorder(event_processor_ptr_type evt_proc)
 {
     if (pipe(m_pipefd) == -1)
     {
-	ERROR(<< "pipe failed: " << strerror(errno));
+	TRACE_ERROR(<< "pipe failed: " << strerror(errno));
 	exit(1);
     }
 
     if (fcntl(m_pipewfd, F_SETFL, O_NONBLOCK) == -1)
     {
-	ERROR(<< "fcntl failed: " << strerror(errno));
+	TRACE_ERROR(<< "fcntl failed: " << strerror(errno));
 	exit(1);
     }
 
@@ -93,7 +93,7 @@ Recorder::~Recorder()
 
 void Recorder::process(boost::shared_ptr<RecorderInitEvent> event)
 {
-    DEBUG(<< "tid = " << gettid());
+    TRACE_DEBUG(<< "tid = " << gettid());
 
     mediaRecorder = event->mediaRecorder;
     recorderAdapter = event->recorderAdapter;
@@ -101,7 +101,7 @@ void Recorder::process(boost::shared_ptr<RecorderInitEvent> event)
 
 void Recorder::process(boost::shared_ptr<StartRecordingReq> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     int access = O_RDONLY | O_LARGEFILE;
 
@@ -114,7 +114,7 @@ void Recorder::process(boost::shared_ptr<StartRecordingReq> event)
     if (m_rfd == -1)
     {
 	error = errno;
-	ERROR(<< "opening source \'" << event->filename << "\' failed: " << strerror(error));
+	TRACE_ERROR(<< "opening source \'" << event->filename << "\' failed: " << strerror(error));
     }
     else
     {
@@ -127,7 +127,7 @@ void Recorder::process(boost::shared_ptr<StartRecordingReq> event)
 	if (m_wfd == -1)
 	{
 	    error = errno;
-	    ERROR(<< "opening target \'" << m_tmpFile << "\' failed: " << strerror(error));
+	    TRACE_ERROR(<< "opening target \'" << m_tmpFile << "\' failed: " << strerror(error));
 	}
 	else
 	{
@@ -141,7 +141,7 @@ void Recorder::process(boost::shared_ptr<StartRecordingReq> event)
 
 void Recorder::process(boost::shared_ptr<StopRecordingReq> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     int error = 0;
     if (m_rfd != -1)
@@ -150,7 +150,7 @@ void Recorder::process(boost::shared_ptr<StopRecordingReq> event)
 	if (ret == -1)
 	{
 	    error = errno;
-	    ERROR(<< "closing source failed: " << strerror(error));
+	    TRACE_ERROR(<< "closing source failed: " << strerror(error));
 	}
 	else
 	{
@@ -163,7 +163,7 @@ void Recorder::process(boost::shared_ptr<StopRecordingReq> event)
 	if (ret == -1)
 	{
 	    error = errno;
-	    ERROR(<< "close target failed: " << strerror(error));
+	    TRACE_ERROR(<< "close target failed: " << strerror(error));
 	}
 	else
 	{
@@ -189,7 +189,7 @@ void Recorder::operator()()
     {
 	if (m_event_processor->empty() && m_state == Opened)
 	{
-	    DEBUG(<< "start");
+	    TRACE_DEBUG(<< "start");
 
 	    pollfd pfd[2];
 
@@ -210,20 +210,20 @@ void Recorder::operator()()
 		if (pfd[1].revents & POLLIN)
 		{
 		    bufferFill = read(m_rfd, &buffer[0], bufferSize);
-		    DEBUG(<< "read " << bufferFill);
+		    TRACE_DEBUG(<< "read " << bufferFill);
 		    if (bufferFill == -1)
 		    {
 			bufferFill = 0;
-			ERROR(<< "read failed on m_rfd: " << strerror(errno));
+			TRACE_ERROR(<< "read failed on m_rfd: " << strerror(errno));
 		    }
 		}
 		if (pfd[1].revents & POLLERR)
 		{
-		    ERROR(<< "POLLERR on m_rfd.");
+		    TRACE_ERROR(<< "POLLERR on m_rfd.");
 		}
 		if (pfd[1].revents & POLLHUP)
 		{
-		    ERROR(<< "POLLHUP on m_rfd.");
+		    TRACE_ERROR(<< "POLLHUP on m_rfd.");
 		}
 	    }
 	    else
@@ -239,10 +239,10 @@ void Recorder::operator()()
 		if (pfd[1].revents & POLLOUT)
 		{
 		    int num = write(m_wfd, &buffer[writePos], bufferFill);
-		    DEBUG(<< "write " << num);
+		    TRACE_DEBUG(<< "write " << num);
 		    if (num == -1)
 		    {
-			ERROR(<< "write failed on m_wfd: " << strerror(errno));
+			TRACE_ERROR(<< "write failed on m_wfd: " << strerror(errno));
 		    }
 		    else
 		    {
@@ -259,11 +259,11 @@ void Recorder::operator()()
 		}
 		if (pfd[1].revents & POLLERR)
 		{
-		    ERROR(<< "POLLERR on m_wfd.");
+		    TRACE_ERROR(<< "POLLERR on m_wfd.");
 		}
 		if (pfd[1].revents & POLLHUP)
 		{
-		    ERROR(<< "POLLHUP on m_wfd.");
+		    TRACE_ERROR(<< "POLLHUP on m_wfd.");
 		}
 	    }
 
@@ -275,27 +275,27 @@ void Recorder::operator()()
 
 		if (pfd[0].revents & POLLIN)
 		{
-		    DEBUG(<< "reading pipe");
+		    TRACE_DEBUG(<< "reading pipe");
 		    // Read dummy data:
 		    int bufSize = 0x1000;
 		    char buf[bufSize];
 		    int num = read(m_piperfd, buf, bufSize);
 		    if (num == -1)
 		    {
-			ERROR(<< "read failed on m_piperfd: " << strerror(errno));
+			TRACE_ERROR(<< "read failed on m_piperfd: " << strerror(errno));
 		    }
 		}
 		if (pfd[0].revents & POLLERR)
 		{
-		    ERROR(<< "POLLERR on m_piperfd.");
+		    TRACE_ERROR(<< "POLLERR on m_piperfd.");
 		}
 		if (pfd[0].revents & POLLHUP)
 		{
-		    ERROR(<< "POLLHUP on m_piperfd.");
+		    TRACE_ERROR(<< "POLLHUP on m_piperfd.");
 		}
 	    }
 
-	    DEBUG(<< "end");
+	    TRACE_DEBUG(<< "end");
 	}
 	else
 	{
@@ -320,7 +320,7 @@ void Recorder::openPvrReader()
 				 0);  // default AVFormatParameters*
     if (ret != 0)
     {
-	ERROR(<< "av_open_input_file failed: " << ret);
+	TRACE_ERROR(<< "av_open_input_file failed: " << ret);
 	m_avFormatContext = 0;
 	return;
     }
@@ -337,14 +337,14 @@ void Recorder::closePvrReader()
 
 void Recorder::updateDuration()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     if (m_avFormatContext)
     {
 	int ret = av_find_stream_info(m_avFormatContext);
 	if (ret < 0)
 	{
-	    ERROR(<< "av_find_stream_info failed: " << ret);
+	    TRACE_ERROR(<< "av_find_stream_info failed: " << ret);
 	    av_close_input_file(m_avFormatContext);
 	    m_avFormatContext = 0;
 	    return;
@@ -366,7 +366,7 @@ void Recorder::updateDuration()
 
 void Recorder::notify()
 {
-    DEBUG();
+    TRACE_DEBUG();
     const int bufferSize = 4;
     char buffer[bufferSize] = {0,0,0,0};
     int num = write(instance->m_pipewfd, buffer, bufferSize);
@@ -379,7 +379,7 @@ void Recorder::notify()
 	}
 	else
 	{
-	    ERROR(<< "write m_pipewfd failed: " << strerror(errno));
+	    TRACE_ERROR(<< "write m_pipewfd failed: " << strerror(errno));
 	}
     }
 }

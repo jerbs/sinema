@@ -14,11 +14,8 @@
 #include <string.h>   // memcpy, strerror
 #include <math.h>
 
-// #undef DEBUG
-// #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
-
-#undef INFO
-#define INFO(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+// #undef TRACE_DEBUG
+// #define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 using namespace std;
 
@@ -77,9 +74,9 @@ XFWindow::XFWindow(unsigned int width, unsigned int height)
 			     visualInfo[i].c_class,
 			     &xVisualInfo))
 	{
-	    DEBUG( << "Found " << visualInfo[i].depth << " bit "
+	    TRACE_DEBUG( << "Found " << visualInfo[i].depth << " bit "
 		   << visualInfo[i].className );
-	    DEBUG( << xVisualInfo );
+	    TRACE_DEBUG( << xVisualInfo );
 	    break;
 	}
 
@@ -174,7 +171,7 @@ XFVideo::XFVideo(Display* display, Window window,
     bool shmExtAvailable = XShmQueryExtension(m_display);
     if (!shmExtAvailable)
     {
-	THROW(XFException, << "No shared memory extension available.");
+	TRACE_THROW(XFException, << "No shared memory extension available.");
     }
 
     // Check to see if Xv extension is available:
@@ -191,7 +188,7 @@ XFVideo::XFVideo(Display* display, Window window,
     case XvBadExtension:
     case XvBadAlloc:
     default:
-	THROW(XFException, << "No Xv extension available.");
+	TRACE_THROW(XFException, << "No Xv extension available.");
     }
 
     // Querry XvAdapterInfo:
@@ -206,7 +203,7 @@ XFVideo::XFVideo(Display* display, Window window,
     case XvBadExtension:
     case XvBadAlloc:
     default:
-	THROW(XFException, << "XvQueryAdaptors failed.");
+	TRACE_THROW(XFException, << "XvQueryAdaptors failed.");
     }
 
     xvPortId = INVALID_XV_PORT_ID;
@@ -214,7 +211,7 @@ XFVideo::XFVideo(Display* display, Window window,
     
     for (unsigned int i=0; i<num_ai; i++)
     {
-	DEBUG( << "XvAdaptorInfo[" << i << "]:\n" << ai[i] );
+	TRACE_DEBUG( << "XvAdaptorInfo[" << i << "]:\n" << ai[i] );
 
 	for (XvPortID adaptorPort = ai[i].base_id;
 	     adaptorPort < ai[i].base_id+ai[i].num_ports;
@@ -231,8 +228,8 @@ XFVideo::XFVideo(Display* display, Window window,
 			xvPortId = adaptorPort;
 			break;
 		    default:
-			ERROR( << "XvGrabPort failed for adaptorPort " 
-			       << adaptorPort << "." );
+			TRACE_ERROR( << "XvGrabPort failed for adaptorPort " 
+				     << adaptorPort << "." );
 		    }
 		}
 	    }
@@ -246,12 +243,12 @@ XFVideo::XFVideo(Display* display, Window window,
 	    case Success:
 		break;
 	    default:
-		THROW(XFException, << "XvQueryEncodings failed.");
+		TRACE_THROW(XFException, << "XvQueryEncodings failed.");
 	    }
 
 	    for (unsigned int j=0; j<num_ei; j++)
 	    {
-		DEBUG( << "XvEncodingInfo[" << j << "]:\n" << ei[j] );
+		TRACE_DEBUG( << "XvEncodingInfo[" << j << "]:\n" << ei[j] );
 	    }
 
 	    XvFreeEncodingInfo(ei);
@@ -263,7 +260,7 @@ XFVideo::XFVideo(Display* display, Window window,
 	    {
 		for (int k=0; k<num_att; k++)
 		{
-		    DEBUG( << "XvAttribute[" << k << "]\n" << att[k] );
+		    TRACE_DEBUG( << "XvAttribute[" << k << "]\n" << att[k] );
 		}
 		XFree(att);
 	    }
@@ -275,7 +272,7 @@ XFVideo::XFVideo(Display* display, Window window,
 	    {
 		for (int l=0; l<num_ifv; l++)
 		{
-		    DEBUG( << "XvImageFormatValues[" << l << "]\n" << ifv[l] );
+		    TRACE_DEBUG( << "XvImageFormatValues[" << l << "]\n" << ifv[l] );
 		}
 		XFree(ifv);
 	    }
@@ -290,7 +287,7 @@ XFVideo::XFVideo(Display* display, Window window,
 	    {
 		for (int l=0; l<num_ifv; l++)
 		{
-		    DEBUG(<< "adding image format id " << std::hex << ifv[l].id)
+		    TRACE_DEBUG(<< "adding image format id " << std::hex << ifv[l].id)
 		    imageFormatList.push_back(ifv[l].id);
 		}
 		XFree(ifv);
@@ -302,7 +299,7 @@ XFVideo::XFVideo(Display* display, Window window,
 
     if (xvPortId == INVALID_XV_PORT_ID)
     {
-	THROW(XFException, << "No XvAdaptorPort found.");
+	TRACE_THROW(XFException, << "No XvAdaptorPort found.");
     }
 
     // Initialize image format:
@@ -312,7 +309,7 @@ XFVideo::XFVideo(Display* display, Window window,
 	imageFormat = GUID_YUY2_PACKED;  // Works with interlaced and non-interlaced video.
 	if (!isImageFormatValid(imageFormat))
 	{
-	    THROW(std::string, << "None of the supported video formats is implemented.");
+	    TRACE_THROW(std::string, << "None of the supported video formats is implemented.");
 	}
     }
 
@@ -374,7 +371,7 @@ void XFVideo::resize(unsigned int width, unsigned int height,
 
     if (!isImageFormatValid(imageFormat))
     {
-	THROW(std::string, << "Unsupported format id: " << std::hex << imageFormat);
+	TRACE_THROW(std::string, << "Unsupported format id: " << std::hex << imageFormat);
     }
 }
 
@@ -386,7 +383,7 @@ void XFVideo::calculateDestinationArea(NotificationVideoSize::Reason reason)
     // pixel aspect ratio:
     double par = double(parNum)/double(parDen);
 
-    DEBUG( << "par = " << par);
+    TRACE_DEBUG( << "par = " << par);
 
     // Keep aspect ratio:
     double ratio = par*double(widthSrc)/double(heightSrc);
@@ -456,7 +453,7 @@ boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yu
 
 void XFVideo::show()
 {
-    DEBUG(<< std::hex << m_displayedImage->yuvImage->id);
+    TRACE_DEBUG(<< std::hex << m_displayedImage->yuvImage->id);
 
     if (m_displayedImage)
     {
@@ -640,19 +637,19 @@ void XFVideo::clip(boost::shared_ptr<XFVideoImage> in,
     }
     else
     {
-	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImageIn->id);
+	TRACE_THROW(std::string, << "unsupported format 0x" << std::hex << yuvImageIn->id);
     }
 }
 
 void XFVideo::enableXvClipping()
 {
-    DEBUG();
+    TRACE_DEBUG();
     m_useXvClipping = true;
 }
 
 void XFVideo::disableXvClipping()
 {
-    DEBUG();
+    TRACE_DEBUG();
     m_useXvClipping = false;
 }
 
@@ -714,7 +711,7 @@ void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int imageFormat
 {
     if (imageFormat == 0)
     {
-	THROW(std::string, << "No valid format id set.");
+	TRACE_THROW(std::string, << "No valid format id set.");
     }
 
     yuvImage = XvShmCreateImage(xfVideo->display(),
@@ -724,14 +721,14 @@ void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int imageFormat
 				width, height,
 				&yuvShmInfo);
 
-    DEBUG(<< std::dec << "requested: " << width << "*" << height
-	  << " got: " << yuvImage->width << "*" << yuvImage->height);
-    DEBUG(<< "yuvImage = " << std::hex << uint64_t(yuvImage));
-    DEBUG(<< "imageFormat  = " << std::hex << imageFormat);
-    DEBUG(<< "yuvImage->id = " << std::hex << yuvImage->id);
+    TRACE_DEBUG(<< std::dec << "requested: " << width << "*" << height
+		<< " got: " << yuvImage->width << "*" << yuvImage->height);
+    TRACE_DEBUG(<< "yuvImage = " << std::hex << uint64_t(yuvImage));
+    TRACE_DEBUG(<< "imageFormat  = " << std::hex << imageFormat);
+    TRACE_DEBUG(<< "yuvImage->id = " << std::hex << yuvImage->id);
     for (int i=0; i<yuvImage->num_planes; i++)
     {
-	DEBUG(<< "yuvImage->offsets[" << std::dec << i << "] = " << yuvImage->offsets[i]);
+	TRACE_DEBUG(<< "yuvImage->offsets[" << std::dec << i << "] = " << yuvImage->offsets[i]);
     }
 
     // Allocate the shared memory requested by the server:
@@ -740,21 +737,21 @@ void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int imageFormat
 			      IPC_CREAT | 0777);
     if (yuvShmInfo.shmid == -1)
     {
-	THROW(XFException,
-	      << "shmget failed"
-	      << " data_size=" << yuvImage->data_size
-	      << " errno=" << strerror(errno) << "(" << errno << ")");
+	TRACE_THROW(XFException,
+		    << "shmget failed"
+		    << " data_size=" << yuvImage->data_size
+		    << " errno=" << strerror(errno) << "(" << errno << ")");
     }
 
     // Attach the shared memory to the address space of the calling process:
     shmAddr = shmat(yuvShmInfo.shmid, 0, 0);
     if (shmAddr == (void*)-1)
     {
-	THROW(XFException,
-	      << "shmat failed"
-	      << " yuvShmInfo.shmid=" << yuvShmInfo.shmid 
-	      << " data_size=" << yuvImage->data_size
-	      << " errno=" << strerror(errno) << "(" << errno << ")");
+	TRACE_THROW(XFException,
+		    << "shmat failed"
+		    << " yuvShmInfo.shmid=" << yuvShmInfo.shmid 
+		    << " data_size=" << yuvImage->data_size
+		    << " errno=" << strerror(errno) << "(" << errno << ")");
     }
 
     // Update XShmSegmentInfo and XvImage with pointer to shared memory:
@@ -766,10 +763,10 @@ void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int imageFormat
     // Attach the shared memory to the X server:
     if (!XShmAttach(m_display, &yuvShmInfo))
     {
-	THROW(XFException, << "XShmAttach failed !");
+	TRACE_THROW(XFException, << "XShmAttach failed !");
     }
 
-    DEBUG( "yuvImage data_size = " << std::dec << yuvImage->data_size );
+    TRACE_DEBUG( "yuvImage data_size = " << std::dec << yuvImage->data_size );
 }
 
 XFVideoImage::~XFVideoImage()
@@ -821,7 +818,7 @@ void XFVideoImage::createBlackImage()
     }
     else
     {
-	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
+	TRACE_THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
     }
 }
 
@@ -868,7 +865,7 @@ void XFVideoImage::createPatternImage()
     }
     else
     {
-	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
+	TRACE_THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
     }
 }
 
@@ -916,7 +913,7 @@ void XFVideoImage::createDemoImage()
     }
     else
     {
-	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
+	TRACE_THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
     }
 }
 

@@ -7,12 +7,12 @@
 #ifndef GTKMM_MEDIA_PLAYER_HPP
 #define GTKMM_MEDIA_PLAYER_HPP
 
+#include "player/MediaPlayer.hpp"  // indirectly include X11/Xlib.h
+
 #include <gtkmm/drawingarea.h>
 #include <glibmm/dispatcher.h>
 #include <gdkmm/cursor.h>
 #include <sigc++/signal.h>
-
-#include "player/MediaPlayer.hpp"  // indirectly include X11/Xlib.h
 
 class GtkmmMediaPlayer : public MediaPlayer,
 			 public Gtk::DrawingArea

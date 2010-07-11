@@ -7,10 +7,10 @@
 #ifndef GTKMM_MEDIA_COMMON_HPP
 #define GTKMM_MEDIA_COMMON_HPP
 
+#include "common/MediaCommon.hpp"
+
 #include <glibmm/dispatcher.h>
 #include <sigc++/signal.h>
-
-#include "common/MediaCommon.hpp"
 
 struct ConfigurationData;
 

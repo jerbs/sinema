@@ -18,8 +18,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-//#undef DEBUG
-//#define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+//#undef TRACE_DEBUG
+//#define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 PvrProtocol* PvrProtocol::instance = 0;
 StorageProtocol* StorageProtocol::instance = 0;
@@ -28,9 +28,9 @@ static void show_protocols(void)
 {
     URLProtocol *up = 0;
     
-    DEBUG(<< "FFmpeg protocols:");
+    TRACE_DEBUG(<< "FFmpeg protocols:");
     while((up = av_protocol_next(up)))
-	DEBUG(<< up->name);
+	TRACE_DEBUG(<< up->name);
 }
 
 // -------------------------------------------------------------------
@@ -72,7 +72,7 @@ void StorageProtocol::init()
 
 int StorageProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
 {
-    DEBUG(<< filename);
+    TRACE_DEBUG(<< filename);
 
     av_strstart(filename, "sto:", &filename);
 
@@ -94,17 +94,17 @@ int StorageProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
 
 int StorageProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
 {
-    DEBUG();
+    TRACE_DEBUG();
     PvrContext* context = (PvrContext*)(h->priv_data);
     int& fd = context->m_fd;
     int num = read(fd, buf, size);
-    DEBUG(<< num);
+    TRACE_DEBUG(<< num);
     return num;
 }
 
 int StorageProtocol::pvrWrite(URLContext *h, unsigned char *buf, int size)
 {
-    DEBUG();
+    TRACE_DEBUG();
     PvrContext* context = (PvrContext*)(h->priv_data);
     int& fd = context->m_fd;
     return write(fd, buf, size);
@@ -112,7 +112,7 @@ int StorageProtocol::pvrWrite(URLContext *h, unsigned char *buf, int size)
 
 int64_t StorageProtocol::pvrSeek(URLContext *h, int64_t pos, int whence)
 {
-    DEBUG( << "pos=" << pos << ", whence=" << whence);
+    TRACE_DEBUG( << "pos=" << pos << ", whence=" << whence);
     PvrContext* context = (PvrContext*)(h->priv_data);
     int& fd = context->m_fd;
 
@@ -128,7 +128,7 @@ int64_t StorageProtocol::pvrSeek(URLContext *h, int64_t pos, int whence)
 
 int StorageProtocol::pvrClose(URLContext *h)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     PvrContext* context = (PvrContext*)(h->priv_data);
     int fd = context->m_fd;
@@ -177,7 +177,7 @@ void PvrProtocol::init(boost::shared_ptr<RecorderAdapter> recorderAdapter)
 
 int PvrProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
 {
-    DEBUG(<< filename);
+    TRACE_DEBUG(<< filename);
 
     av_strstart(filename, "pvr:", &filename);
 
@@ -196,18 +196,18 @@ int PvrProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
 
     if (resp->error)
     {
-	DEBUG(<< "open failed: " << strerror(resp->error));
+	TRACE_DEBUG(<< "open failed: " << strerror(resp->error));
 	return AVERROR(resp->error);
     }
 
-    DEBUG(<< resp->tempFilename);
+    TRACE_DEBUG(<< resp->tempFilename);
 
     return StorageProtocol::pvrOpen(h, resp->tempFilename.c_str(), flags);
 }
 
 int PvrProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
 {
-    DEBUG();
+    TRACE_DEBUG();
     int n = 0;
     while(1)
     {
@@ -218,7 +218,7 @@ int PvrProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
 	    n++;
 	    if (n == 100)
 	    {
-		DEBUG(<< "waiting 1 second");
+		TRACE_DEBUG(<< "waiting 1 second");
 		n = 0;
 	    }
 	    usleep(10*1000); // 10 milli seconds
@@ -232,7 +232,7 @@ int PvrProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
 
 int PvrProtocol::pvrClose(URLContext *h)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     boost::promise<boost::shared_ptr<StopRecordingResp> > promise;
     boost::unique_future<boost::shared_ptr<StopRecordingResp> > future = promise.get_future();
@@ -247,7 +247,7 @@ int PvrProtocol::pvrClose(URLContext *h)
 
     if (resp->error)
     {
-	DEBUG(<< "close failed: " << strerror(resp->error));
+	TRACE_DEBUG(<< "close failed: " << strerror(resp->error));
 	return AVERROR(resp->error);
     }
 

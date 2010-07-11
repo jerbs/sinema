@@ -37,7 +37,7 @@ void AudioOutput::process(boost::shared_ptr<InitEvent> event)
 {
     if (state == IDLE)
     {
-	DEBUG(<< "tid = " << gettid());
+	TRACE_DEBUG(<< "tid = " << gettid());
 
 	audioDecoder = event->audioDecoder;
 	videoOutput = event->videoOutput;
@@ -57,7 +57,7 @@ void AudioOutput::process(boost::shared_ptr<OpenAudioOutputReq> event)
 	channels = event->channels;
 	frameSize = event->frame_size;
 
-	DEBUG(<< "sampleRate=" << sampleRate << ", channels=" << channels << ", frameSize=" << frameSize);
+	TRACE_DEBUG(<< "sampleRate=" << sampleRate << ", channels=" << channels << ", frameSize=" << frameSize);
 
 	alsa = boost::make_shared<AFPCMDigitalAudioInterface>(event);
 
@@ -81,7 +81,7 @@ void AudioOutput::process(boost::shared_ptr<CloseAudioOutputReq> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	alsa->stop();
 
@@ -106,7 +106,7 @@ void AudioOutput::process(boost::shared_ptr<AFAudioFrame> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	eos = false;
 	frameQueue.push_back(event);
@@ -133,7 +133,7 @@ void AudioOutput::process(boost::shared_ptr<PlayNextChunk> event)
 {
     if (state == PLAYING)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	playNextChunk();
     }
@@ -143,7 +143,7 @@ void AudioOutput::process(boost::shared_ptr<FlushReq> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	// Flush audio output buffer in driver:
 	alsa->stop();
@@ -177,7 +177,7 @@ void AudioOutput::process(boost::shared_ptr<EndOfAudioStream> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 	eos = true;
 	if (frameQueue.empty())
 	{
@@ -205,7 +205,7 @@ void AudioOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	if (state == PAUSE)
 	{
@@ -244,7 +244,7 @@ void AudioOutput::process(boost::shared_ptr<CommandPause> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	snd_pcm_sframes_t overallLatencyInFrames;
 	if (alsa->getOverallLatency(overallLatencyInFrames))
@@ -272,7 +272,7 @@ void AudioOutput::process(boost::shared_ptr<CommandSetPlaybackSwitch> event)
 
 void AudioOutput::createAudioFrame()
 {
-    DEBUG();
+    TRACE_DEBUG();
     numAudioFrames++;
     audioDecoder->queue_event(boost::make_shared<AFAudioFrame>(frameSize));
 }
@@ -305,14 +305,14 @@ void AudioOutput::playNextChunk()
 	    return;
 	}
 
-	DEBUG(<< "time=" << chunkTimer.get_current_time());
+	TRACE_DEBUG(<< "time=" << chunkTimer.get_current_time());
 
 	boost::shared_ptr<AFAudioFrame> frame(*currentFrame);
 
 	if (frame->atBegin())
 	{
 	    // Send periodic AudioSyncInfo event to ensure AV-Sync:
-	    DEBUG(<< "calling sendAudioSyncInfo");
+	    TRACE_DEBUG(<< "calling sendAudioSyncInfo");
 	    sendAudioSyncInfo();
 	}
 
@@ -382,7 +382,7 @@ void AudioOutput::startChunkTimer()
     }
 
     chunkTimer.relative(dt);
-    DEBUG(<< "time=" << chunkTimer.get_current_time() << ", sec=" << getSeconds(dt));
+    TRACE_DEBUG(<< "time=" << chunkTimer.get_current_time() << ", sec=" << getSeconds(dt));
     start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
 
     state = PLAYING;
@@ -414,7 +414,7 @@ bool AudioOutput::startEosTimer()
 	    double filledInSeconds = double(filled) / double(sampleRate);
 	    timespec_t dt = getTimespec(filledInSeconds);
 	    chunkTimer.relative(dt);
-	    DEBUG(<< "start_timer filledInSeconds=" << filledInSeconds);
+	    TRACE_DEBUG(<< "start_timer filledInSeconds=" << filledInSeconds);
 	    start_timer(boost::make_shared<PlayNextChunk>(), chunkTimer);
 	    return true;
 	}
@@ -431,14 +431,14 @@ void AudioOutput::sendAudioSyncInfo()
     snd_pcm_sframes_t overallLatencyInFrames;
     if (alsa->getOverallLatency(overallLatencyInFrames))
     {
-	DEBUG();
+	TRACE_DEBUG();
 	double latencyInSeconds = double(overallLatencyInFrames) / double(sampleRate);
 	double currentPTS = nextPTS - latencyInSeconds;
 	audiblePTS = currentPTS;
 
-	INFO( << "AOUT: currentTime=" << currentTime
-	      << ", currentPTS=" << currentPTS
-	      << ", latencyInSeconds=" << latencyInSeconds );
+	TRACE_INFO( << "AOUT: currentTime=" << currentTime
+		    << ", currentPTS=" << currentPTS
+		    << ", latencyInSeconds=" << latencyInSeconds );
 
 	boost::shared_ptr<AudioSyncInfo> audioSyncInfo(new AudioSyncInfo(currentPTS, currentTime));
 	videoOutput->queue_event(audioSyncInfo);

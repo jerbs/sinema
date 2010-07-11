@@ -8,8 +8,8 @@
 #include "common/ConfigFile.hpp"
 
 #ifdef CONFIG_FILE_TEST
-#undef DEBUG
-#define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+#undef TRACE_DEBUG
+#define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 #endif
 
 void ConfigFileTest::process(boost::shared_ptr<CommonInitEvent> event)
@@ -23,13 +23,13 @@ void ConfigFileTest::process(boost::shared_ptr<StartConfigFileTest> event)
 
 void ConfigFileTest::process(boost::shared_ptr<ConfigurationData> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     configFile->queue_event(event);
 }
 
 void ConfigFileTest::process(boost::shared_ptr<ConfigurationFileWritten> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     m_event_processor->terminate();
 }
 

@@ -44,7 +44,7 @@ public:
 	offset += bytes;
 	if (offset > frameByteSize)
 	{
-	    ERROR(<<"Consumed too much data.");
+	    TRACE_ERROR(<<"Consumed too much data.");
 	    exit(-1);
 	}
 	return &buf[off];

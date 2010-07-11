@@ -78,21 +78,21 @@ AFMixer::AFMixer(AudioOutput* audioOutput, MediaPlayer* mediaPlayer)
     ret = snd_mixer_open(&handle, 0);
     if (ret < 0)
     {
-	ERROR(<< "snd_mixer_open failed: " << snd_strerror(ret));
+	TRACE_ERROR(<< "snd_mixer_open failed: " << snd_strerror(ret));
 	exit(1);
     }
 
     ret = snd_mixer_attach(handle, card.c_str());
     if (ret < 0)
     {
-	ERROR(<< "snd_mixer_attach failed: " << snd_strerror(ret));
+	TRACE_ERROR(<< "snd_mixer_attach failed: " << snd_strerror(ret));
 	exit(1);
     }
 
     ret = snd_mixer_selem_register(handle, NULL, NULL);
     if (ret < 0)
     {
-	ERROR(<< "snd_mixer_selem_register failed: " << snd_strerror(ret));
+	TRACE_ERROR(<< "snd_mixer_selem_register failed: " << snd_strerror(ret));
 	exit(1);
     }
 
@@ -102,11 +102,11 @@ AFMixer::AFMixer(AudioOutput* audioOutput, MediaPlayer* mediaPlayer)
     ret = snd_mixer_load(handle);
     if (ret < 0)
     {
-	ERROR(<< "snd_mixer_load failed: " << snd_strerror(ret));
+	TRACE_ERROR(<< "snd_mixer_load failed: " << snd_strerror(ret));
 	exit(1);
     }
 
-    DEBUG(<< "Searching playback volume element...");
+    TRACE_DEBUG(<< "Searching playback volume element...");
 
     // For debugging only:
     dump();
@@ -116,14 +116,14 @@ AFMixer::AFMixer(AudioOutput* audioOutput, MediaPlayer* mediaPlayer)
     {
 	if (snd_mixer_selem_is_active(elem))
 	{
-	    DEBUG(<< "name = " << elem);
+	    TRACE_DEBUG(<< "name = " << elem);
 
 	    if (isPlaybackVolumeElem(elem))
 	    {
 		if (!playbackVolumeElem)
 		{
 		    // Assuming that the first one is the important one.
-		    DEBUG(<< "Found playback volume element.");
+		    TRACE_DEBUG(<< "Found playback volume element.");
 		    playbackVolumeElem = elem;
 		}
 		setDefault(elem);
@@ -212,9 +212,9 @@ void AFMixer::getVolumeAndSwitch(snd_mixer_elem_t* elem,
 	    snd_mixer_selem_get_playback_volume(elem, chn, &vol);
 	    snd_mixer_selem_get_playback_switch(elem, chn, &swt);
 
-	    DEBUG(<< snd_mixer_selem_channel_name(chn) << ": "
-		  << vol << ", "
-		  << swt ? "on" : "off");
+	    TRACE_DEBUG(<< snd_mixer_selem_channel_name(chn) << ": "
+			<< vol << ", "
+			<< swt ? "on" : "off");
 
 	    volume += vol;
 	    count++;
@@ -274,13 +274,13 @@ void AFMixer::setDefault(snd_mixer_elem_t* elem)
     long pmax;
     snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
 
-    DEBUG(<< name);
+    TRACE_DEBUG(<< name);
 
     if (strcmp(name, "Master") == 0 ||
 	strcmp(name, "Front") == 0 ||
 	strcmp(name, "Center") == 0)
     {
-	DEBUG(<< name << ", " << pmax);
+	TRACE_DEBUG(<< name << ", " << pmax);
 
 	long volume;
 	bool enabled;
@@ -299,27 +299,27 @@ void AFMixer::dump()
     {
 	if (snd_mixer_selem_is_active(elem))
 	{
-	    DEBUG(<< "name = " << elem);
-	    DEBUG(<< "  has_common_switch = " << snd_mixer_selem_has_common_switch(elem));
-	    DEBUG(<< "  has_playback_switch_joined = " << snd_mixer_selem_has_playback_switch_joined(elem));
-	    DEBUG(<< "  has_playback_switch = " << snd_mixer_selem_has_playback_switch(elem));
-	    DEBUG(<< "  has_common_volume = " << snd_mixer_selem_has_common_volume(elem));
-	    DEBUG(<< "  has_playback_volume_joined = " << snd_mixer_selem_has_playback_volume_joined(elem));
-	    DEBUG(<< "  has_playback_volume = " << snd_mixer_selem_has_playback_volume(elem));
-	    DEBUG(<< "  is_playback_mono = " << snd_mixer_selem_is_playback_mono(elem));
+	    TRACE_DEBUG(<< "name = " << elem);
+	    TRACE_DEBUG(<< "  has_common_switch = " << snd_mixer_selem_has_common_switch(elem));
+	    TRACE_DEBUG(<< "  has_playback_switch_joined = " << snd_mixer_selem_has_playback_switch_joined(elem));
+	    TRACE_DEBUG(<< "  has_playback_switch = " << snd_mixer_selem_has_playback_switch(elem));
+	    TRACE_DEBUG(<< "  has_common_volume = " << snd_mixer_selem_has_common_volume(elem));
+	    TRACE_DEBUG(<< "  has_playback_volume_joined = " << snd_mixer_selem_has_playback_volume_joined(elem));
+	    TRACE_DEBUG(<< "  has_playback_volume = " << snd_mixer_selem_has_playback_volume(elem));
+	    TRACE_DEBUG(<< "  is_playback_mono = " << snd_mixer_selem_is_playback_mono(elem));
 
 	    long pmin;
 	    long pmax;
 	    snd_mixer_selem_get_playback_volume_range(elem, &pmin, &pmax);
-	    DEBUG(<< "  playback_volume_range: " << pmin << "..." << pmax);
+	    TRACE_DEBUG(<< "  playback_volume_range: " << pmin << "..." << pmax);
 
 	    for (snd_mixer_selem_channel_id_t chn = firstChannel();
 		 chn < lastChannel();
 		 nextChannel(chn))
 	    {
 		if (snd_mixer_selem_has_playback_channel(elem, chn))
-		    DEBUG(<< "    Channel " << chn
-			  << ": " << snd_mixer_selem_channel_name(chn));
+		    TRACE_DEBUG(<< "    Channel " << chn
+				<< ": " << snd_mixer_selem_channel_name(chn));
 	    }
 	}
 
@@ -339,26 +339,26 @@ int AFMixer::mixer_elem_event(snd_mixer_elem_t *elem,
 			      unsigned int mask)
 {
     AFMixer* obj = (AFMixer*)snd_mixer_elem_get_callback_private(elem);
-    DEBUG( << "mixer_elem_event: " << std::hex << obj << std::dec);
+    TRACE_DEBUG( << "mixer_elem_event: " << std::hex << obj << std::dec);
 
     if (mask == SND_CTL_EVENT_MASK_REMOVE)
     {
-	DEBUG(<< "mixer_elem_event: remove" << elem);
+	TRACE_DEBUG(<< "mixer_elem_event: remove" << elem);
 	return 0;
     }
 
     if (mask & SND_CTL_EVENT_MASK_INFO)
     {
-	DEBUG(<< "mixer_elem_event: info" << elem)
+	TRACE_DEBUG(<< "mixer_elem_event: info" << elem)
     }
 
     if (mask & SND_CTL_EVENT_MASK_VALUE)
     {
-	DEBUG(<< "mixer_elem_event: value" << elem);
+	TRACE_DEBUG(<< "mixer_elem_event: value" << elem);
 	if (obj)
 	    obj->sendMixerElemEvent(elem);
 	else
-	    ERROR(<< "mixer_elem_event: no obj!!!");
+	    TRACE_ERROR(<< "mixer_elem_event: no obj!!!");
     }
 
     return 0;
@@ -369,11 +369,11 @@ int AFMixer::mixer_event(snd_mixer_t *mixer,
 			 snd_mixer_elem_t *elem)
 {
     AFMixer* obj = (AFMixer*)snd_mixer_get_callback_private(mixer);
-    DEBUG(<< "mixer_event: " << std::hex << obj << std::dec);
+    TRACE_DEBUG(<< "mixer_event: " << std::hex << obj << std::dec);
 
     if (mask & SND_CTL_EVENT_MASK_ADD)
     {
-	DEBUG(<< "mixer_event: add " << elem);
+	TRACE_DEBUG(<< "mixer_event: add " << elem);
 	snd_mixer_elem_set_callback(elem, AFMixer::mixer_elem_event);
 	snd_mixer_elem_set_callback_private(elem, (void*)obj);
     }
@@ -401,12 +401,12 @@ void AFMixerEventProcessor::operator()()
 	    ret = snd_mixer_handle_events(handle);
 	    if (ret<0)
 	    {
-		ERROR(<< "snd_mixer_handle_events failed: " << snd_strerror(ret));
+		TRACE_ERROR(<< "snd_mixer_handle_events failed: " << snd_strerror(ret));
 	    }
 	}
 	else
 	{
-	    ERROR(<< "snd_mixer_wait failed: ret=" << ret);
+	    TRACE_ERROR(<< "snd_mixer_wait failed: ret=" << ret);
 	}
     }
 }

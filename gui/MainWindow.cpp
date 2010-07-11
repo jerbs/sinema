@@ -10,10 +10,6 @@
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
-#undef DEBUG
-#define DEBUG(s)
-// #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
-
 std::string applicationName = "player";
 
 MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
@@ -94,7 +90,7 @@ bool MainWindow::on_main_window_state_event(GdkEventWindowState* event)
 	ignoreWindowResize();
     }
     m_fullscreen = fullscreen;
-    DEBUG("m_fullscreen = " << m_fullscreen);
+    TRACE_DEBUG("m_fullscreen = " << m_fullscreen);
 
     return false;
 }
@@ -124,12 +120,12 @@ void MainWindow::on_notification_video_size(const NotificationVideoSize& event)
 {
     m_VideoSize = event;
 
-    DEBUG( << std::dec << event.reason << ","
-	   << "vid(" << m_VideoSize.widthVid << "," << m_VideoSize.heightVid << ")"
-	   << "win(" << m_VideoSize.widthWin << "," << m_VideoSize.heightWin << ")"
-	   << "dst(" << m_VideoSize.widthDst << "," << m_VideoSize.heightDst << ")"
-	   << "src(" << m_VideoSize.widthSrc << "," << m_VideoSize.heightSrc << ")"
-	   << "adj(" << m_VideoSize.widthAdj << "," << m_VideoSize.heightAdj << ")" );
+    TRACE_DEBUG( << std::dec << event.reason << ","
+		 << "vid(" << m_VideoSize.widthVid << "," << m_VideoSize.heightVid << ")"
+		 << "win(" << m_VideoSize.widthWin << "," << m_VideoSize.heightWin << ")"
+		 << "dst(" << m_VideoSize.widthDst << "," << m_VideoSize.heightDst << ")"
+		 << "src(" << m_VideoSize.widthSrc << "," << m_VideoSize.heightSrc << ")"
+		 << "adj(" << m_VideoSize.widthAdj << "," << m_VideoSize.heightAdj << ")" );
 
     const double xzoom = round(double(m_VideoSize.widthDst)  / double(m_VideoSize.widthAdj) * 100) / 100;
     const double yzoom = round(double(m_VideoSize.heightDst) / double(m_VideoSize.heightAdj)* 100) / 100;
@@ -198,9 +194,9 @@ void MainWindow::zoom(double percent)
     int window_width  = video_width_zoomed  + get_width()  - m_GtkmmMediaPlayer.get_width();
     int window_height = video_height_zoomed + get_height() - m_GtkmmMediaPlayer.get_height();
 
-    DEBUG( << std::dec << 100 * m_video_zoom << "%" );
-    DEBUG( << window_width << " = " << video_width_zoomed << " + " << get_width() << " - " << m_GtkmmMediaPlayer.get_width() );
-    DEBUG( << window_height << " = " << video_height_zoomed << " + " << get_height()<< " - " << m_GtkmmMediaPlayer.get_height());
+    TRACE_DEBUG( << std::dec << 100 * m_video_zoom << "%" );
+    TRACE_DEBUG( << window_width << " = " << video_width_zoomed << " + " << get_width() << " - " << m_GtkmmMediaPlayer.get_width() );
+    TRACE_DEBUG( << window_height << " = " << video_height_zoomed << " + " << get_height()<< " - " << m_GtkmmMediaPlayer.get_height());
 
     resize(window_width, window_height);
 }

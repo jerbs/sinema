@@ -20,7 +20,7 @@ void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 {
     if (state == IDLE)
     {
-	DEBUG(<< "tid = " << gettid());
+	TRACE_DEBUG(<< "tid = " << gettid());
 
 	mediaPlayer = event->mediaPlayer;
 	demuxer = event->demuxer;
@@ -34,7 +34,7 @@ void VideoOutput::process(boost::shared_ptr<OpenVideoOutputReq> event)
 {
     if (state == INIT)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	xfVideo->resize(event->width, event->height, event->parNum, event->parDen, event->imageFormat);
 	for (int i=0; i<10; i++)
@@ -52,7 +52,7 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	showBlackFrame();
 
@@ -87,7 +87,7 @@ void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
 
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	xfVideo->resize(event->width, event->height, event->parNum, event->parDen, event->imageFormat);
 	createVideoImage();
@@ -98,7 +98,7 @@ void VideoOutput::process(boost::shared_ptr<XFVideoImage> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	eos = false;
 	frameQueue.push(event);
@@ -136,7 +136,7 @@ void VideoOutput::process(boost::shared_ptr<ShowNextFrame> event)
 {
     if (state == PLAYING)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	displayNextFrame();
     }
@@ -155,8 +155,8 @@ void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
 	    audioSnapshotPTS = event->pts;
 	    audioSnapshotTime = event->abstime;
 
-	    DEBUG(<< "audioSnapshotPTS =" << audioSnapshotPTS
-		  << ", audioSnapshotTime=" << audioSnapshotTime);
+	    TRACE_DEBUG(<< "audioSnapshotPTS =" << audioSnapshotPTS
+			<< ", audioSnapshotTime=" << audioSnapshotTime);
 
 	    if (state == STILL)
 	    {
@@ -177,7 +177,7 @@ void VideoOutput::process(boost::shared_ptr<FlushReq> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	// Send received frames back to VideoDecoder without showing them:
 	while (!frameQueue.empty())
@@ -214,7 +214,7 @@ void VideoOutput::process(boost::shared_ptr<AudioFlushedInd> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 	ignoreAudioSync--;
     }
 }
@@ -229,7 +229,7 @@ void VideoOutput::process(boost::shared_ptr<EndOfVideoStream> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 	eos = true;
 	if (frameQueue.empty())
 	{
@@ -251,7 +251,7 @@ void VideoOutput::process(boost::shared_ptr<WindowRealizeEvent> event)
 {
     if (!xfVideo)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	// Make VideoOutput::sendNotificationVideoSize accessable for XFVideo: 
 	typedef void (VideoOutput::*fct_t)(boost::shared_ptr<NotificationVideoSize>);
@@ -271,7 +271,7 @@ void VideoOutput::process(boost::shared_ptr<WindowRealizeEvent> event)
 
 void VideoOutput::process(boost::shared_ptr<WindowConfigureEvent> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     if (xfVideo)
     {
 	xfVideo->handleConfigureEvent(event);
@@ -284,7 +284,7 @@ void VideoOutput::process(boost::shared_ptr<WindowConfigureEvent> event)
 
 void VideoOutput::process(boost::shared_ptr<WindowExposeEvent> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     if (xfVideo)
     {
 	xfVideo->handleExposeEvent();
@@ -331,7 +331,7 @@ void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	displayNextFrame();
     }
@@ -341,7 +341,7 @@ void VideoOutput::process(boost::shared_ptr<CommandPause> event)
 {
     if (isOpen())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	state = PAUSE;
 	audioSync = false;
@@ -366,7 +366,7 @@ void VideoOutput::displayNextFrame()
 	return;
     }
 
-    DEBUG();
+    TRACE_DEBUG();
 
     boost::shared_ptr<XFVideoImage> image(frameQueue.front());
     frameQueue.pop();
@@ -383,11 +383,11 @@ void VideoOutput::displayNextFrame()
 	std::cout << "displayedFramePTS=" << displayedFramePTS << std::endl;
 #endif
 
-	INFO(<< "VOUT: currentTime=" <<  currentTime
-	     << ", displayedFramePTS=" << displayedFramePTS
-	     << ", currentAudioPTS=" << currentAudioPTS
-	     << ", AVoffsetPTS=" << displayedFramePTS-currentAudioPTS
-	     << ", audioDeltaTime=" << audioDeltaTime);
+	TRACE_INFO(<< "VOUT: currentTime=" <<  currentTime
+		   << ", displayedFramePTS=" << displayedFramePTS
+		   << ", currentAudioPTS=" << currentAudioPTS
+		   << ", AVoffsetPTS=" << displayedFramePTS-currentAudioPTS
+		   << ", audioDeltaTime=" << audioDeltaTime);
     }
 
     boost::shared_ptr<XFVideoImage> previousImage = xfVideo->show(image);
@@ -432,7 +432,7 @@ void VideoOutput::startFrameTimer()
 	}
     }
 
-    DEBUG();
+    TRACE_DEBUG();
 
     boost::shared_ptr<XFVideoImage> nextFrame(frameQueue.front());
 
@@ -447,10 +447,10 @@ void VideoOutput::startFrameTimer()
 	timespec_t videoDeltaTime = getTimespec(videoDeltaPTS);
 
 #if 1
-	INFO( << "VOUT: startFrameTimer: currentTime=" << currentTime
-	      << ", currentPTS=" << currentPTS
-	      << ", nextFrameVideoPTS=" << nextFrameVideoPTS
-	      << ", waitTime=" << videoDeltaTime << videoDeltaPTS );
+	TRACE_INFO( << "VOUT: startFrameTimer: currentTime=" << currentTime
+		    << ", currentPTS=" << currentPTS
+		    << ", nextFrameVideoPTS=" << nextFrameVideoPTS
+		    << ", waitTime=" << videoDeltaTime << videoDeltaPTS );
 #endif
 
 	frameTimer.relative(videoDeltaTime);

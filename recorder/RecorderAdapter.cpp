@@ -12,32 +12,32 @@
 
 void RecorderAdapter::process(boost::shared_ptr<RecorderInitEvent> event)
 {
-    DEBUG(<< "tid = " << gettid());
+    TRACE_DEBUG(<< "tid = " << gettid());
     recorder = event->recorder;
 }
 
 void RecorderAdapter::process(boost::shared_ptr<StartRecordingSReq> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     startSReq = event;
     recorder->queue_event(event->request);
 }
 
 void RecorderAdapter::process(boost::shared_ptr<StartRecordingResp> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     startSReq->promise.set_value(event);
 }
 
 void RecorderAdapter::process(boost::shared_ptr<StopRecordingSReq> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     stopSReq = event;
     recorder->queue_event(event->request);
 }
 
 void RecorderAdapter::process(boost::shared_ptr<StopRecordingResp> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     stopSReq->promise.set_value(event);
 }

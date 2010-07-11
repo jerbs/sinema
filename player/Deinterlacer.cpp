@@ -16,8 +16,8 @@
 #include "deinterlacer/src/copyfunctions.h"
 #include "deinterlacer/src/mm_accel.h"
 
-// #undef DEBUG
-// #define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+// #undef TRACE_DEBUG
+// #define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 Deinterlacer::Deinterlacer(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
@@ -48,7 +48,7 @@ Deinterlacer::~Deinterlacer()
 
 void Deinterlacer::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG(<< "tid = " << gettid());
+    TRACE_DEBUG(<< "tid = " << gettid());
     mediaPlayer = event->mediaPlayer;
     videoOutput = event->videoOutput;
     videoDecoder = event->videoDecoder;
@@ -85,7 +85,7 @@ void Deinterlacer::process(boost::shared_ptr<CloseVideoOutputReq> event)
 
 void Deinterlacer::process(boost::shared_ptr<XFVideoImage> event)
 {
-    DEBUG(<< m_interlacedImages.size() << ", " << m_emptyImages.size());
+    TRACE_DEBUG(<< m_interlacedImages.size() << ", " << m_emptyImages.size());
 
     if (m_nextImageHasContent)
 	m_interlacedImages.push_back(event);
@@ -103,7 +103,7 @@ void Deinterlacer::process(boost::shared_ptr<XFVideoImage> event)
 
 void Deinterlacer::process(boost::shared_ptr<TopFieldFirst> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     m_topFieldFirst = true;
 
     // Continue with top field:
@@ -112,7 +112,7 @@ void Deinterlacer::process(boost::shared_ptr<TopFieldFirst> event)
 
 void Deinterlacer::process(boost::shared_ptr<BottomFieldFirst> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     m_topFieldFirst = false;
 
     // Continue with bottom field:
@@ -180,7 +180,7 @@ void Deinterlacer::process(boost::shared_ptr<EndOfVideoStream> event)
 
 void Deinterlacer::process(boost::shared_ptr<SelectDeinterlacer> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     int i = 0;
     while (deinterlace_method_t* dim = get_deinterlace_method(i))
@@ -188,13 +188,13 @@ void Deinterlacer::process(boost::shared_ptr<SelectDeinterlacer> event)
 	if (event->name == dim->name)
 	{
 	    m_deinterlacer = dim;
-	    DEBUG(<< "Setting " << dim->name);
+	    TRACE_DEBUG(<< "Setting " << dim->name);
 	    return;
 	}
 	i++;
     }
 
-    ERROR(<< "Deinterlacer " << event->name << " not found.");
+    TRACE_ERROR(<< "Deinterlacer " << event->name << " not found.");
 }
 
 // -------------------------------------------------------------------
@@ -320,7 +320,7 @@ static inline void intpLine(deinterlace_interp_scanline_t intp, int line, XvImag
 
 void Deinterlacer::deinterlace()
 {
-    DEBUG();
+    TRACE_DEBUG();
     boost::shared_ptr<XFVideoImage> image(m_emptyImages.front());
     m_emptyImages.pop();
 
@@ -436,7 +436,7 @@ void Deinterlacer::deinterlace()
 
 void Deinterlacer::announceDeinterlacers()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     boost::shared_ptr<NotificationDeinterlacerList> event(new NotificationDeinterlacerList());
     event->selected = -1;
@@ -451,7 +451,7 @@ void Deinterlacer::announceDeinterlacers()
 
 	if (dim->scanlinemode)
 	{
-	    DEBUG(<< dim->name);
+	    TRACE_DEBUG(<< dim->name);
 	    event->list.push_back(std::string(dim->name));
 	}
 	i++;

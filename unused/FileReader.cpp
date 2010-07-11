@@ -43,13 +43,13 @@ FileReader::~FileReader()
 
 void FileReader::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     m_demuxer = event->demuxer;
 }
 
 void FileReader::process(boost::shared_ptr<OpenFileReq> event)
 {
-    DEBUG(<< event->fileName);
+    TRACE_DEBUG(<< event->fileName);
 
     m_fd = open(event->fileName.c_str(), O_RDONLY);
     if (m_fd < 0)
@@ -63,7 +63,7 @@ void FileReader::process(boost::shared_ptr<OpenFileReq> event)
 
 void FileReader::process(boost::shared_ptr<CloseFileReq> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     close(m_fd);
     m_fd = -1;
     m_offset = 0;
@@ -71,7 +71,7 @@ void FileReader::process(boost::shared_ptr<CloseFileReq> event)
 
 void FileReader::process(boost::shared_ptr<SystemStreamGetMoreDataEvent> event)
 {
-    // DEBUG();
+    // TRACE_DEBUG();
     if (m_fd < 0)
     {
 	return;
@@ -95,7 +95,7 @@ void FileReader::aioCompletionHandler(sigval_t sigval)
 
 void FileReader::completed(sigval_t& sigval)
 {
-    // DEBUG();
+    // TRACE_DEBUG();
     if (aio_error(&m_aiocb) == 0)
     {
 	// Request completed successfully
@@ -115,7 +115,7 @@ void FileReader::completed(sigval_t& sigval)
 	    if (ret < 0)
 	    {
 		// Error occurred:
-		ERROR(<< "aio_return: " << ret);
+		TRACE_ERROR(<< "aio_return: " << ret);
 	    }
 	    else  // ret == 0
 	    {

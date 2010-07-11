@@ -24,7 +24,7 @@ void TunerFacade::process(boost::shared_ptr<TunerOpen> event)
 {
     if ((fd = open(device, O_RDWR)) < 0)
     {
-        ERROR( << "Failed to open " << device << ": " << strerror(errno) );
+        TRACE_ERROR( << "Failed to open " << device << ": " << strerror(errno) );
     }
     else
     {
@@ -64,7 +64,7 @@ void TunerFacade::getFrequency()
     int result = ioctl(fd, VIDIOC_G_FREQUENCY, &vf);
     if (result < 0)
     {
-        ERROR( << "ioctl VIDIOC_G_FREQUENCY failed: " << strerror(errno) );
+        TRACE_ERROR( << "ioctl VIDIOC_G_FREQUENCY failed: " << strerror(errno) );
 	return;
     }
 
@@ -85,7 +85,7 @@ void TunerFacade::setFrequency(const ChannelData& channelData)
 
     if (result < 0)
     {
-        ERROR( << "ioctl VIDIOC_S_FREQUENCY failed: " << strerror(errno) );
+        TRACE_ERROR( << "ioctl VIDIOC_S_FREQUENCY failed: " << strerror(errno) );
 	return;
     }
 
@@ -117,7 +117,7 @@ void TunerFacade::process(boost::shared_ptr<TunerCheckSignal> event)
 
     if (result < 0)
     {
-	ERROR( << "ioctl VIDIOC_S_FREQUENCY failed" << strerror(errno) );
+	TRACE_ERROR( << "ioctl VIDIOC_S_FREQUENCY failed" << strerror(errno) );
 	return;
     }
 
@@ -141,7 +141,7 @@ void TunerFacade::process(boost::shared_ptr<TunerCheckSignal> event)
     {
 	// Signal detected.
 	signalDetected = true;
-	DEBUG( << "signal detected: retry = " << retry );
+	TRACE_DEBUG( << "signal detected: retry = " << retry );
 	mediaReceiver->queue_event(boost::make_shared<TunerNotifySignalDetected>(tunedChannelData));
     }
 

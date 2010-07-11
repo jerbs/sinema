@@ -30,26 +30,26 @@ public:
     ~TraceUnit();
 };
 
-#define INFO(s)          \
+#define TRACE_INFO(s)          \
 {                        \
    TraceUnit traceUnit;  \
    traceUnit s;          \
 }
 
-#define DEBUG(s)                                \
+#define TRACE_DEBUG(s)                                \
 {                                               \
    TraceUnit traceUnit;                         \
    traceUnit << "D: " << __PRETTY_FUNCTION__ << " " s;	\
 }
 
-#define ERROR(s)                                            \
+#define TRACE_ERROR(s)                                            \
 {                                                           \
    TraceUnit traceUnit;                                     \
    traceUnit << "Error: " << __PRETTY_FUNCTION__ << " " s;  \
    std::cout << traceUnit.str() << std::endl;	            \
 }
 
-#define THROW(t,s)                                              \
+#define TRACE_THROW(t,s)                                              \
 {                                                               \
    TraceUnit traceUnit;                                         \
    traceUnit << "Exception: " << __PRETTY_FUNCTION__ << " " s;  \
@@ -62,7 +62,7 @@ public:
 //
 // Usage:
 //   std::cout << hexDump(dataPtr, dataLen) << cout::endl;
-//   INFO(<< hexDump(dataPtr, dataLen) );
+//   TRACE_INFO(<< hexDump(dataPtr, dataLen) );
 
 inline unsigned char lowerNibble(unsigned char c)
 {

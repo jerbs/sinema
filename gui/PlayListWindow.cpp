@@ -115,7 +115,7 @@ PlayListWindow::~PlayListWindow()
 
 void PlayListWindow::on_show_window(bool pshow)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     // This is the same as ControlWindow::on_show_control_window.
 
@@ -144,7 +144,7 @@ void PlayListWindow::on_show_window(bool pshow)
 void PlayListWindow::on_row_activated (const Gtk::TreeModel::Path& path,
 				       Gtk::TreeViewColumn* column)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Gtk::TreeModel::iterator iter = m_refTreeModel->get_iter(path);
     if (iter)
@@ -167,7 +167,7 @@ bool PlayListWindow::on_button_press_event(GdkEventButton* event)
 	    {
 		int row_num = *path.get_indices().begin();
 		// Gtk::TreeModel::Row row = *( m_refTreeModel->children[row_num - 1]);
-		DEBUG( << "row_num = " << row_num );
+		TRACE_DEBUG( << "row_num = " << row_num );
 	    }
 
             Gtk::Menu* popup = getPopupMenuWidget();
@@ -184,13 +184,13 @@ bool PlayListWindow::on_button_press_event(GdkEventButton* event)
     {
 	if (event->button == 1)
         {
-	    DEBUG( << "Double Click" );
+	    TRACE_DEBUG( << "Double Click" );
 	    Glib::RefPtr<Gtk::TreeView::Selection> selection = m_TreeView.get_selection();
 	    Gtk::TreeModel::iterator iter = selection->get_selected();
 	    if (iter)
 	    {
 		Gtk::TreeModel::Row row = *iter;
-		DEBUG( << "Selected: " << row[m_Columns.m_col_name] );
+		TRACE_DEBUG( << "Selected: " << row[m_Columns.m_col_name] );
 	    }
 	}
     }
@@ -203,7 +203,7 @@ void PlayListWindow::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>&
 					   int x, int y, const Gtk::SelectionData& selection_data,
 					   guint info, guint time)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     if ( (selection_data.get_length() >= 0) &&
 	 (selection_data.get_format() == 8) )
@@ -228,7 +228,7 @@ void PlayListWindow::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>&
 	    while(it != file_list.end())
 	    {
 		Glib::ustring file = Glib::filename_from_uri(*it);
-		DEBUG(<< file);
+		TRACE_DEBUG(<< file);
 		m_PlayList.insert(n++, file);
 		it++;
 		
@@ -268,7 +268,7 @@ void PlayListWindow::on_rows_reordered(const Gtk::TreeModel::Path& path, const G
 
 void PlayListWindow::on_play_entry()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Glib::RefPtr<Gtk::TreeView::Selection> selection = m_TreeView.get_selection();
     Gtk::TreeModel::iterator iter = selection->get_selected();

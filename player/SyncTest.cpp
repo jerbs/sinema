@@ -17,7 +17,7 @@
 
 void SyncTest::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     audioOutput = event->audioOutput;
     videoOutput = event->videoOutput;
 }
@@ -137,10 +137,10 @@ void SyncTest::generateVideoFrame(boost::shared_ptr<XFVideoImage> videoFrame)
 
     XvImage* yuvImage = videoFrame->xvImage();
 
-    DEBUG(<< "yuvImage = " << std::hex << uint64_t(yuvImage));
-    DEBUG(<< "yuvImage->id = 0x" << std::hex << yuvImage->id);
+    TRACE_DEBUG(<< "yuvImage = " << std::hex << uint64_t(yuvImage));
+    TRACE_DEBUG(<< "yuvImage->id = 0x" << std::hex << yuvImage->id);
     for (int i=0; i<yuvImage->num_planes; i++)
-	DEBUG(<< "yuvImage->offsets["<< i <<"] = " << yuvImage->offsets[i]);
+	TRACE_DEBUG(<< "yuvImage->offsets["<< i <<"] = " << yuvImage->offsets[i]);
 
     char* data = yuvImage->data;
 

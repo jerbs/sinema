@@ -17,8 +17,8 @@
 
 extern std::string applicationName;
 
-// #undef DEBUG 
-// #define DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
+// #undef TRACE_DEBUG 
+// #define TRACE_DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
 
 ConfigWindow::ConfigWindow()
     : m_shown(false),
@@ -39,7 +39,7 @@ ConfigWindow::~ConfigWindow()
 
 void ConfigWindow::on_show_window(bool pshow)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     // This is the same as ControlWindow::on_show_control_window.
 

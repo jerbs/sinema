@@ -14,6 +14,7 @@
 #include <signal.h>
 #include <time.h>
 #include <stdio.h>   // perror
+#include <iostream>
 
 template<class concurrent_queue>
 class event_processor;

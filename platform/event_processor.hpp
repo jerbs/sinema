@@ -143,7 +143,7 @@ public:
 private:
     void process(boost::shared_ptr<QuitEvent> event)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	terminate();
     }
 

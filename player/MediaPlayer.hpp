@@ -7,13 +7,13 @@
 #ifndef MEDIA_PLAYER_HPP
 #define MEDIA_PLAYER_HPP
 
-#include <boost/thread/thread.hpp>
-#include <boost/shared_ptr.hpp>
-#include <string>
-
 #include "platform/Logging.hpp"
 #include "platform/event_receiver.hpp"
 #include "player/GeneralEvents.hpp"
+
+#include <boost/thread/thread.hpp>
+#include <boost/shared_ptr.hpp>
+#include <string>
 
 class Demuxer;
 class VideoDecoder;

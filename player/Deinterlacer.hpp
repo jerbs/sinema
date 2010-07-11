@@ -9,8 +9,8 @@
 
 #include "player/GeneralEvents.hpp"
 #include "platform/event_receiver.hpp"
-#include <boost/shared_ptr.hpp>
 
+#include <boost/shared_ptr.hpp>
 #include <list>
 
 class XFVideoImage;

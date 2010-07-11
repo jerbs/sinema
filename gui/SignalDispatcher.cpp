@@ -4,6 +4,15 @@
 // Copyright (C) Joachim Erbs, 2009-2010
 //
 
+#include "platform/timer.hpp"
+#include "platform/temp_value.hpp"
+
+#include "gui/ControlWindow.hpp"
+#include "gui/MainWindow.hpp"
+#include "gui/SignalDispatcher.hpp"
+#include "gui/GtkmmPlayList.hpp"
+#include "receiver/ChannelFrequencyTable.hpp"
+
 #include <boost/bind.hpp>
 #include <boost/make_shared.hpp>
 #include <iostream>
@@ -13,15 +22,6 @@
 #include <gtkmm/menu.h>
 #include <gtkmm/stock.h>
 #include <gdk/gdkkeysyms.h>
-
-#include "platform/timer.hpp"
-#include "platform/temp_value.hpp"
-
-#include "gui/ControlWindow.hpp"
-#include "gui/MainWindow.hpp"
-#include "gui/SignalDispatcher.hpp"
-#include "gui/GtkmmPlayList.hpp"
-#include "receiver/ChannelFrequencyTable.hpp"
 
 SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
     : m_MainWindow(0),
@@ -419,7 +419,7 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 {
     if(event->type == GDK_KEY_PRESS)
     {
-	INFO(<< std::hex << "keyval = " << event->keyval);
+	TRACE_DEBUG(<< std::hex << "keyval = " << event->keyval);
 
 	int factor = 1;
 	if (event->state & GDK_SHIFT_MASK)
@@ -472,7 +472,7 @@ void SignalDispatcher::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext
 					     int x, int y, const Gtk::SelectionData& selection_data,
 					     guint info, guint time)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     if ( (selection_data.get_length() >= 0) &&
 	 (selection_data.get_format() == 8) )
@@ -485,7 +485,7 @@ void SignalDispatcher::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext
 	    while(it != file_list.end())
 	    {
 		Glib::ustring file = Glib::filename_from_uri(*it);
-		DEBUG(<< file);
+		TRACE_DEBUG(<< file);
 		PlayList::iterator itPl = m_PlayList.append(file);
 		if (it == file_list.begin())
 		{
@@ -512,7 +512,7 @@ void SignalDispatcher::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext
 
 void SignalDispatcher::on_file_open()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Gtk::FileChooserDialog dialog("Please choose a file",
 				  Gtk::FILE_CHOOSER_ACTION_OPEN);
@@ -553,7 +553,7 @@ void SignalDispatcher::on_file_open()
     {
     case(Gtk::RESPONSE_OK):
 	{
-	    DEBUG(<< "RESPONSE_OK");
+	    TRACE_DEBUG(<< "RESPONSE_OK");
 
 	    // Get list of selected files:
 	    std::list<std::string> filenames = dialog.get_filenames();
@@ -581,12 +581,12 @@ void SignalDispatcher::on_file_open()
 	}
     case(Gtk::RESPONSE_CANCEL):
 	{
-	    DEBUG(<< "RESPONSE_CANCEL");
+	    TRACE_DEBUG(<< "RESPONSE_CANCEL");
 	    break;
 	}
     default:
 	{
-	    DEBUG(<< "result = " << result);
+	    TRACE_DEBUG(<< "result = " << result);
 	    break;
 	}
     }   
@@ -594,7 +594,7 @@ void SignalDispatcher::on_file_open()
 
 void SignalDispatcher::on_file_close()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     on_media_stop();
 
@@ -621,7 +621,7 @@ void SignalDispatcher::on_file_close()
 
 void SignalDispatcher::on_file_quit()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     // Terminate application when close procedure is finished:
     m_quit = true;
@@ -772,27 +772,27 @@ void SignalDispatcher::on_view_clipping_169()
 
 void on_window_state_event(Glib::RefPtr<Gtk::ToggleAction> action, GdkEventWindowState* event)
 {
-    DEBUG( << "GDK_WINDOW_STATE_WITHDRAWN:  "
-	   << (event->changed_mask & GDK_WINDOW_STATE_WITHDRAWN) << ","
-	   << (event->new_window_state & GDK_WINDOW_STATE_WITHDRAWN));
-    DEBUG( << "GDK_WINDOW_STATE_ICONIFIED:  "
-	   << (event->changed_mask & GDK_WINDOW_STATE_ICONIFIED) << ","
-	   << (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED));
-    DEBUG( << "GDK_WINDOW_STATE_MAXIMIZED:  "
-	   << (event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED) << ","
-	   << (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED));
-    DEBUG( << "GDK_WINDOW_STATE_STICKY:     "
-	   << (event->changed_mask & GDK_WINDOW_STATE_STICKY) << ","
-	   << (event->new_window_state & GDK_WINDOW_STATE_STICKY));
-    DEBUG( << "GDK_WINDOW_STATE_FULLSCREEN: "
-	   << (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN) << ","
-	   << (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN));
-    DEBUG( << "GDK_WINDOW_STATE_ABOVE:      "
-	   << (event->changed_mask & GDK_WINDOW_STATE_ABOVE) << ","
-	   << (event->new_window_state & GDK_WINDOW_STATE_ABOVE));
-    DEBUG( << "GDK_WINDOW_STATE_BELOW:      "
-	   << (event->changed_mask & GDK_WINDOW_STATE_BELOW) << ","
-	   << (event->new_window_state & GDK_WINDOW_STATE_BELOW));
+    TRACE_DEBUG( << "GDK_WINDOW_STATE_WITHDRAWN:  "
+		 << (event->changed_mask & GDK_WINDOW_STATE_WITHDRAWN) << ","
+		 << (event->new_window_state & GDK_WINDOW_STATE_WITHDRAWN));
+    TRACE_DEBUG( << "GDK_WINDOW_STATE_ICONIFIED:  "
+		 << (event->changed_mask & GDK_WINDOW_STATE_ICONIFIED) << ","
+		 << (event->new_window_state & GDK_WINDOW_STATE_ICONIFIED));
+    TRACE_DEBUG( << "GDK_WINDOW_STATE_MAXIMIZED:  "
+		 << (event->changed_mask & GDK_WINDOW_STATE_MAXIMIZED) << ","
+		 << (event->new_window_state & GDK_WINDOW_STATE_MAXIMIZED));
+    TRACE_DEBUG( << "GDK_WINDOW_STATE_STICKY:     "
+		 << (event->changed_mask & GDK_WINDOW_STATE_STICKY) << ","
+		 << (event->new_window_state & GDK_WINDOW_STATE_STICKY));
+    TRACE_DEBUG( << "GDK_WINDOW_STATE_FULLSCREEN: "
+		 << (event->changed_mask & GDK_WINDOW_STATE_FULLSCREEN) << ","
+		 << (event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN));
+    TRACE_DEBUG( << "GDK_WINDOW_STATE_ABOVE:      "
+		 << (event->changed_mask & GDK_WINDOW_STATE_ABOVE) << ","
+		 << (event->new_window_state & GDK_WINDOW_STATE_ABOVE));
+    TRACE_DEBUG( << "GDK_WINDOW_STATE_BELOW:      "
+		 << (event->changed_mask & GDK_WINDOW_STATE_BELOW) << ","
+		 << (event->new_window_state & GDK_WINDOW_STATE_BELOW));
 
     if (event->changed_mask & GDK_WINDOW_STATE_WITHDRAWN)
     {
@@ -807,21 +807,21 @@ void on_window_state_event(Glib::RefPtr<Gtk::ToggleAction> action, GdkEventWindo
 
 bool SignalDispatcher::on_config_window_state_event(GdkEventWindowState* event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     on_window_state_event(m_refConfigWindowVisible, event);
     return false;
 }
 
 bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     on_window_state_event(m_refControlWindowVisible, event);
     return false;
 }
 
 bool SignalDispatcher::on_play_list_window_state_event(GdkEventWindowState* event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     on_window_state_event(m_refPlayListWindowVisible, event);
     return false;
 }
@@ -859,7 +859,7 @@ bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
 	{
 	    // This branch is executed when the main window is closed.
 
-	    DEBUG(<< "GDK_WINDOW_STATE_WITHDRAWN");
+	    TRACE_DEBUG(<< "GDK_WINDOW_STATE_WITHDRAWN");
 
 	    if (! m_quit)
 	    {
@@ -890,7 +890,7 @@ bool operator==(const NotificationClipping& rect1, const ClipVideoSrcEvent& rect
 
 void SignalDispatcher::on_notification_clipping(const NotificationClipping& event)
 {
-    DEBUG( << "(" << event.left << "," << event.right << "," << event.top << "," << event.bottom << ")" );
+    TRACE_DEBUG( << "(" << event.left << "," << event.right << "," << event.top << "," << event.bottom << ")" );
 
     if (event == getClipVideoSrcEventNone())
     {
@@ -1036,12 +1036,12 @@ void SignalDispatcher::on_media_rewind()
 
 void SignalDispatcher::on_media_record()
 {
-    INFO();
+    TRACE_DEBUG();
 }
 
 void SignalDispatcher::on_channel_next()
 {
-    DEBUG();
+    TRACE_DEBUG();
     int size = m_ChannelSelectRadioAction.size();
     if (size)
     {
@@ -1055,7 +1055,7 @@ void SignalDispatcher::on_channel_next()
 
 void SignalDispatcher::on_channel_previous()
 {
-    DEBUG();
+    TRACE_DEBUG();
     int size = m_ChannelSelectRadioAction.size();
     if (size)
     {
@@ -1069,12 +1069,12 @@ void SignalDispatcher::on_channel_previous()
 
 void SignalDispatcher::on_channel_selected(int num)
 {
-    DEBUG(<< "channel = " << num);
+    TRACE_DEBUG(<< "channel = " << num);
     Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[num];
 
     if (ra && ra->get_active() && m_isEnabled_signalSetFrequency && m_ConfigurationData)
     {
-	DEBUG(<< "active");
+	TRACE_DEBUG(<< "active");
 	StationData& sd = m_ConfigurationData->stationList[num];
 
 	ChannelFrequencyTable cft = ChannelFrequencyTable::create(sd.standard.c_str());
@@ -1103,12 +1103,12 @@ void SignalDispatcher::on_channel_selected(int num)
 
 void SignalDispatcher::on_help_help()
 {
-    INFO();
+    TRACE_DEBUG();
 }
 
 void SignalDispatcher::on_help_about()
 {
-    INFO();
+    TRACE_DEBUG();
 }
 
 void SignalDispatcher::on_position_changed()
@@ -1149,7 +1149,7 @@ void SignalDispatcher::on_mute_toggled()
 
 void SignalDispatcher::on_notification_file_closed()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     // MediaPlayer finished playing a file.
 
@@ -1223,7 +1223,7 @@ int getTunerFrequency(const StationData& sd)
 
 void SignalDispatcher::on_configuration_data_changed(boost::shared_ptr<ConfigurationData> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     const ConfigurationData& configurationData = *event;
 
@@ -1332,7 +1332,7 @@ void SignalDispatcher::on_configuration_data_changed(boost::shared_ptr<Configura
 
 void SignalDispatcher::on_tuner_channel_tuned(const ChannelData& channelData)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     // This slot may be triggered before the channel list is available.
     // In that case the station list is still empty and setting the
@@ -1378,7 +1378,7 @@ void SignalDispatcher::on_tuner_channel_tuned(const ChannelData& channelData)
 
 void SignalDispatcher::updateGuiConfiguration()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     if (m_ConfigurationData)
     {

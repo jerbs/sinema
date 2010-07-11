@@ -5,7 +5,6 @@
 //
 
 #include "gui/GtkmmMediaCommon.hpp"
-// #include "receiver/TunerFacade.hpp"
 
 Glib::Dispatcher GtkmmMediaCommon::m_dispatcher;
 

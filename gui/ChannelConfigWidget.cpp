@@ -17,8 +17,8 @@
 
 extern std::string applicationName;
 
-// #undef DEBUG 
-// #define DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
+// #undef TRACE_DEBUG 
+// #define TRACE_DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
 
 ChannelConfigWidget::ChannelConfigWidget()
     : m_FinetuneAdjustment(0, -100, 100),
@@ -206,7 +206,7 @@ ChannelConfigWidget::~ChannelConfigWidget()
 
 void ChannelConfigWidget::on_tuner_channel_tuned(const ChannelData& channelData)
 {
-    DEBUG();
+    TRACE_DEBUG();
     std::stringstream ss;
     ss << "Tuned " << channelData.standard
        << ", " << channelData.channel
@@ -229,7 +229,7 @@ void ChannelConfigWidget::on_tuner_signal_detected(const ChannelData& channelDat
     ss << "Signal " << channelData.standard
        << ", " << channelData.channel
        << ", " << channelData.getTunedFrequency()/1000.0 << " MHz";
-    DEBUG(<< ss.str());
+    TRACE_DEBUG(<< ss.str());
     m_StatusBarMessage.set_text(ss.str());
 
     {
@@ -269,19 +269,19 @@ void ChannelConfigWidget::on_tuner_signal_detected(const ChannelData& channelDat
 
 void ChannelConfigWidget::on_tuner_scan_stopped()
 {
-    DEBUG();
+    TRACE_DEBUG();
     m_StatusBarMessage.set_text("Interrupted scanning channels.");
 }
 
 void ChannelConfigWidget::on_tuner_scan_finished()
 {
-    DEBUG();
+    TRACE_DEBUG();
     m_StatusBarMessage.set_text("Scanning channels finished");
 }
 
 void ChannelConfigWidget::on_configuration_data_loaded(boost::shared_ptr<ConfigurationData> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     m_ConfigurationData = event;
 
@@ -315,7 +315,7 @@ void ChannelConfigWidget::on_cellrenderer_standard_edited(
           const Glib::ustring& path_string,
 	  const Glib::ustring& new_standard)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Gtk::TreePath path(path_string);
 
@@ -333,7 +333,7 @@ void ChannelConfigWidget::on_cellrenderer_channel_edited(
           const Glib::ustring& path_string,
 	  const Glib::ustring& new_channel)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Gtk::TreePath path(path_string);
 
@@ -351,7 +351,7 @@ void ChannelConfigWidget::on_cellrenderer_finetune_edited(
           const Glib::ustring& path_string,
 	  const Glib::ustring& new_text)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Gtk::TreePath path(path_string);
 
@@ -368,7 +368,7 @@ void ChannelConfigWidget::on_cellrenderer_finetune_edited(
 void ChannelConfigWidget::on_row_activated (const Gtk::TreeModel::Path& path,
 					    Gtk::TreeViewColumn* column)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Gtk::TreeModel::iterator iter = m_refTreeModel->get_iter(path);
     if (iter)
@@ -392,7 +392,7 @@ bool ChannelConfigWidget::on_button_press_event(GdkEventButton* event)
 	    {
 		int row_num = *path.get_indices().begin();
 		// Gtk::TreeModel::Row row = *( m_refTreeModel->children[row_num - 1]);
-		DEBUG( << "row_num = " << row_num );
+		TRACE_DEBUG( << "row_num = " << row_num );
 	    }
 
             Gtk::Menu* popup = getPopupMenuWidget();
@@ -409,13 +409,13 @@ bool ChannelConfigWidget::on_button_press_event(GdkEventButton* event)
     {
 	if (event->button == 1)
         {
-	    DEBUG( << "Double Click" );
+	    TRACE_DEBUG( << "Double Click" );
 	    Glib::RefPtr<Gtk::TreeView::Selection> selection = m_TreeView.get_selection();
 	    Gtk::TreeModel::iterator iter = selection->get_selected();
 	    if (iter)
 	    {
 		Gtk::TreeModel::Row row = *iter;
-		DEBUG( << "Selected: " << row[m_Columns.m_col_name] );
+		TRACE_DEBUG( << "Selected: " << row[m_Columns.m_col_name] );
 	    }
 	}
     }
@@ -446,7 +446,7 @@ void ChannelConfigWidget::on_rows_reordered(const Gtk::TreeModel::Path& path, co
 
 void ChannelConfigWidget::on_tune_channel()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Glib::RefPtr<Gtk::TreeView::Selection> selection = m_TreeView.get_selection();
     Gtk::TreeModel::iterator iter = selection->get_selected();
@@ -459,7 +459,7 @@ void ChannelConfigWidget::on_tune_channel()
 
 void ChannelConfigWidget::on_add_entry_before()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Glib::RefPtr<Gtk::TreeView::Selection> selection = m_TreeView.get_selection();
     Gtk::TreeModel::iterator iter = selection->get_selected();
@@ -475,7 +475,7 @@ void ChannelConfigWidget::on_add_entry_before()
 
 void ChannelConfigWidget::on_add_entry_after()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Glib::RefPtr<Gtk::TreeView::Selection> selection = m_TreeView.get_selection();
     Gtk::TreeModel::iterator iter = selection->get_selected();
@@ -491,7 +491,7 @@ void ChannelConfigWidget::on_add_entry_after()
 
 void ChannelConfigWidget::on_remove_entry()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Glib::RefPtr<Gtk::TreeView::Selection> selection = m_TreeView.get_selection();
     Gtk::TreeModel::iterator iter = selection->get_selected();
@@ -503,7 +503,7 @@ void ChannelConfigWidget::on_remove_entry()
 
 void ChannelConfigWidget::on_scan_channels()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     // Open dialog to select standard:
     ComboBoxDialog<Glib::ustring> dialog(m_refTreeModelComboStandard,
@@ -541,7 +541,7 @@ void ChannelConfigWidget::saveConfigurationData()
 	return;
     }
 
-    DEBUG(<< __PRETTY_FUNCTION__);
+    TRACE_DEBUG(<< __PRETTY_FUNCTION__);
 
     ConfigurationData& configurationData = *m_ConfigurationData;
     StationList& stationList = configurationData.stationList;
@@ -600,7 +600,7 @@ void ChannelConfigWidget::updateFrequency(Gtk::TreeRow& row)
     ChannelFrequencyTable cft = ChannelFrequencyTable::create(standard.c_str());
     int ch = ChannelFrequencyTable::getChannelNumber(cft, channel.c_str());
     int freq = ChannelFrequencyTable::getChannelFreq(cft, ch);
-    DEBUG(<< standard << ":" << channel << " = " << freq);
+    TRACE_DEBUG(<< standard << ":" << channel << " = " << freq);
     if (row[m_Columns.m_col_frequency] != freq)
     {
 	TemporaryDisable d(m_isEnabled_signalConfigurationDataChanged);

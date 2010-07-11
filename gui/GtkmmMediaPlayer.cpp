@@ -111,7 +111,7 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationClipping> event)
 
 void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationDeinterlacerList> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     notificationDeinterlacerList(*event);
 }
 
@@ -123,7 +123,7 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
 
 void GtkmmMediaPlayer::on_realize()
 {
-    INFO();
+    TRACE_DEBUG();
 
     //Call base class:
     Gtk::DrawingArea::on_realize();
@@ -145,7 +145,7 @@ void GtkmmMediaPlayer::on_realize()
 
 bool GtkmmMediaPlayer::on_configure_event(GdkEventConfigure* event)
 {
-    INFO();
+    TRACE_DEBUG();
 
     if (videoOutput)
     {
@@ -158,7 +158,7 @@ bool GtkmmMediaPlayer::on_configure_event(GdkEventConfigure* event)
 
 bool GtkmmMediaPlayer::on_expose_event(GdkEventExpose* event)
 {
-    INFO();
+    TRACE_DEBUG();
 
     if (videoOutput &&
 	event->count == 0)  // The last Expose event.

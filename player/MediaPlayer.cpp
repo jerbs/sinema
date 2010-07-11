@@ -11,7 +11,6 @@
 #include "player/VideoOutput.hpp"
 #include "player/AudioOutput.hpp"
 #include "player/Deinterlacer.hpp"
-
 #include "player/PlayList.hpp"
 
 #include <boost/make_shared.hpp>
@@ -30,7 +29,7 @@ void logfunc(void* p, int i, const char* format, va_list ap)
     int needed = vsnprintf (&buffer[pos], size-pos, format, ap);
     if (needed < 0)
     {
-	ERROR(<< "vsnprintf failed: " << needed);
+	TRACE_ERROR(<< "vsnprintf failed: " << needed);
     }
     else if (needed > size-pos)
     {
@@ -246,7 +245,7 @@ void MediaPlayer::seekAbsolute(double second)
 
 void MediaPlayer::seekRelative(double secondsDelta)
 {
-    DEBUG(<< secondsDelta);
+    TRACE_DEBUG(<< secondsDelta);
     // Send SeekRelativeReq indirectly to Demuxer via VideoOutput 
     // which has to fill the current PTS:
     videoOutput->queue_event(boost::make_shared<SeekRelativeReq>
@@ -300,44 +299,44 @@ void MediaPlayer::selectDeinterlacer(const std::string& name)
 
 void MediaPlayer::process(boost::shared_ptr<OpenFileResp> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 }
 
 void MediaPlayer::process(boost::shared_ptr<OpenFileFail> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     skipForward();
 }
 
 void MediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 }
 
 void MediaPlayer::process(boost::shared_ptr<NoAudioStream> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     hasAudioStream = false;
     videoOutput->queue_event(event);
 }
 
 void MediaPlayer::process(boost::shared_ptr<NoVideoStream> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     hasVideoStream = false;
     audioOutput->queue_event(event);
 }
 
 void MediaPlayer::process(boost::shared_ptr<EndOfSystemStream> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     endOfAudioStream = false;
     endOfVideoStream = false;
 }
 
 void MediaPlayer::process(boost::shared_ptr<EndOfAudioStream> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     endOfAudioStream = true;
     if (endOfVideoStream || ! hasVideoStream)
     {
@@ -353,7 +352,7 @@ void MediaPlayer::process(boost::shared_ptr<EndOfAudioStream> event)
 
 void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     endOfVideoStream = true;
     if (endOfAudioStream || ! hasAudioStream)
     {
@@ -369,7 +368,7 @@ void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream> event)
 
 void MediaPlayer::process(boost::shared_ptr<AudioSyncInfo> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     // This messeage is only received for files having an audio stream only.
     process(boost::make_shared<NotificationCurrentTime>(event->pts));
 }

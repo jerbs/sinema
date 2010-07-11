@@ -309,7 +309,7 @@ bool PlayListTreeModel::row_draggable_vfunc(const TreeModel::Path&  path) const
 {
     // Returns whether a particular row can be used as the source of a DND operation. 
 
-    DEBUG();
+    TRACE_DEBUG();
 
     // All rows are draggable:
     return true;
@@ -322,7 +322,7 @@ bool PlayListTreeModel::drag_data_get_vfunc(const TreeModel::Path& path, Gtk::Se
     // Should robustly handle a path no longer found in the model!
     // Returns true if the required data was provided.
 
-    DEBUG();
+    TRACE_DEBUG();
 
     if(path.size() == 1)
     {
@@ -352,7 +352,7 @@ bool PlayListTreeModel::drag_data_delete_vfunc(const TreeModel::Path& path)
     // Should robustly handle a path no longer found in the model!
     // Returns true if the row was successfully deleted.
 
-    DEBUG();
+    TRACE_DEBUG();
 
     if(path.size() == 1)
     {
@@ -376,7 +376,7 @@ bool PlayListTreeModel::drag_data_received_vfunc(const TreeModel::Path&  dest, c
     // Also, false may be returned if the new row is not created for some model-specific reason.
     // Should robustly handle a dest no longer found in the model! 
 
-    DEBUG();
+    TRACE_DEBUG();
 
     if (selection_data.get_data_type().find("<file>") != std::string::npos &&
 	selection_data.get_target() == "GTK_TREE_MODEL_ROW")
@@ -384,7 +384,7 @@ bool PlayListTreeModel::drag_data_received_vfunc(const TreeModel::Path&  dest, c
 	if(dest.size() == 1)
 	{
 	    int row_index = dest[0];
-	    DEBUG(<< "row_index = " << row_index << ", " << selection_data.get_data_as_string());
+	    TRACE_DEBUG(<< "row_index = " << row_index << ", " << selection_data.get_data_as_string());
 	    if (row_index <= m_PlayList.size())
 	    {
 		PlayList::iterator it = m_PlayList.insert(row_index, selection_data.get_data_as_string());
@@ -406,9 +406,9 @@ bool PlayListTreeModel::row_drop_possible_vfunc(const TreeModel::Path& dest, con
     // i.e., can we drop the data in selection_data at that location. dest_path does not have to exist;
     // the return value will almost certainly be false if the parent of dest_path doesn't exist, though.
 
-    DEBUG(<< "Type  : " << selection_data.get_data_type());
-    DEBUG(<< "String: " << selection_data.get_data_as_string());
-    DEBUG(<< "Target: " << selection_data.get_target());
+    TRACE_DEBUG(<< "Type  : " << selection_data.get_data_type());
+    TRACE_DEBUG(<< "String: " << selection_data.get_data_as_string());
+    TRACE_DEBUG(<< "Target: " << selection_data.get_target());
 
     if (selection_data.get_data_type().find("<file>") != std::string::npos &&
 	selection_data.get_target() == "GTK_TREE_MODEL_ROW")
@@ -416,7 +416,7 @@ bool PlayListTreeModel::row_drop_possible_vfunc(const TreeModel::Path& dest, con
 	if(dest.size() == 1)
 	{
 	    int row_index = dest[0];
-	    DEBUG(<< "row_index = " << row_index);
+	    TRACE_DEBUG(<< "row_index = " << row_index);
 
 	    if (row_index < m_PlayList.size())
 	    {
@@ -433,7 +433,7 @@ bool PlayListTreeModel::row_drop_possible_vfunc(const TreeModel::Path& dest, con
 
 void PlayListTreeModel::on_entry_changed(const GtkmmPlayList::path& p, const PlayList::iterator&)
 {
-    DEBUG();
+    TRACE_DEBUG();
     if (p.size())
     {
 	unsigned int n = p[0];

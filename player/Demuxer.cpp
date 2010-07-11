@@ -45,7 +45,7 @@ int Demuxer::interrupt_cb()
 
 void Demuxer::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG(<< "tid = " << gettid());
+    TRACE_DEBUG(<< "tid = " << gettid());
     mediaPlayer = event->mediaPlayer;
     audioDecoder = event->audioDecoder;
     videoDecoder = event->videoDecoder;
@@ -53,14 +53,14 @@ void Demuxer::process(boost::shared_ptr<InitEvent> event)
 
 void Demuxer::process(boost::shared_ptr<StopEvent> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 }
 
 void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 {
     if (systemStreamStatus == SystemStreamClosed)
     {
-	DEBUG(<< event->fileName);
+	TRACE_DEBUG(<< event->fileName);
 
 	fileName = event->fileName;
 
@@ -74,7 +74,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 				 0);  // default AVFormatParameters*
 	if (ret != 0)
 	{
-	    ERROR(<< "av_open_input_file failed: " << ret);
+	    TRACE_ERROR(<< "av_open_input_file failed: " << ret);
 	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
 	    return;
 	}
@@ -83,7 +83,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	ret = av_find_stream_info(avFormatContext);
 	if (ret < 0)
 	{
-	    ERROR(<< "av_find_stream_info failed: " << ret);
+	    TRACE_ERROR(<< "av_find_stream_info failed: " << ret);
 	    av_close_input_file(avFormatContext);
 	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
 	    return;
@@ -126,7 +126,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
     }
     else if (systemStreamStatus == SystemStreamOpened)
     {
-	DEBUG(<< "opened");
+	TRACE_DEBUG(<< "opened");
 	mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
     }
     else if (systemStreamStatus == SystemStreamClosing ||
@@ -135,7 +135,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	// Wait until current procedure is finished.
 	// Directly putting the event back into the queue
 	// would result in a busy loop.
-	DEBUG(<< "defer");
+	TRACE_DEBUG(<< "defer");
 	defer_event(event);
     }
 }
@@ -144,7 +144,7 @@ void Demuxer::process(boost::shared_ptr<OpenAudioStreamResp> event)
 {
     if (audioStreamStatus == StreamOpening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	audioStreamStatus = StreamOpened;
 	updateSystemStreamStatusOpening();
     }
@@ -154,7 +154,7 @@ void Demuxer::process(boost::shared_ptr<OpenAudioStreamFail> event)
 {
     if (audioStreamStatus == StreamOpening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	mediaPlayer->queue_event(boost::make_shared<OpenAudioStreamFailed>());
 	audioStreamStatus = StreamClosed;
 	audioStreamIndex = -1;
@@ -166,7 +166,7 @@ void Demuxer::process(boost::shared_ptr<OpenVideoStreamResp> event)
 {
     if (videoStreamStatus == StreamOpening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	videoStreamStatus = StreamOpened;
 	updateSystemStreamStatusOpening();
     }
@@ -176,7 +176,7 @@ void Demuxer::process(boost::shared_ptr<OpenVideoStreamFail> event)
 {
     if (videoStreamStatus == StreamOpening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	mediaPlayer->queue_event(boost::make_shared<OpenVideoStreamFailed>());
 	videoStreamStatus = StreamClosed;
 	videoStreamIndex = -1;
@@ -236,7 +236,7 @@ void Demuxer::process(boost::shared_ptr<CloseFileReq> event)
 {
     if (systemStreamStatus == SystemStreamOpened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	systemStreamStatus = SystemStreamClosing;
 	systemStreamFailed = false;
@@ -259,7 +259,7 @@ void Demuxer::process(boost::shared_ptr<CloseFileReq> event)
     }
     else if (systemStreamStatus == SystemStreamClosed)
     {
-	DEBUG(<< "closed");
+	TRACE_DEBUG(<< "closed");
 
 	// Is allready closed. Just send a response.
 	mediaPlayer->queue_event(boost::make_shared<CloseFileResp>());
@@ -270,7 +270,7 @@ void Demuxer::process(boost::shared_ptr<CloseFileReq> event)
 	// Wait until current procedure is finished.
 	// Directly putting the event back into the queue
 	// would result in a busy loop.
-	DEBUG(<< "defer");
+	TRACE_DEBUG(<< "defer");
 	defer_event(event);
     }
 }
@@ -279,7 +279,7 @@ void Demuxer::process(boost::shared_ptr<CloseAudioStreamResp> event)
 {
     if (audioStreamStatus == StreamClosing)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	audioStreamStatus = StreamClosed;
 	updateSystemStreamStatusClosing();
@@ -290,7 +290,7 @@ void Demuxer::process(boost::shared_ptr<CloseVideoStreamResp> event)
 {
     if (videoStreamStatus == StreamClosing)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	videoStreamStatus = StreamClosed;
 	updateSystemStreamStatusClosing();
@@ -301,7 +301,7 @@ void Demuxer::updateSystemStreamStatusClosing()
 {
     if (systemStreamStatus == SystemStreamClosing)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	if (audioStreamStatus == StreamClosed &&
 	    videoStreamStatus == StreamClosed)
 	{
@@ -322,7 +322,7 @@ void Demuxer::process(boost::shared_ptr<SeekRelativeReq> event)
     if ( systemStreamStatus==SystemStreamOpened ||
 	 systemStreamStatus==SystemStreamOpening )
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	// Timestamps in streams are measured in frames.
 	// frames = seconds * time_base (fps).
@@ -336,12 +336,12 @@ void Demuxer::process(boost::shared_ptr<SeekRelativeReq> event)
 
 void Demuxer::process(boost::shared_ptr<SeekAbsoluteReq> event)
 {
-    DEBUG(<< "systemStreamStatus=" << systemStreamStatus);
+    TRACE_DEBUG(<< "systemStreamStatus=" << systemStreamStatus);
 
     if ( systemStreamStatus==SystemStreamOpened ||
 	 systemStreamStatus==SystemStreamOpening )
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	int streamIndex = videoStreamIndex;
 	if (streamIndex == -1) streamIndex = audioStreamIndex;
@@ -366,14 +366,14 @@ void Demuxer::process(boost::shared_ptr<SeekAbsoluteReq> event)
 	}
 	else
 	{
-	    ERROR(<< "av_seek_frame failed: ret=" << ret);
+	    TRACE_ERROR(<< "av_seek_frame failed: ret=" << ret);
 	}
     }
 }
 
 void Demuxer::process(boost::shared_ptr<FlushReq> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     videoDecoder->queue_event(event);
     audioDecoder->queue_event(event);
 }
@@ -382,7 +382,7 @@ void Demuxer::process(boost::shared_ptr<ConfirmAudioPacketEvent> event)
 {
     if (audioStreamStatus == StreamOpened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	queuedAudioPackets--;
     }
 }
@@ -391,7 +391,7 @@ void Demuxer::process(boost::shared_ptr<ConfirmVideoPacketEvent> event)
 {
     if (videoStreamStatus == StreamOpened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	queuedVideoPackets--;
     }
 }
@@ -407,7 +407,7 @@ void Demuxer::operator()()
 
     while(!m_event_processor->terminating())
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	if ( systemStreamStatus == SystemStreamOpened &&
 	     !systemStreamFailed &&
@@ -419,16 +419,16 @@ void Demuxer::operator()()
 	    int ret = av_read_frame(avFormatContext, avPacket);
 	    if (ret == 0)
 	    {
-		DEBUG(<< "av_read_frame: stream_index = " << avPacket->stream_index);
+		TRACE_DEBUG(<< "av_read_frame: stream_index = " << avPacket->stream_index);
 		if (avPacket->stream_index == videoStreamIndex)
 		{
-		    DEBUG(<< "sending VideoPacketEvent");
+		    TRACE_DEBUG(<< "sending VideoPacketEvent");
 		    queuedVideoPackets++;
 		    videoDecoder->queue_event(boost::make_shared<VideoPacketEvent>(avPacket));
 		}
 		else if (avPacket->stream_index == audioStreamIndex)
 		{
-		    DEBUG(<< "sending AudioPacketEvent");
+		    TRACE_DEBUG(<< "sending AudioPacketEvent");
 		    queuedAudioPackets++;
 		    audioDecoder->queue_event(boost::make_shared<AudioPacketEvent>(avPacket));
 		}
@@ -439,7 +439,7 @@ void Demuxer::operator()()
 	    }
 	    else
 	    {
-		ERROR(<< "av_read_frame failed: " << ret);
+		TRACE_ERROR(<< "av_read_frame failed: " << ret);
 
 		systemStreamFailed = true;
 

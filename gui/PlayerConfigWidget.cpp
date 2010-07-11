@@ -6,8 +6,8 @@
 
 #include "gui/PlayerConfigWidget.hpp"
 
-// #undef DEBUG 
-// #define DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
+// #undef TRACE_DEBUG 
+// #define TRACE_DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
 
 PlayerConfigWidget::PlayerConfigWidget()
     : m_FrameDeinterlacer("Deinterlacer"),
@@ -48,7 +48,7 @@ PlayerConfigWidget::~PlayerConfigWidget()
 
 void PlayerConfigWidget::on_configuration_data_loaded(boost::shared_ptr<ConfigurationData> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     m_ConfigurationData = event;
 
@@ -66,7 +66,7 @@ void PlayerConfigWidget::on_configuration_data_loaded(boost::shared_ptr<Configur
 
 void PlayerConfigWidget::on_deinterlacer_list(const NotificationDeinterlacerList& event)
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     m_refTreeModelComboDeinterlacer->clear();    
 
@@ -75,7 +75,7 @@ void PlayerConfigWidget::on_deinterlacer_list(const NotificationDeinterlacerList
 
     for(list_t::const_iterator it = list.begin(); it != list.end(); it++)
     {
-	DEBUG(<< *it);
+	TRACE_DEBUG(<< *it);
 	Gtk::TreeModel::Row row = *(m_refTreeModelComboDeinterlacer->append());
 	row[m_ColumnsCombo.m_col_name] = Glib::ustring(*it);
     }
@@ -92,7 +92,7 @@ void PlayerConfigWidget::on_deinterlacer_list(const NotificationDeinterlacerList
 
 void PlayerConfigWidget::on_deinterlacer_changed()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     Gtk::TreeModel::iterator iter = m_ComboBoxDeinterlacer.get_active();
     if (iter)
@@ -115,7 +115,7 @@ void PlayerConfigWidget::on_deinterlacer_changed()
 
 void PlayerConfigWidget::on_useOptimalPixelFormat_toggled()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     bool active = m_UseOptimalPixelFormat.get_active();
 
@@ -140,7 +140,7 @@ void PlayerConfigWidget::on_useOptimalPixelFormat_toggled()
 
 void PlayerConfigWidget::on_useXvClipping_toggled()
 {
-    DEBUG();
+    TRACE_DEBUG();
 
     bool active = m_UseXvClipping.get_active();
 
@@ -174,7 +174,7 @@ void PlayerConfigWidget::selectConfiguredDeinterlacer()
 
 	if (row[m_ColumnsCombo.m_col_name] == m_ConfigurationData->configPlayer.deinterlacer)
 	{
-	    DEBUG( << "-->" <<row[m_ColumnsCombo.m_col_name]);
+	    TRACE_DEBUG( << row[m_ColumnsCombo.m_col_name]);
 	    m_ComboBoxDeinterlacer.set_active(it);
 	    return;
 	}

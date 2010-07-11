@@ -70,14 +70,14 @@ struct InitEvent
 
 struct StartEvent
 {
-    StartEvent(){DEBUG();}
-    ~StartEvent(){DEBUG();}
+    StartEvent(){TRACE_DEBUG();}
+    ~StartEvent(){TRACE_DEBUG();}
 };
 
 struct StopEvent
 {
-    StopEvent(){DEBUG();}
-    ~StopEvent(){DEBUG();}
+    StopEvent(){TRACE_DEBUG();}
+    ~StopEvent(){TRACE_DEBUG();}
 };
 
 // ===================================================================
@@ -185,11 +185,9 @@ struct AudioPacketEvent
 	: avPacket(*avp)
     {
 	av_dup_packet(&avPacket);
-	DEBUG();
     }
     ~AudioPacketEvent()
     {
-	DEBUG();
 	av_free_packet(&avPacket);
     }
     AVPacket avPacket;
@@ -201,11 +199,9 @@ struct VideoPacketEvent
 	: avPacket(*avp)
     {
 	av_dup_packet(&avPacket);
-	DEBUG();
     }
     ~VideoPacketEvent()
     {
-	DEBUG();
 	av_free_packet(&avPacket);
     }
     AVPacket avPacket;

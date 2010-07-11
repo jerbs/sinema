@@ -52,7 +52,7 @@ VideoDecoder::~VideoDecoder()
 
 void VideoDecoder::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG(<< "tid = " << gettid());
+    TRACE_DEBUG(<< "tid = " << gettid());
     mediaPlayer = event->mediaPlayer;
     demuxer = event->demuxer;
     videoOutput = event->videoOutput;
@@ -65,7 +65,7 @@ static int getFormatId(enum PixelFormat pfm)
     {
     case PIX_FMT_YUV420P: return GUID_YUV12_PLANAR;
     case PIX_FMT_YUYV422: return GUID_YUY2_PACKED;
-    default: THROW(std::string, << "Unsupported FFmpeg pixel format: " << pfm);
+    default: TRACE_THROW(std::string, << "Unsupported FFmpeg pixel format: " << pfm);
     }
     return 0;
 }
@@ -76,7 +76,7 @@ static enum PixelFormat getFFmpegFormat(int fid)
     {
     case GUID_YUV12_PLANAR: return PIX_FMT_YUV420P;
     case GUID_YUY2_PACKED: return PIX_FMT_YUYV422;
-    default: THROW(std::string, << "Unsupported format id: " << fid);
+    default: TRACE_THROW(std::string, << "Unsupported format id: " << fid);
     }
     return PIX_FMT_NONE;
 }
@@ -85,7 +85,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 {
     if (state == Closed)
     {
-	DEBUG(<< "streamIndex = " << event->streamIndex);
+	TRACE_DEBUG(<< "streamIndex = " << event->streamIndex);
 
 	videoStreamIndex = event->streamIndex;
 	avFormatContext = event->avFormatContext;
@@ -110,8 +110,8 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 			AVRational& par = avCodecContext->sample_aspect_ratio;
 			int pn = par.num;
 			int pd = par.den;
-			DEBUG( << "size = " << w << ":" << h);
-			DEBUG( << "par  = " << pn << ":" << pd);
+			TRACE_DEBUG( << "size = " << w << ":" << h);
+			TRACE_DEBUG( << "par  = " << pn << ":" << pd);
 			if (pn == 0 || pd == 0) {pn = pd = 1;}
 			if (m_useOptimumImageFormat)
 			{
@@ -127,22 +127,22 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 		    }
 		    else
 		    {
-			ERROR(<< "avcodec_open failed: ret = " << ret);
+			TRACE_ERROR(<< "avcodec_open failed: ret = " << ret);
 		    }
 		}
 		else
 		{
-		    ERROR(<< "avcodec_find_decoder failed");
+		    TRACE_ERROR(<< "avcodec_find_decoder failed");
 		}
 	    }
 	    else
 	    {
-		ERROR(<< "expected video stream");
+		TRACE_ERROR(<< "expected video stream");
 	    }
 	}
 	else
 	{
-	    ERROR(<< "Invalid streamIndex = " << videoStreamIndex);
+	    TRACE_ERROR(<< "Invalid streamIndex = " << videoStreamIndex);
 	}
 
 	avFormatContext = 0;
@@ -160,7 +160,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputResp> event)
 {
     if (state == Opening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	demuxer->queue_event(boost::make_shared<OpenVideoStreamResp>(videoStreamIndex));
 	state = Opened;
@@ -171,7 +171,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputFail> event)
 {
     if (state == Opening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	avcodec_close(avCodecContext);
 
@@ -191,7 +191,7 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq> event)
 {
     if (state != Closed)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	if (state == Opened)
 	{
@@ -226,7 +226,7 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp> event)
 {
     if (state == Closing)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	avFormatContext = 0;
 	avCodecContext = 0;
@@ -256,7 +256,7 @@ void VideoDecoder::process(boost::shared_ptr<VideoPacketEvent> event)
 {
     if (state == Opened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	eos = false;
 	packetQueue.push(event);
@@ -268,7 +268,7 @@ void VideoDecoder::process(boost::shared_ptr<XFVideoImage> event)
 {
     if (state == Opened || state == Opening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	unsigned int width = event->width();
 	unsigned int height = event->height();
@@ -278,12 +278,12 @@ void VideoDecoder::process(boost::shared_ptr<XFVideoImage> event)
 	    avCodecContext->height != int(height) ||
 	    m_imageFormat != imageFormat)
 	{
-	    DEBUG(<< "Frame buffer with wrong size/format."
-		  << " needed:"
-		  << avCodecContext->width << "*" << avCodecContext->height
-		  << std::hex << ", 0x" << m_imageFormat
-		  << std::dec << " got: " << width << "*" << height
-		  << std::hex << ", 0x" << imageFormat );
+	    TRACE_DEBUG(<< "Frame buffer with wrong size/format."
+			<< " needed:"
+			<< avCodecContext->width << "*" << avCodecContext->height
+			<< std::hex << ", 0x" << m_imageFormat
+			<< std::dec << " got: " << width << "*" << height
+			<< std::hex << ", 0x" << imageFormat );
 
 	    videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(event));
 
@@ -303,7 +303,7 @@ void VideoDecoder::process(boost::shared_ptr<FlushReq> event)
 {
     if (state == Opened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	// Flush buffers in ffmpeg decoder:
 	avcodec_flush_buffers(avCodecContext);
@@ -329,7 +329,7 @@ void VideoDecoder::process(boost::shared_ptr<EndOfVideoStream> event)
 {
     if (state == Opened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	eos = true;
 
 	if (packetQueue.empty())
@@ -345,7 +345,7 @@ void VideoDecoder::process(boost::shared_ptr<EndOfVideoStream> event)
 
 void VideoDecoder::process(boost::shared_ptr<EnableOptimalPixelFormat> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     if (!m_useOptimumImageFormat)
     {
 	m_useOptimumImageFormat = true;
@@ -360,7 +360,7 @@ void VideoDecoder::process(boost::shared_ptr<EnableOptimalPixelFormat> event)
 
 void VideoDecoder::process(boost::shared_ptr<DisableOptimalPixelFormat> event)
 {
-    DEBUG();
+    TRACE_DEBUG();
     if (m_useOptimumImageFormat)
     {
 	m_useOptimumImageFormat = false;
@@ -383,7 +383,7 @@ void VideoDecoder::decode()
 {
     if (!avFrameIsFree)
     {
-	DEBUG(<< "frame not yet queued");
+	TRACE_DEBUG(<< "frame not yet queued");
 	// Wait until current frame is transmitted to VideoOutput.
 	return;
     }
@@ -393,7 +393,7 @@ void VideoDecoder::decode()
 	boost::shared_ptr<VideoPacketEvent> videoPacketEvent(packetQueue.front());
 	packetQueue.pop();
 
-	DEBUG(<< "Queueing ConfirmVideoPacketEvent");
+	TRACE_DEBUG(<< "Queueing ConfirmVideoPacketEvent");
 	demuxer->queue_event(boost::make_shared<ConfirmVideoPacketEvent>());
 
 	AVPacket& avPacket = videoPacketEvent->avPacket;
@@ -423,11 +423,11 @@ void VideoDecoder::decode()
 
 	    static int64_t lastDts = 0;
 
-	    INFO( << "VDEC: pts=" << std::fixed << std::setprecision(2) << pts 
-		  << ", pts=" << avFrame->pts
-		  << ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
-		  << ", time_base=" << avStream->time_base
-		  << ", frameFinished=" << frameFinished );
+	    TRACE_INFO( << "VDEC: pts=" << std::fixed << std::setprecision(2) << pts 
+			<< ", pts=" << avFrame->pts
+			<< ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
+			<< ", time_base=" << avStream->time_base
+			<< ", frameFinished=" << frameFinished );
 
 	    lastDts = avPacket.dts;
 	    
@@ -444,7 +444,7 @@ void VideoDecoder::decode()
 	}
 	else
 	{
-	    ERROR(<< "avcodec_decode_video failed");
+	    TRACE_ERROR(<< "avcodec_decode_video failed");
 	}
     }
 
@@ -453,7 +453,7 @@ void VideoDecoder::decode()
 	// Decoded everything in this stream.
 
 	// Forward event via Deinterlacer to VideoOutput:
-	DEBUG(<< "forwarding EndOfVideoStream");
+	TRACE_DEBUG(<< "forwarding EndOfVideoStream");
 	deinterlacer->queue_event(boost::make_shared<EndOfVideoStream>());
 	eos = false;
     }
@@ -465,13 +465,13 @@ void VideoDecoder::queue()
     if (avFrameIsFree)
     {
 	// Nothing to queue
-	DEBUG(<< "nothing to queue");
+	TRACE_DEBUG(<< "nothing to queue");
 	return;
     }
 
     if (frameQueue.empty())
     {
-	DEBUG(<< "frameQueue.empty() returned true");
+	TRACE_DEBUG(<< "frameQueue.empty() returned true");
 	return;
     }
 
@@ -495,15 +495,15 @@ void VideoDecoder::queue()
     boost::shared_ptr<XFVideoImage> xfVideoImage(frameQueue.front());
     frameQueue.pop();
 
-    DEBUG( << "interlaced_frame = " << avFrame->interlaced_frame
-	   << ", top_field_first = " << avFrame->top_field_first);
+    TRACE_DEBUG( << "interlaced_frame = " << avFrame->interlaced_frame
+		 << ", top_field_first = " << avFrame->top_field_first);
 
     XvImage* yuvImage = xfVideoImage->xvImage();
     char* data = yuvImage->data;
 
     AVPicture avPicture;
 
-    DEBUG(<< "yuvImage->id = " << std::hex << yuvImage->id);
+    TRACE_DEBUG(<< "yuvImage->id = " << std::hex << yuvImage->id);
 
     if (yuvImage->id == GUID_YUV12_PLANAR)
     {
@@ -539,7 +539,7 @@ void VideoDecoder::queue()
     }
     else
     {
-	THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
+	TRACE_THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
 	return;
     }
 
@@ -584,7 +584,7 @@ void VideoDecoder::queue()
     }
 
     avFrameIsFree = true;
-    DEBUG(<< "Queueing XFVideoImage");
+    TRACE_DEBUG(<< "Queueing XFVideoImage");
 }
 
 void VideoDecoder::setImageFormat(int imageFormat)
@@ -632,7 +632,7 @@ void VideoDecoder::getSwsContext()
 				NULL, NULL, NULL);        // SwsFilter*
     if (!swsContext)
     {
-	THROW(std::string, << "sws_getContext failed");
+	TRACE_THROW(std::string, << "sws_getContext failed");
     }
 }
 

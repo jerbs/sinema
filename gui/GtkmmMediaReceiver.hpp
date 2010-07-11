@@ -7,12 +7,12 @@
 #ifndef GTKMM_MEDIA_RECEIVER_HPP
 #define GTKMM_MEDIA_RECEIVER_HPP
 
+#include "receiver/MediaReceiver.hpp"
+
 #include <gtkmm/drawingarea.h>
 #include <glibmm/dispatcher.h>
 #include <gdkmm/cursor.h>
 #include <sigc++/signal.h>
-
-#include "receiver/MediaReceiver.hpp"
 
 struct ChannelData;
 

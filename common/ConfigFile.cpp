@@ -22,8 +22,8 @@
 #include <sys/types.h>
 
 #ifdef CONFIG_FILE_TEST
-#undef DEBUG
-#define DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
+#undef TRACE_DEBUG
+#define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 #endif
 
 namespace spirit = boost::spirit;
@@ -114,13 +114,13 @@ std::ostream& operator<<(std::ostream& strm, const ConfigurationData& cnf)
 }
 
 // Semantic actions (for debugging):
-void actionStationName(std::string const& s) {DEBUG( << s);}
-void actionStationStandard(std::string const& s) {DEBUG( << s);}
-void actionStationChannel(std::string const& s) {DEBUG( << s);}
-void actionStationFine(int const& i) {DEBUG( << i);}
-void actionStation(StationData const& stationData){DEBUG(<< std::endl << stationData);}
-void actionGui(bool b) {DEBUG(<< b);}
-void actionPlayer(bool b) {DEBUG(<< b);}
+void actionStationName(std::string const& s) {TRACE_DEBUG( << s);}
+void actionStationStandard(std::string const& s) {TRACE_DEBUG( << s);}
+void actionStationChannel(std::string const& s) {TRACE_DEBUG( << s);}
+void actionStationFine(int const& i) {TRACE_DEBUG( << i);}
+void actionStation(StationData const& stationData){TRACE_DEBUG(<< std::endl << stationData);}
+void actionGui(bool b) {TRACE_DEBUG(<< b);}
+void actionPlayer(bool b) {TRACE_DEBUG(<< b);}
 
 // Configuration File Parser:
 
@@ -253,7 +253,7 @@ void ConfigFile::parse()
     std::ifstream in(fileName.c_str());
     if (!in.is_open())
     {
-	ERROR( << "Opening config file \'" << fileName << "\' failed.");
+	TRACE_ERROR( << "Opening config file \'" << fileName << "\' failed.");
 	return;
     }
 
@@ -268,17 +268,17 @@ void ConfigFile::parse()
 
     if (! qi::phrase_parse(begin, end, config_parser<base_iterator_type>(), ascii::space, confData))
     {
-	ERROR( << "parse failed");
+	TRACE_ERROR( << "parse failed");
 	return;
     }
 
     if (begin != end)
     {
-	ERROR( << "parse incomplete");
+	TRACE_ERROR( << "parse incomplete");
 	return;
     }
 
-    DEBUG(<< confData);
+    TRACE_DEBUG(<< confData);
 
     // Notify application about the read configuration:
     mediaCommon->queue_event(configurationData);
@@ -297,19 +297,19 @@ void ConfigFile::generate(ConfigurationData& configurationData)
 #endif
     if (!out.is_open())
     {
-	ERROR( << "Opening config file \'" << fileName << "\' failed.");
+	TRACE_ERROR( << "Opening config file \'" << fileName << "\' failed.");
 	return;
     }
 
     // Generate:
 
-    DEBUG(<< configurationData.configPlayer.deinterlacer);
+    TRACE_DEBUG(<< configurationData.configPlayer.deinterlacer);
 
     typedef std::ostream_iterator<char> sink_type;
     sink_type sink(out);
     if (! karma::generate(sink, config_generator<sink_type>(), configurationData))
     {
-	ERROR( << "generate failed");
+	TRACE_ERROR( << "generate failed");
 	return;
     }
 
@@ -343,7 +343,7 @@ bool ConfigFile::find()
 
 void ConfigFile::process(boost::shared_ptr<CommonInitEvent> event)
 {
-    DEBUG(<< "tid = " << gettid());
+    TRACE_DEBUG(<< "tid = " << gettid());
     mediaCommon = event->mediaCommon;
     parse();
 }

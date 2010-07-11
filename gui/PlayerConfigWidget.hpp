@@ -7,6 +7,9 @@
 #ifndef PLAYER_CONFIG_WIDGET_HPP
 #define PLAYER_CONFIG_WIDGET_HPP
 
+#include "common/GeneralEvents.hpp"
+#include "player/GeneralEvents.hpp"
+
 #include <gtkmm/box.h>
 #include <gtkmm/checkbutton.h>
 #include <gtkmm/combobox.h>
@@ -14,9 +17,6 @@
 #include <gtkmm/liststore.h>
 
 #include <list>
-
-#include "common/GeneralEvents.hpp"
-#include "player/GeneralEvents.hpp"
 
 class PlayerConfigWidget : public Gtk::VBox
 {

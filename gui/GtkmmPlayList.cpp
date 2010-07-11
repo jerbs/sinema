@@ -63,7 +63,7 @@ PlayList::iterator GtkmmPlayList::insert(int n, std::string elem)
 
 void GtkmmPlayList::on_entry_changed(int n, iterator it)
 {
-    DEBUG(<< n);
+    TRACE_DEBUG(<< n);
     path p(1, n);
     signal_entry_changed(p, it);
 }

@@ -23,7 +23,7 @@
 
 int main(int argc, char *argv[])
 {
-    DEBUG(<< "pid = " << getpid());
+    TRACE_DEBUG(<< "pid = " << getpid());
 
     Gtk::Main kit(argc, argv);
 

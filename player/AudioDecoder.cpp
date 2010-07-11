@@ -15,7 +15,7 @@
 
 void AudioDecoder::process(boost::shared_ptr<InitEvent> event)
 {
-    DEBUG(<< "tid = " << gettid());
+    TRACE_DEBUG(<< "tid = " << gettid());
     demuxer = event->demuxer;
     audioOutput = event->audioOutput;
 }
@@ -24,7 +24,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 {
     if (state == Closed)
     {
-	DEBUG(<< "streamIndex = " << event->streamIndex);
+	TRACE_DEBUG(<< "streamIndex = " << event->streamIndex);
 
     audioStreamIndex = event->streamIndex;
     avFormatContext = event->avFormatContext;
@@ -57,22 +57,22 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 		}
 		else
 		{
-		    ERROR(<< "avcodec_open failed: ret = " << ret);
+		    TRACE_ERROR(<< "avcodec_open failed: ret = " << ret);
 		}
 	    }
 	    else
 	    {
-		ERROR(<< "avcodec_find_decoder failed");
+		TRACE_ERROR(<< "avcodec_find_decoder failed");
 	    }
 	}
 	else
 	{
-	    ERROR(<< "expected audio stream");
+	    TRACE_ERROR(<< "expected audio stream");
 	}
     }
     else
     {
-	ERROR(<< "Invalid streamIndex = " << audioStreamIndex);
+	TRACE_ERROR(<< "Invalid streamIndex = " << audioStreamIndex);
     }
 
     avFormatContext = 0;
@@ -91,7 +91,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputResp> event)
 {
     if (state == Opening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	demuxer->queue_event(boost::make_shared<OpenAudioStreamResp>(audioStreamIndex));
 	state = Opened;
@@ -102,7 +102,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputFail> event)
 {
     if (state == Opening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	avcodec_close(avCodecContext);
 
@@ -122,7 +122,7 @@ void AudioDecoder::process(boost::shared_ptr<CloseAudioStreamReq> event)
 {
     if (state != Closed)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	if (state == Opened)
 	{
@@ -153,7 +153,7 @@ void AudioDecoder::process(boost::shared_ptr<CloseAudioOutputResp> event)
 {
     if (state == Closing)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	avFormatContext = 0;
 	avCodecContext = 0;
@@ -171,7 +171,7 @@ void AudioDecoder::process(boost::shared_ptr<AudioPacketEvent> event)
 {
     if (state == Opened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	eos = false;
 	packetQueue.push(event);
@@ -183,7 +183,7 @@ void AudioDecoder::process(boost::shared_ptr<AFAudioFrame> event)
 {
     if (state == Opened || state == Opening)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	frameQueue.push(event);
 	decode();
@@ -194,7 +194,7 @@ void AudioDecoder::process(boost::shared_ptr<FlushReq> event)
 {
     if (state == Opened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 
 	// Flush buffers in ffmpeg decoder:
 	avcodec_flush_buffers(avCodecContext);
@@ -219,7 +219,7 @@ void AudioDecoder::process(boost::shared_ptr<EndOfAudioStream> event)
 {
     if (state == Opened)
     {
-	DEBUG();
+	TRACE_DEBUG();
 	eos = true;
 
 	if (packetQueue.empty())
@@ -235,8 +235,8 @@ extern std::ostream& operator<<(std::ostream& strm, AVRational r);
 
 void AudioDecoder::decode()
 {
-    DEBUG(<< "packetQueue: "  << (packetQueue.empty() ? "empty" : "has data")
-	  << ", frameQueue: " << (frameQueue.empty()  ? "empty" : "has data"));
+    TRACE_DEBUG(<< "packetQueue: "  << (packetQueue.empty() ? "empty" : "has data")
+		<< ", frameQueue: " << (frameQueue.empty()  ? "empty" : "has data"));
 
     while ( !packetQueue.empty() &&
 	    !frameQueue.empty() )
@@ -285,19 +285,19 @@ void AudioDecoder::decode()
 		posCurrentPacket += ret;
 		numFramesCurrentPacket += frameByteSize / (2*numChannels);
 
-		INFO( << "ADEC: framePTS=" << framePTS
-		      << ", packetPTS=" << packetPTS
-		      << ", pts=" << avPacket.pts
-		      << ", dts=" << avPacket.dts
-		      << ", time_base=" << avStream->time_base
-		      << ", finished=" << (posCurrentPacket == avPacket.size) );
+		TRACE_INFO( << "ADEC: framePTS=" << framePTS
+			    << ", packetPTS=" << packetPTS
+			    << ", pts=" << avPacket.pts
+			    << ", dts=" << avPacket.dts
+			    << ", time_base=" << avStream->time_base
+			    << ", finished=" << (posCurrentPacket == avPacket.size) );
 
 		if (posCurrentPacket == avPacket.size)
 		{
 		    // Decoded the complete AVPacket
 		    packetQueue.pop();
 		    posCurrentPacket = 0;
-		    DEBUG(<< "Queueing ConfirmAudioPacketEvent");
+		    TRACE_DEBUG(<< "Queueing ConfirmAudioPacketEvent");
 		    demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
 		}
 
@@ -307,7 +307,7 @@ void AudioDecoder::decode()
 		    frameQueue.pop();
 		    numFramesCurrentPacket = 0;
 		    audioFrame->setPTS(framePTS);
-		    DEBUG(<< "Queueing AFAudioFrame");
+		    TRACE_DEBUG(<< "Queueing AFAudioFrame");
 		    audioOutput->queue_event(audioFrame);
 		}
 	    }
@@ -315,27 +315,27 @@ void AudioDecoder::decode()
 	    {
 		// Skip packet
 		packetQueue.pop();
-		DEBUG(<< "Queueing ConfirmAudioPacketEvent");
+		TRACE_DEBUG(<< "Queueing ConfirmAudioPacketEvent");
 		demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
 		
-		DEBUG(<< "W avcodec_decode_audio2 failed: " << ret);
+		TRACE_DEBUG(<< "W avcodec_decode_audio2 failed: " << ret);
 	    }
 	}
         else
         {
 	    // Skip packet
 	    packetQueue.pop();
-	    DEBUG(<< "Queueing ConfirmAudioPacketEvent");
+	    TRACE_DEBUG(<< "Queueing ConfirmAudioPacketEvent");
 	    demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
 
-            DEBUG(<< "W empty packet");
+            TRACE_DEBUG(<< "W empty packet");
         }
     }
 
     if (eos && packetQueue.empty())
     {
 	// Decoded everything in this stream.
-	DEBUG(<< "forwarding EndOfAudioStream");
+	TRACE_DEBUG(<< "forwarding EndOfAudioStream");
 	audioOutput->queue_event(boost::make_shared<EndOfAudioStream>());
 	eos = false;
     }

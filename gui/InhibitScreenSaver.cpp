@@ -15,8 +15,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
-// #undef DEBUG 
-// #define DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
+// #undef TRACE_DEBUG 
+// #define TRACE_DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
 
 // -------------------------------------------------------------------
 
@@ -138,7 +138,7 @@ InhibitScreenSaverImpl::InhibitScreenSaverImpl()
 
 void InhibitScreenSaverImpl::sendGetOwnerNameRequest()
 {
-    DEBUG();
+    TRACE_DEBUG();
     DBus::CallMessage::pointer msg = m_method_DBus_GetNameOwner->create_call_message();
     msg << screenSaver[m_index].busName;
     m_pending = m_method_DBus_GetNameOwner->call_async(msg);
@@ -148,12 +148,12 @@ void InhibitScreenSaverImpl::sendGetOwnerNameRequest()
 
 void InhibitScreenSaverImpl::recvGetNameOwnerResponse()
 {
-    DEBUG();
+    TRACE_DEBUG();
     DBus::Message::pointer retmsg = m_pending->steal_reply();
     if ( retmsg->type() == DBus::ERROR_MESSAGE )
     {
 	DBus::ErrorMessage::pointer errormsg = DBus::ErrorMessage::create(retmsg);
-	DEBUG(<< "DBus::ErrorMessage: " << errormsg->name());
+	TRACE_DEBUG(<< "DBus::ErrorMessage: " << errormsg->name());
 	if (m_index+1 < numScreenSaver)
 	{
 	    m_index++;
@@ -163,7 +163,7 @@ void InhibitScreenSaverImpl::recvGetNameOwnerResponse()
     }
     std::string name;
     retmsg >> name;
-    DEBUG(<< name);
+    TRACE_DEBUG(<< name);
 
     connect();
 }
@@ -174,7 +174,7 @@ void InhibitScreenSaverImpl::connect()
     const char* path = screenSaver[m_index].path;
     const char* interface = busName;
 	
-    DEBUG(<< busName << path);
+    TRACE_DEBUG(<< busName << path);
 
     // std::string introspection = m_connection->introspect( busName, path );
     // std::cout << introspection << std::endl;
@@ -195,7 +195,7 @@ void InhibitScreenSaverImpl::simulateUserActivity()
 
 void InhibitScreenSaverImpl::sendSimulateUserActivityRequest()
 {
-    DEBUG();
+    TRACE_DEBUG();
     DBus::CallMessage::pointer msg = m_method_ScreenSaver_SimulateUserActivity->create_call_message();
     m_pending = m_method_ScreenSaver_SimulateUserActivity->call_async(msg);
     m_pending->signal_notify().connect( sigc::mem_fun(this, &InhibitScreenSaverImpl::recvSimulateUserActivityResponse) );
@@ -204,12 +204,12 @@ void InhibitScreenSaverImpl::sendSimulateUserActivityRequest()
 
 void InhibitScreenSaverImpl::recvSimulateUserActivityResponse()
 {
-    DEBUG();
+    TRACE_DEBUG();
     DBus::Message::pointer retmsg = m_pending->steal_reply();
     if ( retmsg->type() == DBus::ERROR_MESSAGE )
     {
 	DBus::ErrorMessage::pointer errormsg = DBus::ErrorMessage::create(retmsg);
-	ERROR(<< "DBus::ErrorMessage: " << errormsg->name());
+	TRACE_ERROR(<< "DBus::ErrorMessage: " << errormsg->name());
     }
 }
 
@@ -322,7 +322,7 @@ void XScreenSaverInterface::simulateUserActivity()
 
     if (! XSendEvent (m_xdisplay, m_ScreenSaverWindow, False, 0L, &event))
     {
-	ERROR(<< "XSendEvent failed");
+	TRACE_ERROR(<< "XSendEvent failed");
     }
 
     XFlush(m_xdisplay);
