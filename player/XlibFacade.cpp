@@ -227,6 +227,9 @@ XFVideo::XFVideo(Display* display, Window window,
 		    case Success:
 			xvPortId = adaptorPort;
 			break;
+		    case XvAlreadyGrabbed:
+			TRACE_DEBUG( << "XvGrabPort failed: XvAlreadyGrabbed");
+			break;
 		    default:
 			TRACE_ERROR( << "XvGrabPort failed for adaptorPort " 
 				     << adaptorPort << "." );
