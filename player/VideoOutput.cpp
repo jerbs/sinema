@@ -311,6 +311,22 @@ void VideoOutput::process(boost::shared_ptr<ClipVideoSrcEvent> event)
     }
 }
 
+void VideoOutput::process(boost::shared_ptr<EnableXvClipping> event)
+{
+    if (xfVideo)
+    {
+	xfVideo->enableXvClipping();
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<DisableXvClipping> event)
+{
+    if (xfVideo)
+    {
+	xfVideo->disableXvClipping();
+    }
+}
+
 void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())

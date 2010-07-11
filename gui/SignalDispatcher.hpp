@@ -49,6 +49,7 @@ public:
     sigc::signal<void, double> signal_playback_volume;
     sigc::signal<void, bool> signal_playback_switch;
     sigc::signal<void, const ChannelData&> signalSetFrequency;
+    sigc::signal<void, boost::shared_ptr<ConfigurationData> > signalConfigurationDataChanged;
 
     SignalDispatcher(GtkmmPlayList& playList);
     ~SignalDispatcher();
@@ -87,7 +88,7 @@ public:
     void on_set_time(double seconds);
     void on_set_volume(const NotificationCurrentVolume& vol);
 
-    void on_configuration_data_changed(const ConfigurationData& configurationData);
+    void on_configuration_data_changed(boost::shared_ptr<ConfigurationData>);
     void on_tuner_channel_tuned(const ChannelData& channelData);
 
     // Slots:
@@ -131,6 +132,8 @@ public:
     virtual void on_mute_toggled();
 
 private:
+    void updateGuiConfiguration();
+
     MainWindow* m_MainWindow;
 
     GtkmmPlayList& m_PlayList;
@@ -173,23 +176,12 @@ private:
 
     timespec_t m_timeTitlePlaybackStarted;
 
-    struct Visible {
-	Visible(bool menuBar, bool toolBar, bool statusBar)
-	    : menuBar(menuBar),
-	      toolBar(toolBar),
-	      statusBar(statusBar)
-	{}
-	bool menuBar;
-	bool toolBar;
-	bool statusBar;
-    };
-
-    Visible m_visibleFullscreen;
-    Visible m_visibleWindow;
-    Visible* m_visible;
+    ConfigurationGuiVisible m_visibleFullscreen;
+    ConfigurationGuiVisible m_visibleWindow;
+    ConfigurationGuiVisible* m_visible;
     bool m_fullscreen;
 
-    ConfigurationData m_ConfigurationData;
+    boost::shared_ptr<ConfigurationData> m_ConfigurationData;
     std::vector<Glib::RefPtr<Gtk::RadioAction> > m_ChannelSelectRadioAction;
     bool m_isEnabled_signalSetFrequency;
     Glib::RefPtr<Gtk::RadioAction> m_refNoChannel;

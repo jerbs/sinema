@@ -273,6 +273,31 @@ void MediaPlayer::clip(boost::shared_ptr<ClipVideoSrcEvent> event)
     videoOutput->queue_event(event);
 }
 
+void MediaPlayer::enableOptimalPixelFormat()
+{
+    videoDecoder->queue_event(boost::make_shared<EnableOptimalPixelFormat>());
+}
+
+void MediaPlayer::disableOptimalPixelFormat()
+{
+    videoDecoder->queue_event(boost::make_shared<DisableOptimalPixelFormat>());
+}
+
+void MediaPlayer::enableXvClipping()
+{
+    videoOutput->queue_event(boost::make_shared<EnableXvClipping>());
+}
+
+void MediaPlayer::disableXvClipping()
+{
+    videoOutput->queue_event(boost::make_shared<DisableXvClipping>());
+}
+
+void MediaPlayer::selectDeinterlacer(const std::string& name)
+{
+    deinterlacer->queue_event(boost::make_shared<SelectDeinterlacer>(name));
+}
+
 void MediaPlayer::process(boost::shared_ptr<OpenFileResp> event)
 {
     DEBUG();

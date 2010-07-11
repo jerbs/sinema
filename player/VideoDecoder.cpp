@@ -115,9 +115,9 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 			if (pn == 0 || pd == 0) {pn = pd = 1;}
 			if (m_useOptimumImageFormat)
 			{
-			    m_imageFormat = getFormatId(avCodecContext->pix_fmt);
+			    int formatId = getFormatId(avCodecContext->pix_fmt);
+			    setImageFormat(formatId);
 			}
-			getSwsContext();
 			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd,
 											m_imageFormat));
 
@@ -343,6 +343,36 @@ void VideoDecoder::process(boost::shared_ptr<EndOfVideoStream> event)
     }
 }
 
+void VideoDecoder::process(boost::shared_ptr<EnableOptimalPixelFormat> event)
+{
+    DEBUG();
+    if (!m_useOptimumImageFormat)
+    {
+	m_useOptimumImageFormat = true;
+	if (avCodecContext)
+	{
+	    // Set image format emitted by the video decoder:
+	    int formatId = getFormatId(avCodecContext->pix_fmt);
+	    setImageFormat(formatId);
+	}
+    }
+}
+
+void VideoDecoder::process(boost::shared_ptr<DisableOptimalPixelFormat> event)
+{
+    DEBUG();
+    if (m_useOptimumImageFormat)
+    {
+	m_useOptimumImageFormat = false;
+	if (avCodecContext)
+	{
+	    // Set initial image format.
+	    // This is the format needed by the deinterlacer:
+	    setImageFormat(GUID_YUY2_PACKED);
+	}
+    }
+}
+
 std::ostream& operator<<(std::ostream& strm, AVRational r)
 {
     strm << r.num << "/" << r.den;
@@ -456,15 +486,8 @@ void VideoDecoder::queue()
 	{
 	    // The deinterlacer needs the packed YUY2 format.
 	    // This format is not the default.
-	    m_imageFormat = GUID_YUY2_PACKED;
-	    getSwsContext();
+	    setImageFormat(GUID_YUY2_PACKED);
 
-	    while(!frameQueue.empty())
-	    {
-		frameQueue.pop();
-		requestNewFrame();
-	    }
-	
 	    return;
 	}
     }
@@ -562,6 +585,26 @@ void VideoDecoder::queue()
 
     avFrameIsFree = true;
     DEBUG(<< "Queueing XFVideoImage");
+}
+
+void VideoDecoder::setImageFormat(int imageFormat)
+{
+    if (m_imageFormat != imageFormat)
+    {
+	m_imageFormat = imageFormat;
+
+	getSwsContext();
+
+	// Throw away all queued frames:
+	while(!frameQueue.empty())
+	{
+	    boost::shared_ptr<XFVideoImage> xfVideoImage(frameQueue.front());
+	    frameQueue.pop();
+	    videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
+
+	    requestNewFrame();
+	}
+    }
 }
 
 void VideoDecoder::getSwsContext()

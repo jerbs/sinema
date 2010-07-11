@@ -5,6 +5,7 @@
 //
 
 #include "player/Deinterlacer.hpp"
+#include "player/MediaPlayer.hpp"
 #include "player/VideoOutput.hpp"
 #include "player/VideoDecoder.hpp"
 #include "player/XlibFacade.hpp"
@@ -25,6 +26,19 @@ Deinterlacer::Deinterlacer(event_processor_ptr_type evt_proc)
       m_topField(true)
 {
     setup_copyfunctions(MM_ACCEL_X86_MMXEXT);
+
+    register_deinterlace_method(greedy_get_method());
+    // register_deinterlace_method(dscaler_greedyh_get_method());
+    // register_deinterlace_method(dscaler_tomsmocomp_get_method());
+    register_deinterlace_method(linearblend_get_method());
+    register_deinterlace_method(linear_get_method());
+    // deinterlace_method_t struct does not define interpolate and copy functions:
+    // register_deinterlace_method(scalerbob_get_method());
+    register_deinterlace_method(vfir_get_method());
+    register_deinterlace_method(weavebff_get_method());
+    register_deinterlace_method(weave_get_method());
+    register_deinterlace_method(weavetff_get_method());
+
     m_deinterlacer = greedy_get_method();
 }
 
@@ -35,8 +49,11 @@ Deinterlacer::~Deinterlacer()
 void Deinterlacer::process(boost::shared_ptr<InitEvent> event)
 {
     DEBUG(<< "tid = " << gettid());
+    mediaPlayer = event->mediaPlayer;
     videoOutput = event->videoOutput;
     videoDecoder = event->videoDecoder;
+
+    announceDeinterlacers();
 }
 
 void Deinterlacer::process(boost::shared_ptr<CloseVideoOutputReq> event)
@@ -159,6 +176,25 @@ void Deinterlacer::process(boost::shared_ptr<EndOfVideoStream> event)
 
     // Finally forward EndOfVideoStream indication to VideoOutput:
     videoOutput->queue_event(event);
+}
+
+void Deinterlacer::process(boost::shared_ptr<SelectDeinterlacer> event)
+{
+    DEBUG();
+
+    int i = 0;
+    while (deinterlace_method_t* dim = get_deinterlace_method(i))
+    {
+	if (event->name == dim->name)
+	{
+	    m_deinterlacer = dim;
+	    DEBUG(<< "Setting " << dim->name);
+	    return;
+	}
+	i++;
+    }
+
+    ERROR(<< "Deinterlacer " << event->name << " not found.");
 }
 
 // -------------------------------------------------------------------
@@ -394,4 +430,32 @@ void Deinterlacer::deinterlace()
     videoOutput->queue_event(image);
 
     m_topField = !m_topField;
+}
+
+// -------------------------------------------------------------------
+
+void Deinterlacer::announceDeinterlacers()
+{
+    DEBUG();
+
+    boost::shared_ptr<NotificationDeinterlacerList> event(new NotificationDeinterlacerList());
+    event->selected = -1;
+
+    int i = 0;
+    while (deinterlace_method_t* dim = get_deinterlace_method(i))
+    {
+	if (dim == m_deinterlacer)
+	{
+	    event->selected = i;
+	}
+
+	if (dim->scanlinemode)
+	{
+	    DEBUG(<< dim->name);
+	    event->list.push_back(std::string(dim->name));
+	}
+	i++;
+    }
+
+    mediaPlayer->queue_event(event);
 }

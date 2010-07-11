@@ -31,50 +31,109 @@ namespace karma = boost::spirit::karma;
 namespace qi = boost::spirit::qi;
 namespace ascii = boost::spirit::ascii;
 
-typedef StationData station;
-typedef StationList station_list;
 
-#if 0
-struct station
+// Adapt the structs to be a fully conforming fusion tuples:
+
+BOOST_FUSION_ADAPT_STRUCT(StationData,
+			  (std::string, name)
+			  (std::string, standard)
+			  (std::string, channel)
+			  (int, fine));
+
+BOOST_FUSION_ADAPT_STRUCT(ConfigurationGuiVisible,
+			  (bool, menuBar)
+			  (bool, toolBar)
+			  (bool, statusBar));
+
+BOOST_FUSION_ADAPT_STRUCT(ConfigurationGui,
+			  (bool, fullscreen)
+			  (ConfigurationGuiVisible, visibleWindow)
+			  (ConfigurationGuiVisible, visibleFullscreen));
+
+BOOST_FUSION_ADAPT_STRUCT(ConfigurationPlayer,
+			  (bool, useOptimalPixelFormat)
+			  (bool, useXvClipping)
+			  (std::string, deinterlacer));
+
+BOOST_FUSION_ADAPT_STRUCT(ConfigurationData,
+			  (StationList, stationList)
+			  (ConfigurationGui, configGui)
+			  (ConfigurationPlayer, configPlayer));
+
+// For debugging:
+
+std::ostream& operator<<(std::ostream& strm, const StationData& s)
 {
-    std::string name;
-    std::string standard;
-    std::string channel;
-    int fine;
-};
-#endif
-
-// Adapt the struct to be a fully conforming fusion tuple:
-
-BOOST_FUSION_ADAPT_STRUCT(
-    station,
-    (std::string, name)
-    (std::string, standard)
-    (std::string, channel)
-    (int, fine)
-)
-
-template <typename Attrib, typename Context>
-void fa(Attrib& attr, Context& context, bool& pass)
-{
-    DEBUG();
+    strm << "name = " << s.name << std::endl;
+    strm << "standard = " << s.standard << std::endl;
+    strm << "channel = " << s.channel << std::endl;
+    strm << "fine = " << s.fine << std::endl;
+    return strm;
 }
 
-template <typename Attrib>
-void fb(Attrib const& i)
+std::ostream& operator<<(std::ostream& strm, const StationList& l)
 {
-    DEBUG();
+    for (StationList::const_iterator it = l.begin(); it != l.end(); it++)
+    {
+	strm << *it << std::endl;
+    }
+
+    return strm;
 }
+
+std::ostream& operator<<(std::ostream& strm, const ConfigurationGuiVisible& cgv)
+{
+    strm << "menuBar = " << cgv.menuBar << std::endl;
+    strm << "toolBar = " << cgv.toolBar << std::endl;
+    strm << "statusBar = " << cgv.statusBar << std::endl;
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const ConfigurationGui& cg)
+{
+    strm << "fullscreen = " << cg.fullscreen << std::endl;
+    strm << "visibleWindow = " << cg.visibleWindow << std::endl;
+    strm << "visibleFullscreen = " << cg.visibleFullscreen << std::endl;
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const ConfigurationPlayer& cp)
+{
+    strm << "useOptimalPixelFormat = " << cp.useOptimalPixelFormat << std::endl;
+    strm << "useXvClipping = " << cp.useXvClipping << std::endl;
+    strm << "deinterlacer = " << cp.deinterlacer << std::endl;
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const ConfigurationData& cnf)
+{
+    strm << cnf.stationList << std::endl;
+    strm << cnf.configGui << std::endl;
+    strm << cnf.configPlayer << std::endl;
+    return strm;
+}
+
+// Semantic actions (for debugging):
+void actionStationName(std::string const& s) {DEBUG( << s);}
+void actionStationStandard(std::string const& s) {DEBUG( << s);}
+void actionStationChannel(std::string const& s) {DEBUG( << s);}
+void actionStationFine(int const& i) {DEBUG( << i);}
+void actionStation(StationData const& stationData){DEBUG(<< std::endl << stationData);}
+void actionGui(bool b) {DEBUG(<< b);}
+void actionPlayer(bool b) {DEBUG(<< b);}
+
+// Configuration File Parser:
 
 template <typename ForwardIterator>
-struct config_parser : qi::grammar<ForwardIterator, station_list(), ascii::space_type>
+struct config_parser : qi::grammar<ForwardIterator, ConfigurationData(), ascii::space_type>
 {
-    config_parser() : config_parser::base_type(station_list_)
+    config_parser() : config_parser::base_type(config_data_)
     {
         using qi::int_;
         using qi::lit;
-        using qi::lexeme;
+        using boost::spirit::qi::lexeme;
         using ascii::char_;
+	using qi::bool_;
 
         quoted_string %= lexeme['"' >> *(char_ - '"') >> '"'];
 
@@ -84,23 +143,54 @@ struct config_parser : qi::grammar<ForwardIterator, station_list(), ascii::space
 		 ( lit("standard") >> '=' >> quoted_string >> ';' ) ^
 		 ( lit("channel") >> '=' >> quoted_string >> ';' ) ^
 		 ( lit("fine") >> '=' >> int_ >> ';' ) )
-            >>  '}' >> ";";
+            >> '}' >> ";";
 
-        station_list_ %= *(station_);
+        station_list_ %= *(station_ /* [&actionStation] */);
+
+	config_gui_visible_ %= lit("{")
+	    >> ( ( lit("menuBar") >> '=' >> bool_ >> ';' ) ^
+		 ( lit("toolBar") >> '=' >> bool_ >> ';' ) ^
+		 ( lit("statusBar") >> '=' >> bool_ >> ';' ) )
+		 >> '}';
+
+	config_gui_ %= lit("gui")
+            >> '{'
+            >> ( ( lit("fullscreen") >> '=' >> bool_ >> ';' ) ^
+		 ( lit("window") >> config_gui_visible_ >> ';') ^
+		 ( lit("fullscreen") >> config_gui_visible_ >> ';') )
+            >> '}' >> ";";
+
+	config_player_ %= lit("player")
+            >> '{'
+            >> ( ( lit("useOptimalPixelFormat") >> '=' >> bool_ >> ';' ) ^
+		 ( lit("useXvClipping") >> '=' >> bool_ >> ';' ) ^
+		 ( lit("deinterlacer") >> '=' >> quoted_string >> ';' ) )
+            >> '}' >> ";";
+
+	config_data_ %=
+	    station_list_ ^
+	    config_gui_ ^
+	    config_player_;
     }
 
     qi::rule<ForwardIterator, std::string(), ascii::space_type> quoted_string;
-    qi::rule<ForwardIterator, station(), ascii::space_type> station_;
-    qi::rule<ForwardIterator, station_list(), ascii::space_type> station_list_;
+    qi::rule<ForwardIterator, StationData(), ascii::space_type> station_;
+    qi::rule<ForwardIterator, StationList(), ascii::space_type> station_list_;
+    qi::rule<ForwardIterator, ConfigurationGuiVisible(), ascii::space_type> config_gui_visible_;
+    qi::rule<ForwardIterator, ConfigurationGui(), ascii::space_type> config_gui_;
+    qi::rule<ForwardIterator, ConfigurationPlayer(), ascii::space_type> config_player_;
+
+    qi::rule<ForwardIterator, ConfigurationData(), ascii::space_type> config_data_;
 };
 
 template <typename OutputIterator>
-struct config_generator : karma::grammar<OutputIterator, station_list()>
+struct config_generator : karma::grammar<OutputIterator, ConfigurationData()>
 {
-    config_generator() : config_generator::base_type(station_list_)
+    config_generator() : config_generator::base_type(config_data_)
     {
         using karma::int_;
         using karma::lit;
+	using karma::bool_;
 
         quoted_string = '"' << karma::string << '"';
 
@@ -113,22 +203,43 @@ struct config_generator : karma::grammar<OutputIterator, station_list()>
             <<  "};\n";
 
 	station_list_ = *(station_);
+
+	config_gui_visible_ = lit("\n    {\n")
+	    << lit("        menuBar") << " = " << bool_ << ";\n"
+	    << lit("        toolBar") << " = " << bool_ << ";\n"
+	    << lit("        statusBar") << " = " << bool_ << ";\n"
+	    << "    }";
+
+	config_gui_ = lit("\ngui\n")
+            << "{\n"
+            << lit("    fullscreen") << " = " << bool_ << ";\n"
+	    << lit("    window") << config_gui_visible_ << ";\n"
+	    << lit("    fullscreen") << config_gui_visible_ << ";\n"
+            << "};\n";
+
+	config_player_ = lit("\nplayer\n")
+            << "{\n"
+            << lit("    useOptimalPixelFormat") << " = " << bool_ << ";\n"
+	    << lit("    useXvClipping") << " = " << bool_ << ";\n"
+	    << lit("    deinterlacer") << " = " << quoted_string << ";\n"
+            << "};\n";
+
+	config_data_ =
+	    station_list_ <<
+	    config_gui_ <<
+	    config_player_;
     }
 
     karma::rule<OutputIterator, std::string()> quoted_string;
-    karma::rule<OutputIterator, station()> station_;
-    karma::rule<OutputIterator, station_list()> station_list_;
+    karma::rule<OutputIterator, StationData()> station_;
+    karma::rule<OutputIterator, StationList()> station_list_;
+    karma::rule<OutputIterator, ConfigurationGuiVisible()> config_gui_visible_;
+    karma::rule<OutputIterator, ConfigurationGui()> config_gui_;
+    karma::rule<OutputIterator, ConfigurationPlayer()> config_player_;
+
+    karma::rule<OutputIterator, ConfigurationData()> config_data_;
+
 };
-
-
-std::ostream& operator<<(std::ostream& strm, const station& s)
-{
-    strm << "name = " << s.name << std::endl;
-    strm << "standard = " << s.standard << std::endl;
-    strm << "channel = " << s.channel << std::endl;
-    strm << "fine = " << s.fine << std::endl;
-    return strm;
-}
 
 void ConfigFile::parse()
 {
@@ -153,9 +264,9 @@ void ConfigFile::parse()
     base_iterator_type end;
 
     boost::shared_ptr<ConfigurationData> configurationData(new ConfigurationData());
-    StationList& stationList = configurationData->stationList;
+    ConfigurationData& confData = *configurationData;
 
-    if (! qi::phrase_parse(begin, end, config_parser<base_iterator_type>(), ascii::space, stationList))
+    if (! qi::phrase_parse(begin, end, config_parser<base_iterator_type>(), ascii::space, confData))
     {
 	ERROR( << "parse failed");
 	return;
@@ -167,14 +278,14 @@ void ConfigFile::parse()
 	return;
     }
 
+    DEBUG(<< confData);
+
     // Notify application about the read configuration:
     mediaCommon->queue_event(configurationData);
 }
 
 void ConfigFile::generate(ConfigurationData& configurationData)
 {
-    StationList& stationList = configurationData.stationList;
-
     find();
 
     // Opening output file:
@@ -192,9 +303,11 @@ void ConfigFile::generate(ConfigurationData& configurationData)
 
     // Generate:
 
+    DEBUG(<< configurationData.configPlayer.deinterlacer);
+
     typedef std::ostream_iterator<char> sink_type;
     sink_type sink(out);
-    if (! karma::generate(sink, config_generator<sink_type>(), stationList))
+    if (! karma::generate(sink, config_generator<sink_type>(), configurationData))
     {
 	ERROR( << "generate failed");
 	return;

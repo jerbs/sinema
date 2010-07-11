@@ -33,6 +33,8 @@
 #include "platform/Logging.hpp"
 
 #include <boost/shared_ptr.hpp>
+#include <list>
+#include <string>
 #include <time.h>
 
 extern "C"
@@ -413,6 +415,12 @@ struct NotificationClipping
     int bottom;
 };
 
+struct NotificationDeinterlacerList
+{
+    int selected;   // -1: none
+    std::list<std::string> list;
+};
+
 // ===================================================================
 
 struct HideCursorEvent {};
@@ -497,6 +505,22 @@ struct ClipVideoSrcEvent
     int right;
     int top;
     int bottom;
+};
+
+// ===================================================================
+
+struct EnableOptimalPixelFormat {};
+struct DisableOptimalPixelFormat {};
+
+struct EnableXvClipping {};
+struct DisableXvClipping {};
+
+struct SelectDeinterlacer
+{
+    SelectDeinterlacer(const std::string& name)
+	: name(name)
+    {}
+    std::string name;
 };
 
 // ===================================================================

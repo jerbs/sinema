@@ -54,6 +54,14 @@ public:
     void clip(boost::shared_ptr<ClipVideoDstEvent> event);
     void clip(boost::shared_ptr<ClipVideoSrcEvent> event);
 
+    void enableOptimalPixelFormat();
+    void disableOptimalPixelFormat();
+
+    void enableXvClipping();
+    void disableXvClipping();
+
+    void selectDeinterlacer(const std::string& name);
+
     void processEventQueue();
 
 protected:
@@ -111,6 +119,7 @@ private:
     virtual void process(boost::shared_ptr<NotificationCurrentVolume> event) = 0;
     virtual void process(boost::shared_ptr<NotificationVideoSize> event) = 0;
     virtual void process(boost::shared_ptr<NotificationClipping> event) = 0;
+    virtual void process(boost::shared_ptr<NotificationDeinterlacerList> event) = 0;
 
     virtual void process(boost::shared_ptr<OpenAudioStreamFailed> event) {};
     virtual void process(boost::shared_ptr<OpenVideoStreamFailed> event) {};

@@ -46,9 +46,49 @@ struct StationData
 
 typedef std::vector<StationData> StationList;
 
+struct ConfigurationGuiVisible
+{
+    ConfigurationGuiVisible(bool menuBar, bool toolBar, bool statusBar)
+	: menuBar(menuBar),
+	  toolBar(toolBar),
+	  statusBar(statusBar)
+    {}
+
+    bool menuBar;
+    bool toolBar;
+    bool statusBar;
+};
+
+inline bool operator!=(const ConfigurationGuiVisible& lhs, const ConfigurationGuiVisible& rhs)
+{
+    return lhs.menuBar != rhs.menuBar
+	|| lhs.toolBar != rhs.toolBar
+	|| lhs.statusBar != rhs.statusBar;
+}
+
+struct ConfigurationGui
+{
+    ConfigurationGui()
+	: visibleWindow(true, true, true),
+	  visibleFullscreen(false, false, false)
+    {}
+    bool fullscreen;
+    ConfigurationGuiVisible visibleWindow;
+    ConfigurationGuiVisible visibleFullscreen;
+};
+
+struct ConfigurationPlayer
+{
+    bool useOptimalPixelFormat;
+    bool useXvClipping;
+    std::string deinterlacer;
+};
+
 struct ConfigurationData
 {
     StationList stationList;
+    ConfigurationGui configGui;
+    ConfigurationPlayer configPlayer;
 };
 
 #ifdef CONFIG_FILE_TEST

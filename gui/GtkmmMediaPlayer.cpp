@@ -109,6 +109,12 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationClipping> event)
     notificationClipping(*event);
 }
 
+void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationDeinterlacerList> event)
+{
+    DEBUG();
+    notificationDeinterlacerList(*event);
+}
+
 void GtkmmMediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
 {
     notificationCurrentTime(0);

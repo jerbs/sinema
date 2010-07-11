@@ -640,6 +640,7 @@ void SignalDispatcher::on_view_fullscreen()
     if (m_MainWindow)
     {
 	m_MainWindow->fullscreen();
+	updateGuiConfiguration();
     }
 }
 
@@ -648,6 +649,7 @@ void SignalDispatcher::on_view_leave_fullscreen()
     if (m_MainWindow)
     {
 	m_MainWindow->unfullscreen();
+	updateGuiConfiguration();
     }
 }
 
@@ -667,6 +669,8 @@ void SignalDispatcher::on_view_normal_mode()
 	m_refToolBarVisible->set_active(true);
 	m_refStatusBarVisible->set_active(true);
     }
+
+    updateGuiConfiguration();
 }
 
 void SignalDispatcher::on_view_tv_mode()
@@ -685,6 +689,8 @@ void SignalDispatcher::on_view_tv_mode()
 	m_refToolBarVisible->set_active(false);
 	m_refStatusBarVisible->set_active(false);    
     }
+
+    updateGuiConfiguration();
 }
 
 void SignalDispatcher::on_view_zoom_200()
@@ -934,6 +940,8 @@ void SignalDispatcher::on_view_menubar()
 	{
 	    pMenubar->hide();
 	}
+
+	updateGuiConfiguration();
     }
 }
 
@@ -952,6 +960,8 @@ void SignalDispatcher::on_view_toolbar()
 	{
 	    pToolbar->hide();
 	}
+
+	updateGuiConfiguration();
     }
 }
 
@@ -967,6 +977,8 @@ void SignalDispatcher::on_view_statusbar()
     {
 	m_StatusBar.hide();
     }
+
+    updateGuiConfiguration();
 }
 
 void SignalDispatcher::on_media_play()
@@ -1060,10 +1072,10 @@ void SignalDispatcher::on_channel_selected(int num)
     DEBUG(<< "channel = " << num);
     Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[num];
 
-    if (ra && ra->get_active() && m_isEnabled_signalSetFrequency)
+    if (ra && ra->get_active() && m_isEnabled_signalSetFrequency && m_ConfigurationData)
     {
 	DEBUG(<< "active");
-	StationData& sd = m_ConfigurationData.stationList[num];
+	StationData& sd = m_ConfigurationData->stationList[num];
 
 	ChannelFrequencyTable cft = ChannelFrequencyTable::create(sd.standard.c_str());
 	int ch = ChannelFrequencyTable::getChannelNumber(cft, sd.channel.c_str());
@@ -1209,11 +1221,34 @@ int getTunerFrequency(const StationData& sd)
     return ChannelFrequencyTable::getChannelFreq(cft, ch) + sd.fine;
 }
 
-void SignalDispatcher::on_configuration_data_changed(const ConfigurationData& configurationData)
+void SignalDispatcher::on_configuration_data_changed(boost::shared_ptr<ConfigurationData> event)
 {
     DEBUG();
 
-    m_ConfigurationData = configurationData;
+    const ConfigurationData& configurationData = *event;
+
+    m_ConfigurationData = event;
+
+    // -------------------------------------------
+    // Updating visibility mode:
+    m_fullscreen = configurationData.configGui.fullscreen;
+    m_visibleWindow = configurationData.configGui.visibleWindow;
+    m_visibleFullscreen = configurationData.configGui.visibleFullscreen;
+    if (m_fullscreen)
+    {
+	on_view_fullscreen();
+    }
+    else
+    {
+	on_view_leave_fullscreen();
+    }
+
+    m_refMenuBarVisible->set_active(m_visible->menuBar);
+    m_refToolBarVisible->set_active(m_visible->toolBar);
+    m_refStatusBarVisible->set_active(m_visible->statusBar);
+
+    // -------------------------------------------
+    // Updating Channel menu:
 
     // Remove menu entries from UIManager:
     if (m_UiMergeIdChannels)
@@ -1240,8 +1275,8 @@ void SignalDispatcher::on_configuration_data_changed(const ConfigurationData& co
 
     Glib::ustring ui_info_channels;
 
-    StationList::const_iterator it = m_ConfigurationData.stationList.begin();
-    while(it != m_ConfigurationData.stationList.end())
+    StationList::const_iterator it = m_ConfigurationData->stationList.begin();
+    while(it != m_ConfigurationData->stationList.end())
     {
 	const StationData& sd = *it;
 	int num = m_ChannelSelectRadioAction.size();
@@ -1309,31 +1344,67 @@ void SignalDispatcher::on_tuner_channel_tuned(const ChannelData& channelData)
 
     m_tunedFrequency = channelData.getTunedFrequency();
 
-    int num = 0;
-    StationList::const_iterator it = m_ConfigurationData.stationList.begin();
-    while(it != m_ConfigurationData.stationList.end())
+    if (m_ConfigurationData)
     {
-	const StationData& sd = *it;
-	if (m_tunedFrequency == getTunerFrequency(sd))
+	int num = 0;
+	StationList::const_iterator it = m_ConfigurationData->stationList.begin();
+	while(it != m_ConfigurationData->stationList.end())
 	{
-	    int size = m_ChannelSelectRadioAction.size();
-	    if (size)
+	    const StationData& sd = *it;
+	    if (m_tunedFrequency == getTunerFrequency(sd))
 	    {
-		Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[0];
-
-		// Activate tuned channel in the RadioButtonGroup:
-		ra->set_current_value(num);
+		int size = m_ChannelSelectRadioAction.size();
+		if (size)
+		{
+		    Glib::RefPtr<Gtk::RadioAction> ra = m_ChannelSelectRadioAction[0];
+		    
+		    // Activate tuned channel in the RadioButtonGroup:
+		    ra->set_current_value(num);
+		}
+		return;
 	    }
-	    return;
-	}
 
-	num++;
-	it++;
+	    num++;
+	    it++;
+	}
     }
 
     if (m_refNoChannel)
     {
 	// Select the invisible radio action:
 	m_refNoChannel->set_current_value(-1);
+    }
+}
+
+void SignalDispatcher::updateGuiConfiguration()
+{
+    DEBUG();
+
+    if (m_ConfigurationData)
+    {
+	bool modified = false;
+
+	if (m_ConfigurationData->configGui.fullscreen != m_fullscreen)
+	{
+	    m_ConfigurationData->configGui.fullscreen = m_fullscreen;
+	    modified = true;
+	}
+
+	if ( (m_ConfigurationData->configGui.visibleWindow) != m_visibleWindow)
+	{
+	    m_ConfigurationData->configGui.visibleWindow = m_visibleWindow;
+	    modified = true;
+	}
+
+	if (m_ConfigurationData->configGui.visibleFullscreen != m_visibleFullscreen)
+	{
+	    m_ConfigurationData->configGui.visibleFullscreen = m_visibleFullscreen;
+	    modified = true;
+	}
+
+	if (modified)
+	{
+	    signalConfigurationDataChanged(m_ConfigurationData);
+	}
     }
 }

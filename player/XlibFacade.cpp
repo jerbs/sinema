@@ -644,6 +644,18 @@ void XFVideo::clip(boost::shared_ptr<XFVideoImage> in,
     }
 }
 
+void XFVideo::enableXvClipping()
+{
+    DEBUG();
+    m_useXvClipping = true;
+}
+
+void XFVideo::disableXvClipping()
+{
+    DEBUG();
+    m_useXvClipping = false;
+}
+
 void XFVideo::paintBorder()
 {
     //     x1   x2   x3

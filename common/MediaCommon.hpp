@@ -44,7 +44,7 @@ public:
 
     void init();
 
-    void saveConfigurationData(const ConfigurationData& configurationData);
+    void saveConfigurationData(boost::shared_ptr<ConfigurationData> event);
 
     void processEventQueue();
 

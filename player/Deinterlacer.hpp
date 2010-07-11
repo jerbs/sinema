@@ -36,6 +36,7 @@ public:
     ~Deinterlacer();
 
 private:
+    MediaPlayer* mediaPlayer;
     boost::shared_ptr<VideoOutput> videoOutput;
     boost::shared_ptr<VideoDecoder> videoDecoder;
 
@@ -49,7 +50,11 @@ private:
     void process(boost::shared_ptr<FlushReq> event);
     void process(boost::shared_ptr<EndOfVideoStream> event);
 
+    void process(boost::shared_ptr<SelectDeinterlacer> event);
+
     void deinterlace();
+
+    void announceDeinterlacers();
 };
 
 #endif

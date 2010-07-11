@@ -19,7 +19,7 @@ class GtkmmMediaCommon : public MediaCommon
     static Glib::Dispatcher m_dispatcher;
 
 public:
-    sigc::signal<void, const ConfigurationData&> signal_configuration_data_loaded;
+    sigc::signal<void, boost::shared_ptr<ConfigurationData> > signal_configuration_data_loaded;
 
     GtkmmMediaCommon();
     virtual ~GtkmmMediaCommon();

@@ -69,11 +69,14 @@ private:
     void process(boost::shared_ptr<VideoPacketEvent> event);
     void process(boost::shared_ptr<XFVideoImage> event);
     void process(boost::shared_ptr<FlushReq> event);
-    void process(boost::shared_ptr<EndOfVideoStream> event);		 
+    void process(boost::shared_ptr<EndOfVideoStream> event);
+    void process(boost::shared_ptr<EnableOptimalPixelFormat> event);
+    void process(boost::shared_ptr<DisableOptimalPixelFormat> event);
 
     void decode();
     void queue();
 
+    void setImageFormat(int imageFormat);
     void getSwsContext();
     void requestNewFrame();
 };

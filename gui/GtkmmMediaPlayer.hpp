@@ -26,6 +26,7 @@ public:
     sigc::signal<void, NotificationCurrentVolume> notificationCurrentVolume;
     sigc::signal<void, NotificationVideoSize> notificationVideoSize;
     sigc::signal<void, NotificationClipping> notificationClipping;
+    sigc::signal<void, NotificationDeinterlacerList> notificationDeinterlacerList;
     sigc::signal<void> notificationFileClosed;
 
     GtkmmMediaPlayer(PlayList& playList);
@@ -38,6 +39,7 @@ public:
     virtual void process(boost::shared_ptr<NotificationCurrentVolume> event);
     virtual void process(boost::shared_ptr<NotificationVideoSize> event);
     virtual void process(boost::shared_ptr<NotificationClipping> event);
+    virtual void process(boost::shared_ptr<NotificationDeinterlacerList> event);
     virtual void process(boost::shared_ptr<CloseFileResp> event);
 
 private:

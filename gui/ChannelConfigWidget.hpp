@@ -29,7 +29,7 @@ class ChannelConfigWidget : public Gtk::VBox
 public:
     sigc::signal<void, const ChannelData&> signalSetFrequency;
     sigc::signal<void, std::string> signalStartScan;
-    sigc::signal<void, const ConfigurationData&> signalConfigurationDataChanged;
+    sigc::signal<void, boost::shared_ptr<ConfigurationData> > signalConfigurationDataChanged;
 
     ChannelConfigWidget();
     virtual ~ChannelConfigWidget();
@@ -41,7 +41,7 @@ public:
     virtual void on_tuner_scan_stopped();
     virtual void on_tuner_scan_finished();
 
-    virtual void on_configuration_data_loaded(const ConfigurationData&);
+    virtual void on_configuration_data_loaded(boost::shared_ptr<ConfigurationData>);
 
 private:
     //Signal handlers:
@@ -142,6 +142,8 @@ private:
     // case configuration data has to be saved. In the first case this is 
     // not useful, when further modification do follow.
     bool m_isEnabled_signalConfigurationDataChanged;
+
+    boost::shared_ptr<ConfigurationData> m_ConfigurationData;
 };
 
 #endif

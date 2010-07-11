@@ -27,5 +27,5 @@ void GtkmmMediaCommon::notifyGuiThread()
 
 void GtkmmMediaCommon::process(boost::shared_ptr<ConfigurationData> event)
 {
-    signal_configuration_data_loaded(*event);
+    signal_configuration_data_loaded(event);
 }

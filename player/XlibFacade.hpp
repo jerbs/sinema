@@ -87,6 +87,8 @@ public:
     void handleExposeEvent();
     void clipDst(int windowLeft, int windowRight, int windowTop, int windowBottom);
     void clipSrc(int videoLeft, int videoRight, int videoTop, int videoBottom);
+    void enableXvClipping();
+    void disableXvClipping();
     Display* display() {return m_display;}
     Window window() {return m_window;}
 

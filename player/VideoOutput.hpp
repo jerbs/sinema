@@ -103,6 +103,8 @@ private:
     void process(boost::shared_ptr<WindowExposeEvent> event);
     void process(boost::shared_ptr<ClipVideoDstEvent> event);
     void process(boost::shared_ptr<ClipVideoSrcEvent> event);
+    void process(boost::shared_ptr<EnableXvClipping> event);
+    void process(boost::shared_ptr<DisableXvClipping> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);

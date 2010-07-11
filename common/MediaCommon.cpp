@@ -58,10 +58,10 @@ void MediaCommon::init()
     sendInitEvents();
 }
 
-void MediaCommon::saveConfigurationData(const ConfigurationData& configurationData)
+void MediaCommon::saveConfigurationData(boost::shared_ptr<ConfigurationData> event)
 {
     // Send copy of configuration data:
-    configFile->queue_event(boost::make_shared<ConfigurationData>(configurationData));
+    configFile->queue_event(boost::make_shared<ConfigurationData>(*event));
 }
 
 void MediaCommon::sendInitEvents()

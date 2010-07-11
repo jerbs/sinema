@@ -279,9 +279,13 @@ void ChannelConfigWidget::on_tuner_scan_finished()
     m_StatusBarMessage.set_text("Scanning channels finished");
 }
 
-void ChannelConfigWidget::on_configuration_data_loaded(const ConfigurationData& configurationData)
+void ChannelConfigWidget::on_configuration_data_loaded(boost::shared_ptr<ConfigurationData> event)
 {
     DEBUG();
+
+    m_ConfigurationData = event;
+
+    const ConfigurationData& configurationData = *event;
 
     TemporaryDisable d(m_isEnabled_signalConfigurationDataChanged);
 
@@ -539,8 +543,9 @@ void ChannelConfigWidget::saveConfigurationData()
 
     DEBUG(<< __PRETTY_FUNCTION__);
 
-    ConfigurationData configurationData;
+    ConfigurationData& configurationData = *m_ConfigurationData;
     StationList& stationList = configurationData.stationList;
+    stationList.clear();
 
     Gtk::TreeModel::Children children = m_refTreeModel->children();
     Gtk::TreeModel::iterator iter = children.begin();
@@ -557,7 +562,7 @@ void ChannelConfigWidget::saveConfigurationData()
 	iter++;
     }
 
-    signalConfigurationDataChanged(configurationData);
+    signalConfigurationDataChanged(m_ConfigurationData);
 }
 
 void ChannelConfigWidget::setStandard(Gtk::TreeRow& row, const Glib::ustring& standard)

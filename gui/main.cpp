@@ -6,6 +6,7 @@
 
 #include "gui/ConfigWindow.hpp"
 #include "gui/ChannelConfigWidget.hpp"
+#include "gui/PlayerConfigWidget.hpp"
 #include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/GtkmmMediaReceiver.hpp"
@@ -46,6 +47,7 @@ int main(int argc, char *argv[])
     ControlWindow controlWindow(signalDispatcher);
     ConfigWindow configWindow;
     ChannelConfigWidget channelConfigWidget;
+    PlayerConfigWidget playerConfigWidget;
     PlayListWindow playListWindow(playList);
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
     GtkmmMediaRecorder mediaRecorder;
@@ -58,6 +60,7 @@ int main(int argc, char *argv[])
     signalDispatcher.setMainWindow(&mainWindow);
 
     configWindow.addWidget(channelConfigWidget, "Channels", "Channels");
+    configWindow.addWidget(playerConfigWidget, "Player", "Player");
 
     // Compiler needs help to find the correct overloaded method:
     void (GtkmmMediaPlayer::*GtkmmMediaPlayer_ClipSrc)(boost::shared_ptr<ClipVideoSrcEvent> event) = &GtkmmMediaPlayer::clip;
@@ -123,6 +126,10 @@ int main(int argc, char *argv[])
     signalDispatcher.ignoreWindowResize.connect(sigc::mem_fun(mainWindow, &MainWindow::ignoreWindowResize));
 
     // ---------------------------------------------------------------
+    // Signals: GtkmmMediaPlayer -> PlayerConfigWidget
+    mediaPlayer.notificationDeinterlacerList.connect( sigc::mem_fun(playerConfigWidget, &PlayerConfigWidget::on_deinterlacer_list) );
+
+    // ---------------------------------------------------------------
     // Signals: GtkmmMediaReceiver -> ChannelConfigWidget
     mediaReceiver.notificationChannelTuned.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_channel_tuned) );
     mediaReceiver.notificationSignalDetected.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_signal_detected) );
@@ -136,6 +143,14 @@ int main(int argc, char *argv[])
     // ---------------------------------------------------------------
     // Signals: ChannelConfigWidget -> SignalDispatcher
     channelConfigWidget.signalConfigurationDataChanged.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
+
+    // ---------------------------------------------------------------
+    // Signals: PlayerConfigWidget -> MediaPlayer
+    playerConfigWidget.signalEnableOptimalPixelFormat.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::enableOptimalPixelFormat) );
+    playerConfigWidget.signalDisableOptimalPixelFormat.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::disableOptimalPixelFormat) );
+    playerConfigWidget.signalEnableXvClipping.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::enableXvClipping) );
+    playerConfigWidget.signalDisableXvClipping.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::disableXvClipping) );
+    playerConfigWidget.signalSelectDeinterlacer.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::selectDeinterlacer) );
 
     // ---------------------------------------------------------------
     // Signals: ConfigWindow -> SignalDispatcher
@@ -152,8 +167,18 @@ int main(int argc, char *argv[])
     channelConfigWidget.signalConfigurationDataChanged.connect(sigc::mem_fun(&mediaCommon, &MediaCommon::saveConfigurationData) );
 
     // ---------------------------------------------------------------
+    // Signals: GtkmmMediaCommon -> PlayerConfigWidget
+    mediaCommon.signal_configuration_data_loaded.connect(sigc::mem_fun(&playerConfigWidget, &PlayerConfigWidget::on_configuration_data_loaded) );
+
+    // Signals: PlayerConfigWidget -> GtkmmMediaCommon
+    playerConfigWidget.signalConfigurationDataChanged.connect(sigc::mem_fun(&mediaCommon, &MediaCommon::saveConfigurationData) );
+
+    // ---------------------------------------------------------------
     // Signals: GtkmmMediaCommon -> SignalDispatcher
     mediaCommon.signal_configuration_data_loaded.connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_configuration_data_changed) );
+
+    // Signals: SignalDispatcher -> GtkmmMediaCommon
+    signalDispatcher.signalConfigurationDataChanged.connect(sigc::mem_fun(&mediaCommon, &MediaCommon::saveConfigurationData) );
 
     // ---------------------------------------------------------------
     // Signals: PlayListWindow -> SignalDispatcher
