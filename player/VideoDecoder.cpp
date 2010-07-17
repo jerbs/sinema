@@ -30,7 +30,7 @@ VideoDecoder::VideoDecoder(event_processor_ptr_type evt_proc)
       avFrame(avcodec_alloc_frame()),
       avFrameIsFree(true),
       pts(0),
-      m_imageFormat(GUID_YUY2_PACKED),
+      m_imageFormat(0),
       eos(false),
       swsContext(0),
       m_topFieldFirst(true),
@@ -117,6 +117,11 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 			{
 			    int formatId = getFormatId(avCodecContext->pix_fmt);
 			    setImageFormat(formatId);
+			}
+			else
+			{
+			    // Set format needed to use the deinterlacer:
+			    setImageFormat(GUID_YUY2_PACKED);
 			}
 			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd,
 											m_imageFormat));
@@ -215,6 +220,8 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq> event)
 	// Do the same as the Deinterlacer when receiving CloseVideoOutputReq:
 	m_topFieldFirst = true;
 
+	// Do not reset m_useOptimumImageFormat, it is a configuration parameter.
+
 	// Send event via Deinterlacer to VideoOutput:
 	deinterlacer->queue_event(boost::make_shared<CloseVideoOutputReq>());
 
@@ -239,6 +246,7 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp> event)
 	// Keep avFrame.
 	avFrameIsFree = true;
 	pts = 0;
+	m_imageFormat = 0;
 
 	if (swsContext)
 	{
@@ -568,6 +576,8 @@ void VideoDecoder::queue()
 	    {
 		deinterlacer->queue_event(boost::make_shared<BottomFieldFirst>());
 	    }
+
+	    m_topFieldFirst = tff;
 	}
 
 	// The deinterlacer needs two frames.
@@ -591,6 +601,8 @@ void VideoDecoder::setImageFormat(int imageFormat)
 {
     if (m_imageFormat != imageFormat)
     {
+	TRACE_DEBUG(<< std::hex << imageFormat);
+
 	m_imageFormat = imageFormat;
 
 	getSwsContext();
