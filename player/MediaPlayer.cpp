@@ -1,7 +1,7 @@
 //
 // Media Player
 //
-// Copyright (C) Joachim Erbs
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include "player/MediaPlayer.hpp"
@@ -304,8 +304,18 @@ void MediaPlayer::process(boost::shared_ptr<OpenFileResp> event)
 
 void MediaPlayer::process(boost::shared_ptr<OpenFileFail> event)
 {
-    TRACE_DEBUG();
-    skipForward();
+    TRACE_DEBUG(<< event->reason);
+
+    if (event->reason == OpenFileFail::AlreadyOpened)
+    {
+	// Pressing play in the GUI always sends an Open and a Play event.
+	// The Demuxer then also receives a OpenFileReq when Play is pressed 
+	// in pause mode.
+    }
+    else
+    {
+	skipForward();
+    }
 }
 
 void MediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
@@ -371,4 +381,17 @@ void MediaPlayer::process(boost::shared_ptr<AudioSyncInfo> event)
     TRACE_DEBUG();
     // This messeage is only received for files having an audio stream only.
     process(boost::make_shared<NotificationCurrentTime>(event->pts));
+}
+
+std::ostream& operator<<(std::ostream& strm, OpenFileFail::Reason reason)
+{
+    switch (reason)
+    {
+    case OpenFileFail::OpenFileFailed:   strm << "OpenFileFailed"; break;
+    case OpenFileFail::FindStreamFailed: strm << "FindStreamFailed"; break;
+    case OpenFileFail::OpenStreamFailed: strm << "OpenStreamFailed"; break;
+    case OpenFileFail::AlreadyOpened:    strm << "AlreadyOpened"; break;
+    }
+
+    return strm;
 }

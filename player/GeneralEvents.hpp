@@ -90,13 +90,26 @@ struct OpenFileReq
 };
 
 struct OpenFileResp {};
-struct OpenFileFail {};
+struct OpenFileFail
+{
+    enum Reason {
+	OpenFileFailed,
+	FindStreamFailed,
+	OpenStreamFailed,
+	AlreadyOpened
+    };
+
+    OpenFileFail(Reason reason) : reason(reason) {}
+    Reason reason;
+};
 
 struct CloseFileReq {};
 struct CloseFileResp {};
 
 struct OpenAudioStreamFailed {};
 struct OpenVideoStreamFailed {};
+
+std::ostream& operator<<(std::ostream& strm, OpenFileFail::Reason reason);
 
 // ===================================================================
 

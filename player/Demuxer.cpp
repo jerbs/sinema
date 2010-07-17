@@ -1,7 +1,7 @@
 //
 // Demultiplexer
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #include "player/Demuxer.hpp"
@@ -75,7 +75,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	if (ret != 0)
 	{
 	    TRACE_ERROR(<< "av_open_input_file failed: " << ret);
-	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
+	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::OpenFileFailed));
 	    return;
 	}
 
@@ -85,7 +85,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	{
 	    TRACE_ERROR(<< "av_find_stream_info failed: " << ret);
 	    av_close_input_file(avFormatContext);
-	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
+	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::FindStreamFailed));
 	    return;
 	}
 
@@ -126,8 +126,9 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
     }
     else if (systemStreamStatus == SystemStreamOpened)
     {
-	TRACE_DEBUG(<< "opened");
-	mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
+	TRACE_DEBUG(<< "state SystemStreamOpened" << fileName << "-->" << event->fileName);
+
+	mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::AlreadyOpened));
     }
     else if (systemStreamStatus == SystemStreamClosing ||
 	     systemStreamStatus == SystemStreamOpening)
@@ -201,7 +202,7 @@ void Demuxer::updateSystemStreamStatusOpening()
 	{
 	    // Opening audio and video stream failed.
 	    av_close_input_file(avFormatContext);
-	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>());
+	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::OpenStreamFailed));
 	    return;
 	}
 
