@@ -325,9 +325,9 @@ void Deinterlacer::deinterlace()
     m_emptyImages.pop();
 
     XvImage* yuvImage = image->xvImage();
-    int w = yuvImage->width;
+    //int w = yuvImage->width;
     int h = yuvImage->height;
-    char* Packed = yuvImage->data + yuvImage->offsets[0];
+    //char* Packed = yuvImage->data + yuvImage->offsets[0];
 
     std::list<boost::shared_ptr<XFVideoImage> >::iterator it = m_interlacedImages.begin();
 

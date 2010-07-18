@@ -599,7 +599,7 @@ void ChannelConfigWidget::updateFrequency(Gtk::TreeRow& row)
     Glib::ustring standard = row[m_Columns.m_col_standard];
     ChannelFrequencyTable cft = ChannelFrequencyTable::create(standard.c_str());
     int ch = ChannelFrequencyTable::getChannelNumber(cft, channel.c_str());
-    int freq = ChannelFrequencyTable::getChannelFreq(cft, ch);
+    unsigned int freq = ChannelFrequencyTable::getChannelFreq(cft, ch);
     TRACE_DEBUG(<< standard << ":" << channel << " = " << freq);
     if (row[m_Columns.m_col_frequency] != freq)
     {

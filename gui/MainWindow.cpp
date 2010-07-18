@@ -16,11 +16,11 @@ MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
 		       SignalDispatcher& signalDispatcher)
     : Gtk::Window(),
       m_GtkmmMediaPlayer(gtkmmMediaPlayer),
+      m_StatusBar(signalDispatcher.getStatusBar()),
+      m_ScrollbarPosition(signalDispatcher.getPositionAdjustment()),
       m_video_zoom(1),
       m_fullscreen(false),
-      m_ignore_window_size_change(getTimespec(0)),
-      m_StatusBar(signalDispatcher.getStatusBar()),
-      m_ScrollbarPosition(signalDispatcher.getPositionAdjustment())
+      m_ignore_window_size_change(getTimespec(0))
 {
     set_title(applicationName);
     set_default_size(400, 300);
@@ -128,7 +128,7 @@ void MainWindow::on_notification_video_size(const NotificationVideoSize& event)
 		 << "adj(" << m_VideoSize.widthAdj << "," << m_VideoSize.heightAdj << ")" );
 
     const double xzoom = round(double(m_VideoSize.widthDst)  / double(m_VideoSize.widthAdj) * 100) / 100;
-    const double yzoom = round(double(m_VideoSize.heightDst) / double(m_VideoSize.heightAdj)* 100) / 100;
+    // const double yzoom = round(double(m_VideoSize.heightDst) / double(m_VideoSize.heightAdj)* 100) / 100;
 
     std::stringstream ss;
     ss << xzoom * 100 << " %";

@@ -432,40 +432,43 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 	{
 	case GDK_Left:
 	    signal_seek_relative(-10 * factor);
-	    break;
+	    return true;
 	case GDK_Right:
 	    signal_seek_relative(+10 * factor);
-	    break;
+	    return true;
 	case ' ':
 	    if (m_refActionPlay->is_visible())
 		on_media_play();
 	    else if (m_refActionPause->is_visible())
 		on_media_pause();
-	    break;
+	    return true;
 	case GDK_Up:
 	    m_AdjustmentVolume.set_value(m_AdjustmentVolume.get_value() +
 					 m_AdjustmentVolume.get_step_increment() * factor);
-	    break;
+	    return true;
 	case GDK_Down:
 	    m_AdjustmentVolume.set_value(m_AdjustmentVolume.get_value() -
 					 m_AdjustmentVolume.get_step_increment() * factor);
-	    break;
+	    return true;
 	case 'm':
 	    m_refMute->set_active(!m_refMute->get_active());
-	    break;
+	    return true;
 	case GDK_Page_Up:
 	    on_media_previous();
 	    // on_channel_previous();
-	    break;
+	    return true;
 	case GDK_Page_Down:
 	    on_media_next();
 	    // on_channel_next();
-	    break;
+	    return true;
 	case GDK_Escape:
 	    m_MainWindow->unfullscreen();
-	    break;
+	    return true;
 	}
     }
+
+    // Event has not been handled:
+    return false;
 }
 
 void SignalDispatcher::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context,
@@ -834,7 +837,7 @@ bool SignalDispatcher::on_main_window_state_event(GdkEventWindowState* event)
 	// may be triggered by the application itself or by the window manager.
 
 	bool fullscreen;
-	if (m_fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN)
+	if (( m_fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN ))
 	{
 	    m_visible = &m_visibleFullscreen;
 	    fullscreen = true;
@@ -932,7 +935,7 @@ void SignalDispatcher::on_view_menubar()
     {
 	ignoreWindowResize();
 
-	if (m_visible->menuBar = m_refMenuBarVisible->get_active())
+	if (( m_visible->menuBar = m_refMenuBarVisible->get_active() ))
 	{
 	    pMenubar->show();
 	}
@@ -952,7 +955,7 @@ void SignalDispatcher::on_view_toolbar()
     {
 	ignoreWindowResize();
 
-	if (m_visible->toolBar = m_refToolBarVisible->get_active())
+	if (( m_visible->toolBar = m_refToolBarVisible->get_active() ))
 	{
 	    pToolbar->show();
 	}
@@ -969,7 +972,7 @@ void SignalDispatcher::on_view_statusbar()
 {
     ignoreWindowResize();
 
-    if (m_visible->statusBar = m_refStatusBarVisible->get_active())
+    if (( m_visible->statusBar = m_refStatusBarVisible->get_active() ))
     {
 	m_StatusBar.show();
     }

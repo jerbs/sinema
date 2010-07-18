@@ -415,7 +415,7 @@ void VideoDecoder::decode()
 	{
 	    if (avPacket.dts == (int64_t)AV_NOPTS_VALUE &&
 		avFrame->opaque &&
-		*(int64_t*)avFrame->opaque != AV_NOPTS_VALUE)
+		*(int64_t*)avFrame->opaque != (int64_t)AV_NOPTS_VALUE)
 	    {
 		pts = *(uint64_t *)avFrame->opaque;
 	    }

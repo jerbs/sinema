@@ -21,8 +21,8 @@ struct StartTest
     int sample_rate;
     int channels;
 
-    int width;
-    int height;
+    unsigned int width;
+    unsigned int height;
     int imageFormat;
 };
 

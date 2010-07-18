@@ -191,6 +191,7 @@ void Recorder::operator()()
 	{
 	    TRACE_DEBUG(<< "start");
 
+	    int res;
 	    pollfd pfd[2];
 
 	    pfd[0].fd = m_piperfd;
@@ -205,25 +206,43 @@ void Recorder::operator()()
 		pfd[1].events = POLLIN;
 		pfd[1].revents = 0;
 
-		int res = poll(pfd, 2, -1);
+		res = poll(pfd, 2, -1);
 
-		if (pfd[1].revents & POLLIN)
+		if (res < 0)
 		{
-		    bufferFill = read(m_rfd, &buffer[0], bufferSize);
-		    TRACE_DEBUG(<< "read " << bufferFill);
-		    if (bufferFill == -1)
+		    if (res == EINTR)
 		    {
-			bufferFill = 0;
-			TRACE_ERROR(<< "read failed on m_rfd: " << strerror(errno));
+			// ignore
+		    }
+		    else
+		    {
+			TRACE_THROW(std::string, "pipe failed (read)" << errno);
 		    }
 		}
-		if (pfd[1].revents & POLLERR)
+		else if (res == 0)
 		{
-		    TRACE_ERROR(<< "POLLERR on m_rfd.");
+		    // timeout
 		}
-		if (pfd[1].revents & POLLHUP)
+		else
 		{
-		    TRACE_ERROR(<< "POLLHUP on m_rfd.");
+		    if (pfd[1].revents & POLLIN)
+		    {
+			bufferFill = read(m_rfd, &buffer[0], bufferSize);
+			TRACE_DEBUG(<< "read " << bufferFill);
+			if (bufferFill == -1)
+			{
+			    bufferFill = 0;
+			    TRACE_ERROR(<< "read failed on m_rfd: " << strerror(errno));
+			}
+		    }
+		    if (pfd[1].revents & POLLERR)
+		    {
+			TRACE_ERROR(<< "POLLERR on m_rfd.");
+		    }
+		    if (pfd[1].revents & POLLHUP)
+		    {
+			TRACE_ERROR(<< "POLLHUP on m_rfd.");
+		    }
 		}
 	    }
 	    else
@@ -234,42 +253,57 @@ void Recorder::operator()()
 		pfd[1].events = POLLOUT;
 		pfd[1].revents = 0;
 
-		int res = poll(pfd, 2, -1);
+		res = poll(pfd, 2, -1);
 
-		if (pfd[1].revents & POLLOUT)
+		if (res < 0)
 		{
-		    int num = write(m_wfd, &buffer[writePos], bufferFill);
-		    TRACE_DEBUG(<< "write " << num);
-		    if (num == -1)
+		    if (res == EINTR)
 		    {
-			TRACE_ERROR(<< "write failed on m_wfd: " << strerror(errno));
+			// ignore
 		    }
 		    else
 		    {
-			writePos += num;
-			bufferFill -= num;
-
-			if (bufferFill == 0)
-			{
-			    writePos = 0;
-			}
-
-			updateDuration();
+			TRACE_THROW(std::string, "pipe failed (read)" << errno);
 		    }
 		}
-		if (pfd[1].revents & POLLERR)
+		else if (res == 0)
 		{
-		    TRACE_ERROR(<< "POLLERR on m_wfd.");
 		}
-		if (pfd[1].revents & POLLHUP)
+		else
 		{
-		    TRACE_ERROR(<< "POLLHUP on m_wfd.");
+		    if (pfd[1].revents & POLLOUT)
+		    {
+			int num = write(m_wfd, &buffer[writePos], bufferFill);
+			TRACE_DEBUG(<< "write " << num);
+			if (num == -1)
+			{
+			    TRACE_ERROR(<< "write failed on m_wfd: " << strerror(errno));
+			}
+			else
+			{
+			    writePos += num;
+			    bufferFill -= num;
+			    
+			    if (bufferFill == 0)
+			    {
+				writePos = 0;
+			    }
+			    
+			    updateDuration();
+			}
+		    }
+		    if (pfd[1].revents & POLLERR)
+		    {
+			TRACE_ERROR(<< "POLLERR on m_wfd.");
+		    }
+		    if (pfd[1].revents & POLLHUP)
+		    {
+			TRACE_ERROR(<< "POLLHUP on m_wfd.");
+		    }
 		}
 	    }
 
-
-
-	    if (pfd[0].revents)
+	    if (res > 0 && pfd[0].revents)
 	    {
 		// Read data from pipe:
 

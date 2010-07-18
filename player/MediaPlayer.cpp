@@ -31,7 +31,7 @@ void logfunc(void* p, int i, const char* format, va_list ap)
     {
 	TRACE_ERROR(<< "vsnprintf failed: " << needed);
     }
-    else if (needed > size-pos)
+    else if (needed > int(size-pos))
     {
 	// Buffer is too small.
 

@@ -481,7 +481,7 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 	{
 	    // Playback not yet started.
 
-	    snd_pcm_sframes_t filled = buffer_size-avail;
+	    snd_pcm_uframes_t filled = buffer_size-avail;
 	    if (2*filled > buffer_size)
 	    {
 		// Now starting playback should be possible

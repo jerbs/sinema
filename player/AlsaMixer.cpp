@@ -214,7 +214,7 @@ void AFMixer::getVolumeAndSwitch(snd_mixer_elem_t* elem,
 
 	    TRACE_DEBUG(<< snd_mixer_selem_channel_name(chn) << ": "
 			<< vol << ", "
-			<< swt ? "on" : "off");
+			<< (swt ? "on" : "off"));
 
 	    volume += vol;
 	    count++;

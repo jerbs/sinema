@@ -129,11 +129,11 @@ void SyncTest::generateAudioFrame(boost::shared_ptr<AFAudioFrame> audioFrame)
 
 void SyncTest::generateVideoFrame(boost::shared_ptr<XFVideoImage> videoFrame)
 {
-    int& width = m_conf.width;
-    int& height = m_conf.height;
+    //unsigned int& width = m_conf.width;
+    //unsigned int& height = m_conf.height;
 
     int num = int(m_pts) % 8;
-    int lum = 25 + (num) * 25;
+    //int lum = 25 + (num) * 25;
 
     XvImage* yuvImage = videoFrame->xvImage();
 
@@ -147,12 +147,12 @@ void SyncTest::generateVideoFrame(boost::shared_ptr<XFVideoImage> videoFrame)
     if (yuvImage->id == GUID_YUV12_PLANAR)
     {
 	char* Y = data + yuvImage->offsets[0];
-	char* V = data + yuvImage->offsets[1];
-	char* U = data + yuvImage->offsets[2];
+	//char* V = data + yuvImage->offsets[1];
+	//char* U = data + yuvImage->offsets[2];
 
 	int Yp = yuvImage->pitches[0];
-	int Vp = yuvImage->pitches[1];
-	int Up = yuvImage->pitches[2];
+	//int Vp = yuvImage->pitches[1];
+	//int Up = yuvImage->pitches[2];
 
 	videoFrame->createDemoImage();
 

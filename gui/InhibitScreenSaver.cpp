@@ -261,7 +261,7 @@ void XScreenSaverInterface::findScreenSaverWindow()
 	if (parent)
 	    return;
 
-	for (int i = 0; i < nchildren; i++)
+	for (unsigned int i = 0; i < nchildren; i++)
 	{
 	    XSync (m_xdisplay, False);
 
