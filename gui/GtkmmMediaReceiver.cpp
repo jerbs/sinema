@@ -35,12 +35,12 @@ void GtkmmMediaReceiver::process(boost::shared_ptr<TunerNotifySignalDetected> ev
     notificationSignalDetected(event->channelData);
 }
 
-void GtkmmMediaReceiver::process(boost::shared_ptr<TunerScanStopped> event)
+void GtkmmMediaReceiver::process(boost::shared_ptr<TunerScanStopped>)
 {
     notificationScanStopped();
 }
 
-void GtkmmMediaReceiver::process(boost::shared_ptr<TunerScanFinished> event)
+void GtkmmMediaReceiver::process(boost::shared_ptr<TunerScanFinished>)
 {
     notificationScanFinished();
 }

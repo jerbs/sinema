@@ -256,7 +256,7 @@ void SyncTestApp::sendInitEvents()
      videoOutput->queue_event(boost::make_shared<WindowConfigureEvent>(0,0, m_width, m_heigth));
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     SyncTestApp syncTestApp;
     syncTestApp();

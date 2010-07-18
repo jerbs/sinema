@@ -87,7 +87,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
     demuxer->queue_event(boost::make_shared<OpenAudioStreamFail>(audioStreamIndex));
 }
 
-void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputResp> event)
+void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputResp>)
 {
     if (state == Opening)
     {
@@ -98,7 +98,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputResp> event)
     }
 }
 
-void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputFail> event)
+void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputFail>)
 {
     if (state == Opening)
     {
@@ -118,7 +118,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputFail> event)
     }
 }
 
-void AudioDecoder::process(boost::shared_ptr<CloseAudioStreamReq> event)
+void AudioDecoder::process(boost::shared_ptr<CloseAudioStreamReq>)
 {
     if (state != Closed)
     {
@@ -149,7 +149,7 @@ void AudioDecoder::process(boost::shared_ptr<CloseAudioStreamReq> event)
     }
 }
 
-void AudioDecoder::process(boost::shared_ptr<CloseAudioOutputResp> event)
+void AudioDecoder::process(boost::shared_ptr<CloseAudioOutputResp>)
 {
     if (state == Closing)
     {
@@ -215,7 +215,7 @@ void AudioDecoder::process(boost::shared_ptr<FlushReq> event)
     }
 }
 
-void AudioDecoder::process(boost::shared_ptr<EndOfAudioStream> event)
+void AudioDecoder::process(boost::shared_ptr<EndOfAudioStream>)
 {
     if (state == Opened)
     {

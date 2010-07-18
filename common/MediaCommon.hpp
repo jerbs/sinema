@@ -60,7 +60,7 @@ private:
     boost::shared_ptr<event_processor<> > commonEventProcessor;
 
     virtual void process(boost::shared_ptr<ConfigurationData> event) = 0;
-    virtual void process(boost::shared_ptr<ConfigurationFileWritten> event) {}
+    virtual void process(boost::shared_ptr<ConfigurationFileWritten>) {}
 
     void sendInitEvents();
 };

@@ -115,7 +115,7 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationDeinterlacerList> e
     notificationDeinterlacerList(*event);
 }
 
-void GtkmmMediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
+void GtkmmMediaPlayer::process(boost::shared_ptr<CloseFileResp>)
 {
     notificationCurrentTime(0);
     notificationFileClosed();
@@ -236,7 +236,7 @@ bool GtkmmMediaPlayer::on_button_press_event(GdkEventButton* event)
     return false;
 }
 
-void GtkmmMediaPlayer::process(boost::shared_ptr<HideCursorEvent> event)
+void GtkmmMediaPlayer::process(boost::shared_ptr<HideCursorEvent>)
 {
     Glib::RefPtr <Gdk::Window> gdkWindow = get_window();
     if (gdkWindow)

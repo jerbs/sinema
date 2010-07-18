@@ -51,7 +51,7 @@ void Demuxer::process(boost::shared_ptr<InitEvent> event)
     videoDecoder = event->videoDecoder;
 }
 
-void Demuxer::process(boost::shared_ptr<StopEvent> event)
+void Demuxer::process(boost::shared_ptr<StopEvent>)
 {
     TRACE_DEBUG();
 }
@@ -141,7 +141,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
     }
 }
 
-void Demuxer::process(boost::shared_ptr<OpenAudioStreamResp> event)
+void Demuxer::process(boost::shared_ptr<OpenAudioStreamResp>)
 {
     if (audioStreamStatus == StreamOpening)
     {
@@ -151,7 +151,7 @@ void Demuxer::process(boost::shared_ptr<OpenAudioStreamResp> event)
     }
 }
 
-void Demuxer::process(boost::shared_ptr<OpenAudioStreamFail> event)
+void Demuxer::process(boost::shared_ptr<OpenAudioStreamFail>)
 {
     if (audioStreamStatus == StreamOpening)
     {
@@ -163,7 +163,7 @@ void Demuxer::process(boost::shared_ptr<OpenAudioStreamFail> event)
     }
 }
 
-void Demuxer::process(boost::shared_ptr<OpenVideoStreamResp> event)
+void Demuxer::process(boost::shared_ptr<OpenVideoStreamResp>)
 {
     if (videoStreamStatus == StreamOpening)
     {
@@ -173,7 +173,7 @@ void Demuxer::process(boost::shared_ptr<OpenVideoStreamResp> event)
     }
 }
 
-void Demuxer::process(boost::shared_ptr<OpenVideoStreamFail> event)
+void Demuxer::process(boost::shared_ptr<OpenVideoStreamFail>)
 {
     if (videoStreamStatus == StreamOpening)
     {
@@ -276,7 +276,7 @@ void Demuxer::process(boost::shared_ptr<CloseFileReq> event)
     }
 }
 
-void Demuxer::process(boost::shared_ptr<CloseAudioStreamResp> event)
+void Demuxer::process(boost::shared_ptr<CloseAudioStreamResp>)
 {
     if (audioStreamStatus == StreamClosing)
     {
@@ -287,7 +287,7 @@ void Demuxer::process(boost::shared_ptr<CloseAudioStreamResp> event)
     }
 }
 
-void Demuxer::process(boost::shared_ptr<CloseVideoStreamResp> event)
+void Demuxer::process(boost::shared_ptr<CloseVideoStreamResp>)
 {
     if (videoStreamStatus == StreamClosing)
     {
@@ -379,7 +379,7 @@ void Demuxer::process(boost::shared_ptr<FlushReq> event)
     audioDecoder->queue_event(event);
 }
 
-void Demuxer::process(boost::shared_ptr<ConfirmAudioPacketEvent> event)
+void Demuxer::process(boost::shared_ptr<ConfirmAudioPacketEvent>)
 {
     if (audioStreamStatus == StreamOpened)
     {
@@ -388,7 +388,7 @@ void Demuxer::process(boost::shared_ptr<ConfirmAudioPacketEvent> event)
     }
 }
 
-void Demuxer::process(boost::shared_ptr<ConfirmVideoPacketEvent> event)
+void Demuxer::process(boost::shared_ptr<ConfirmVideoPacketEvent>)
 {
     if (videoStreamStatus == StreamOpened)
     {

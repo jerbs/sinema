@@ -472,8 +472,8 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 }
 
 void SignalDispatcher::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context,
-					     int x, int y, const Gtk::SelectionData& selection_data,
-					     guint info, guint time)
+					     int /* x */, int /* y */, const Gtk::SelectionData& selection_data,
+					     guint /* info */, guint time)
 {
     TRACE_DEBUG();
 
@@ -1179,9 +1179,10 @@ void SignalDispatcher::on_notification_file_closed()
     }
 }
 
-void SignalDispatcher::on_set_title(Glib::ustring title)
+void SignalDispatcher::on_set_title(Glib::ustring /* title */)
 {
     // A new title is opened.
+    // Store current time. This is needed for skip back.
     m_timeTitlePlaybackStarted = timer::get_current_time();
 }
 

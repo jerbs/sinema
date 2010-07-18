@@ -139,7 +139,7 @@ void Recorder::process(boost::shared_ptr<StartRecordingReq> event)
     recorderAdapter->queue_event(boost::make_shared<StartRecordingResp>(m_tmpFile, error));
 }
 
-void Recorder::process(boost::shared_ptr<StopRecordingReq> event)
+void Recorder::process(boost::shared_ptr<StopRecordingReq>)
 {
     TRACE_DEBUG();
 

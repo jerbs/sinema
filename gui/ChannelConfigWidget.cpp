@@ -366,7 +366,7 @@ void ChannelConfigWidget::on_cellrenderer_finetune_edited(
 }
 
 void ChannelConfigWidget::on_row_activated (const Gtk::TreeModel::Path& path,
-					    Gtk::TreeViewColumn* column)
+					    Gtk::TreeViewColumn* /* column */)
 {
     TRACE_DEBUG();
 
@@ -424,22 +424,26 @@ bool ChannelConfigWidget::on_button_press_event(GdkEventButton* event)
     return false;
 }
 
-void ChannelConfigWidget::on_row_changed(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator&  iter)
+void ChannelConfigWidget::on_row_changed(const Gtk::TreeModel::Path& /* path */,
+					 const Gtk::TreeModel::iterator& /* iter */)
 {
     saveConfigurationData();
 }
 
-void ChannelConfigWidget::on_row_inserted(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter)
+void ChannelConfigWidget::on_row_inserted(const Gtk::TreeModel::Path& /* path */,
+					  const Gtk::TreeModel::iterator& /* iter */)
 {
     saveConfigurationData();
 }
 
-void ChannelConfigWidget::on_row_deleted(const Gtk::TreeModel::Path& path)
+void ChannelConfigWidget::on_row_deleted(const Gtk::TreeModel::Path& /* path */)
 {
     saveConfigurationData();
 }
 
-void ChannelConfigWidget::on_rows_reordered(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter, int* new_order)
+void ChannelConfigWidget::on_rows_reordered(const Gtk::TreeModel::Path& /* path */,
+					    const Gtk::TreeModel::iterator& /* iter */,
+					    int* /* new_order */)
 {
     saveConfigurationData();
 }

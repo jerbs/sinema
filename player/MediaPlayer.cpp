@@ -20,7 +20,7 @@ extern "C"
 #include <libavutil/log.h>
 }
 
-void logfunc(void* p, int i, const char* format, va_list ap)
+void logfunc(void* /* p */, int /* i */, const char* format, va_list ap)
 {
     const size_t size = 1024;
     static char buffer[size];
@@ -297,7 +297,7 @@ void MediaPlayer::selectDeinterlacer(const std::string& name)
     deinterlacer->queue_event(boost::make_shared<SelectDeinterlacer>(name));
 }
 
-void MediaPlayer::process(boost::shared_ptr<OpenFileResp> event)
+void MediaPlayer::process(boost::shared_ptr<OpenFileResp>)
 {
     TRACE_DEBUG();
 }
@@ -318,7 +318,7 @@ void MediaPlayer::process(boost::shared_ptr<OpenFileFail> event)
     }
 }
 
-void MediaPlayer::process(boost::shared_ptr<CloseFileResp> event)
+void MediaPlayer::process(boost::shared_ptr<CloseFileResp>)
 {
     TRACE_DEBUG();
 }
@@ -337,14 +337,14 @@ void MediaPlayer::process(boost::shared_ptr<NoVideoStream> event)
     audioOutput->queue_event(event);
 }
 
-void MediaPlayer::process(boost::shared_ptr<EndOfSystemStream> event)
+void MediaPlayer::process(boost::shared_ptr<EndOfSystemStream>)
 {
     TRACE_DEBUG();
     endOfAudioStream = false;
     endOfVideoStream = false;
 }
 
-void MediaPlayer::process(boost::shared_ptr<EndOfAudioStream> event)
+void MediaPlayer::process(boost::shared_ptr<EndOfAudioStream>)
 {
     TRACE_DEBUG();
     endOfAudioStream = true;
@@ -360,7 +360,7 @@ void MediaPlayer::process(boost::shared_ptr<EndOfAudioStream> event)
     }
 }
 
-void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream> event)
+void MediaPlayer::process(boost::shared_ptr<EndOfVideoStream>)
 {
     TRACE_DEBUG();
     endOfVideoStream = true;

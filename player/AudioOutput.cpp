@@ -77,7 +77,7 @@ void AudioOutput::process(boost::shared_ptr<OpenAudioOutputReq> event)
     }
 }
 
-void AudioOutput::process(boost::shared_ptr<CloseAudioOutputReq> event)
+void AudioOutput::process(boost::shared_ptr<CloseAudioOutputReq>)
 {
     if (isOpen())
     {
@@ -129,7 +129,7 @@ void AudioOutput::process(boost::shared_ptr<AFAudioFrame> event)
     }
 }
 
-void AudioOutput::process(boost::shared_ptr<PlayNextChunk> event)
+void AudioOutput::process(boost::shared_ptr<PlayNextChunk>)
 {
     if (state == PLAYING)
     {
@@ -139,7 +139,7 @@ void AudioOutput::process(boost::shared_ptr<PlayNextChunk> event)
     }
 }
 
-void AudioOutput::process(boost::shared_ptr<FlushReq> event)
+void AudioOutput::process(boost::shared_ptr<FlushReq>)
 {
     if (isOpen())
     {
@@ -173,7 +173,7 @@ void AudioOutput::process(boost::shared_ptr<FlushReq> event)
     }
 }
 
-void AudioOutput::process(boost::shared_ptr<EndOfAudioStream> event)
+void AudioOutput::process(boost::shared_ptr<EndOfAudioStream>)
 {
     if (isOpen())
     {
@@ -189,7 +189,7 @@ void AudioOutput::process(boost::shared_ptr<EndOfAudioStream> event)
     }
 }
 
-void AudioOutput::process(boost::shared_ptr<NoVideoStream> event)
+void AudioOutput::process(boost::shared_ptr<NoVideoStream>)
 {
     audioStreamOnly = true;
     // No timer has to be started here. Audio plays without video by default.
@@ -201,7 +201,7 @@ void AudioOutput::process(boost::shared_ptr<AlsaMixerElemEvent> event)
     	alsaMixer->process(event);
 }
 
-void AudioOutput::process(boost::shared_ptr<CommandPlay> event)
+void AudioOutput::process(boost::shared_ptr<CommandPlay>)
 {
     if (isOpen())
     {
@@ -240,7 +240,7 @@ void AudioOutput::process(boost::shared_ptr<CommandPlay> event)
     }
 }
 
-void AudioOutput::process(boost::shared_ptr<CommandPause> event)
+void AudioOutput::process(boost::shared_ptr<CommandPause>)
 {
     if (isOpen())
     {

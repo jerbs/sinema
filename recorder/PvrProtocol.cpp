@@ -70,7 +70,7 @@ void StorageProtocol::init()
 // -------------------------------------------------------------------
 // Callbacks used by FFmpeg:
 
-int StorageProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
+int StorageProtocol::pvrOpen(URLContext *h, const char *filename, int /* flags */)
 {
     TRACE_DEBUG(<< filename);
 

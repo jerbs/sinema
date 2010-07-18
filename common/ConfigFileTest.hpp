@@ -15,10 +15,6 @@
 
 class ConfigFile;
 
-class StartConfigFileTest
-{
-};
-
 class ConfigFileTest : public event_receiver<ConfigFileTest>
 {
     friend class event_processor<>;
@@ -37,7 +33,6 @@ private:
     boost::shared_ptr<ConfigFile> configFile;
 
     void process(boost::shared_ptr<CommonInitEvent> event);
-    void process(boost::shared_ptr<StartConfigFileTest> event);
     void process(boost::shared_ptr<ConfigurationData>);
     void process(boost::shared_ptr<ConfigurationFileWritten>);
 };

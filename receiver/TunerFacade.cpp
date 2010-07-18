@@ -20,7 +20,7 @@ void TunerFacade::process(boost::shared_ptr<ReceiverInitEvent> event)
     mediaReceiver = event->mediaReceiver;
 }
 
-void TunerFacade::process(boost::shared_ptr<TunerOpen> event)
+void TunerFacade::process(boost::shared_ptr<TunerOpen>)
 {
     if ((fd = open(device, O_RDWR)) < 0)
     {
@@ -32,7 +32,7 @@ void TunerFacade::process(boost::shared_ptr<TunerOpen> event)
     }
 }
 
-void TunerFacade::process(boost::shared_ptr<TunerClose> event)
+void TunerFacade::process(boost::shared_ptr<TunerClose>)
 {
     close(fd);
     fd = -1;

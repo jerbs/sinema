@@ -161,7 +161,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
     demuxer->queue_event(boost::make_shared<OpenVideoStreamFail>(videoStreamIndex));
 }
 
-void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputResp> event)
+void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputResp>)
 {
     if (state == Opening)
     {
@@ -172,7 +172,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputResp> event)
     }
 }
 
-void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputFail> event)
+void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputFail>)
 {
     if (state == Opening)
     {
@@ -192,7 +192,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoOutputFail> event)
     }
 }
 
-void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq> event)
+void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq>)
 {
     if (state != Closed)
     {
@@ -229,7 +229,7 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq> event)
     }
 }
 
-void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp> event)
+void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp>)
 {
     if (state == Closing)
     {
@@ -351,7 +351,7 @@ void VideoDecoder::process(boost::shared_ptr<EndOfVideoStream> event)
     }
 }
 
-void VideoDecoder::process(boost::shared_ptr<EnableOptimalPixelFormat> event)
+void VideoDecoder::process(boost::shared_ptr<EnableOptimalPixelFormat>)
 {
     TRACE_DEBUG();
     if (!m_useOptimumImageFormat)
@@ -366,7 +366,7 @@ void VideoDecoder::process(boost::shared_ptr<EnableOptimalPixelFormat> event)
     }
 }
 
-void VideoDecoder::process(boost::shared_ptr<DisableOptimalPixelFormat> event)
+void VideoDecoder::process(boost::shared_ptr<DisableOptimalPixelFormat>)
 {
     TRACE_DEBUG();
     if (m_useOptimumImageFormat)

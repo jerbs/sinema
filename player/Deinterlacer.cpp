@@ -101,7 +101,7 @@ void Deinterlacer::process(boost::shared_ptr<XFVideoImage> event)
     }
 }
 
-void Deinterlacer::process(boost::shared_ptr<TopFieldFirst> event)
+void Deinterlacer::process(boost::shared_ptr<TopFieldFirst>)
 {
     TRACE_DEBUG();
     m_topFieldFirst = true;
@@ -110,7 +110,7 @@ void Deinterlacer::process(boost::shared_ptr<TopFieldFirst> event)
     m_topField = true;
 }
 
-void Deinterlacer::process(boost::shared_ptr<BottomFieldFirst> event)
+void Deinterlacer::process(boost::shared_ptr<BottomFieldFirst>)
 {
     TRACE_DEBUG();
     m_topFieldFirst = false;

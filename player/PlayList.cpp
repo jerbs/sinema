@@ -190,6 +190,6 @@ PlayList::iterator PlayList::nth(int n)
     return it;
 }
 
-void PlayList::on_entry_changed(int n, iterator)
+void PlayList::on_entry_changed(int /* n */, iterator)
 {
 }

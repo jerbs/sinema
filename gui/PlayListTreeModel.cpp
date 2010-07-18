@@ -4,7 +4,7 @@
 // Copyright (C) Joachim Erbs, 2010
 //
 
-#define NDEBUG
+// #define NDEBUG
 #include <assert.h>
 
 #include "gui/PlayListTreeModel.hpp"
@@ -157,7 +157,8 @@ bool PlayListTreeModel::get_iter_vfunc(const Path& path, iterator& iter) const
     return false;
 }
 
-bool PlayListTreeModel::iter_children_vfunc(const iterator& parent, iterator& iter) const
+bool PlayListTreeModel::iter_children_vfunc(const iterator& /* parent */,
+					    iterator& iter) const
 {
     // Sets iter to refer to the first child of parent. If parent has no children, 
     // false is returned and iter is set to be invalid.
@@ -172,7 +173,8 @@ bool PlayListTreeModel::iter_children_vfunc(const iterator& parent, iterator& it
     return false;
 }
 
-bool PlayListTreeModel::iter_parent_vfunc(const iterator& child, iterator& iter) const
+bool PlayListTreeModel::iter_parent_vfunc(const iterator& /* child */,
+					  iterator& iter) const
 {
     // Sets iter to be the parent of child. If child is at the toplevel, and doesn't
     // have a parent, then iter is set to an invalid iterator and false is returned.
@@ -187,7 +189,9 @@ bool PlayListTreeModel::iter_parent_vfunc(const iterator& child, iterator& iter)
     return false;
 }
 
-bool PlayListTreeModel::iter_nth_child_vfunc(const iterator& parent, int n, iterator& iter) const
+bool PlayListTreeModel::iter_nth_child_vfunc(const iterator& /* parent */,
+					     int /* n */,
+					     iterator& iter) const
 {
     // Sets iter to be the child of parent using the given index. The first index is 0. 
     // If n is too big, or parent has no children, iter is set to an invalid iterator 
@@ -231,7 +235,7 @@ bool PlayListTreeModel::iter_nth_root_child_vfunc(int n, iterator& iter) const
     return false;
 }
 
-bool PlayListTreeModel::iter_has_child_vfunc(const iterator& iter) const
+bool PlayListTreeModel::iter_has_child_vfunc(const iterator& /* iter */) const
 {
     // Returns true if iter has children, false otherwise.
 
@@ -240,7 +244,7 @@ bool PlayListTreeModel::iter_has_child_vfunc(const iterator& iter) const
     return false;
 }
 
-int PlayListTreeModel::iter_n_children_vfunc(const iterator& iter) const
+int PlayListTreeModel::iter_n_children_vfunc(const iterator& /* iter */) const
 {
     // Returns the number of children that iter has.
 
@@ -305,7 +309,7 @@ bool PlayListTreeModel::iter_is_valid(const iterator& iter) const
 // -------------------------------------------------------------------
 // TreeDragSource overrides:
 
-bool PlayListTreeModel::row_draggable_vfunc(const TreeModel::Path&  path) const
+bool PlayListTreeModel::row_draggable_vfunc(const TreeModel::Path& /* path */) const
 {
     // Returns whether a particular row can be used as the source of a DND operation. 
 

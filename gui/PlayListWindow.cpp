@@ -142,7 +142,7 @@ void PlayListWindow::on_show_window(bool pshow)
 }
 
 void PlayListWindow::on_row_activated (const Gtk::TreeModel::Path& path,
-				       Gtk::TreeViewColumn* column)
+				       Gtk::TreeViewColumn* /* column */)
 {
     TRACE_DEBUG();
 
@@ -201,7 +201,7 @@ bool PlayListWindow::on_button_press_event(GdkEventButton* event)
 
 void PlayListWindow::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>& context,
 					   int x, int y, const Gtk::SelectionData& selection_data,
-					   guint info, guint time)
+					   guint /* info */, guint time)
 {
     TRACE_DEBUG();
 
@@ -246,22 +246,26 @@ void PlayListWindow::on_drag_data_received(const Glib::RefPtr<Gdk::DragContext>&
 			 time);
 }
 
-void PlayListWindow::on_row_changed(const Gtk::TreeModel::Path&  path, const Gtk::TreeModel::iterator&  iter)
+void PlayListWindow::on_row_changed(const Gtk::TreeModel::Path& /* path */,
+				    const Gtk::TreeModel::iterator& /* iter */)
 {
     // saveConfigurationData();
 }
 
-void PlayListWindow::on_row_inserted(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter)
+void PlayListWindow::on_row_inserted(const Gtk::TreeModel::Path& /* path */,
+				     const Gtk::TreeModel::iterator& /* iter */)
 {
     // saveConfigurationData();
 }
 
-void PlayListWindow::on_row_deleted(const Gtk::TreeModel::Path& path)
+void PlayListWindow::on_row_deleted(const Gtk::TreeModel::Path& /* path */)
 {
     // saveConfigurationData();
 }
 
-void PlayListWindow::on_rows_reordered(const Gtk::TreeModel::Path& path, const Gtk::TreeModel::iterator& iter, int* new_order)
+void PlayListWindow::on_rows_reordered(const Gtk::TreeModel::Path& /* path */,
+				       const Gtk::TreeModel::iterator& /* iter */,
+				       int* /* new_order */)
 {
     // saveConfigurationData();
 }

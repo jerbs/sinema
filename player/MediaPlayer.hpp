@@ -121,8 +121,8 @@ private:
     virtual void process(boost::shared_ptr<NotificationClipping> event) = 0;
     virtual void process(boost::shared_ptr<NotificationDeinterlacerList> event) = 0;
 
-    virtual void process(boost::shared_ptr<OpenAudioStreamFailed> event) {};
-    virtual void process(boost::shared_ptr<OpenVideoStreamFailed> event) {};
+    virtual void process(boost::shared_ptr<OpenAudioStreamFailed>) {};
+    virtual void process(boost::shared_ptr<OpenVideoStreamFailed>) {};
 
     virtual void process(boost::shared_ptr<HideCursorEvent> event) = 0;
 };

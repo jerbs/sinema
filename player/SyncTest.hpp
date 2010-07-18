@@ -57,18 +57,18 @@ private:
     void process(boost::shared_ptr<XFVideoImage> event);
 
     // Stubs for MediaPlayer, Demuxer, AudioDecoder and VideoDecoder:
-    void process(boost::shared_ptr<OpenAudioOutputResp> event) {}
-    void process(boost::shared_ptr<CloseAudioOutputResp> event) {}
-    void process(boost::shared_ptr<OpenVideoOutputResp> event) {}
-    void process(boost::shared_ptr<CloseVideoOutputResp> event) {}
-    void process(boost::shared_ptr<AudioSyncInfo> event) {}
-    void process(boost::shared_ptr<EndOfAudioStream> event) {}
-    void process(boost::shared_ptr<EndOfVideoStream> event) {}
-    void process(boost::shared_ptr<NotificationVideoSize> event) {}
-    void process(boost::shared_ptr<NotificationClipping> event) {}
-    void process(boost::shared_ptr<NotificationCurrentTime> event) {}
-    void process(boost::shared_ptr<NotificationCurrentVolume> event) {}
-    void process(boost::shared_ptr<SeekRelativeReq> event) {}
+    void process(boost::shared_ptr<OpenAudioOutputResp>) {}
+    void process(boost::shared_ptr<CloseAudioOutputResp>) {}
+    void process(boost::shared_ptr<OpenVideoOutputResp>) {}
+    void process(boost::shared_ptr<CloseVideoOutputResp>) {}
+    void process(boost::shared_ptr<AudioSyncInfo>) {}
+    void process(boost::shared_ptr<EndOfAudioStream>) {}
+    void process(boost::shared_ptr<EndOfVideoStream>) {}
+    void process(boost::shared_ptr<NotificationVideoSize>) {}
+    void process(boost::shared_ptr<NotificationClipping>) {}
+    void process(boost::shared_ptr<NotificationCurrentTime>) {}
+    void process(boost::shared_ptr<NotificationCurrentVolume>) {}
+    void process(boost::shared_ptr<SeekRelativeReq>) {}
 
     void generate();
     void generateAudioFrame(boost::shared_ptr<AFAudioFrame> audioFrame);

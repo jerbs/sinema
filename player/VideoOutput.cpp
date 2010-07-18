@@ -48,7 +48,7 @@ void VideoOutput::process(boost::shared_ptr<OpenVideoOutputReq> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
+void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq>)
 {
     if (isOpen())
     {
@@ -125,14 +125,14 @@ void VideoOutput::process(boost::shared_ptr<XFVideoImage> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<DeleteXFVideoImage> event)
+void VideoOutput::process(boost::shared_ptr<DeleteXFVideoImage>)
 {
     // This class is running in the GUI thread. Here it is safe to delete
     // X11 resources. The XvImage contained in the XFVideoImage object
     // is deleted by not storing the shared_ptr.
 }
 
-void VideoOutput::process(boost::shared_ptr<ShowNextFrame> event)
+void VideoOutput::process(boost::shared_ptr<ShowNextFrame>)
 {
     if (state == PLAYING)
     {
@@ -173,7 +173,7 @@ void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<FlushReq> event)
+void VideoOutput::process(boost::shared_ptr<FlushReq>)
 {
     if (isOpen())
     {
@@ -210,7 +210,7 @@ void VideoOutput::process(boost::shared_ptr<FlushReq> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<AudioFlushedInd> event)
+void VideoOutput::process(boost::shared_ptr<AudioFlushedInd>)
 {
     if (isOpen())
     {
@@ -225,7 +225,7 @@ void VideoOutput::process(boost::shared_ptr<SeekRelativeReq> event)
     demuxer->queue_event(event);
 }
 
-void VideoOutput::process(boost::shared_ptr<EndOfVideoStream> event)
+void VideoOutput::process(boost::shared_ptr<EndOfVideoStream>)
 {
     if (isOpen())
     {
@@ -238,7 +238,7 @@ void VideoOutput::process(boost::shared_ptr<EndOfVideoStream> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<NoAudioStream> event)
+void VideoOutput::process(boost::shared_ptr<NoAudioStream>)
 {
     videoStreamOnly = true;
     if (state == STILL)
@@ -282,7 +282,7 @@ void VideoOutput::process(boost::shared_ptr<WindowConfigureEvent> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<WindowExposeEvent> event)
+void VideoOutput::process(boost::shared_ptr<WindowExposeEvent>)
 {
     TRACE_DEBUG();
     if (xfVideo)
@@ -311,7 +311,7 @@ void VideoOutput::process(boost::shared_ptr<ClipVideoSrcEvent> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<EnableXvClipping> event)
+void VideoOutput::process(boost::shared_ptr<EnableXvClipping>)
 {
     if (xfVideo)
     {
@@ -319,7 +319,7 @@ void VideoOutput::process(boost::shared_ptr<EnableXvClipping> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<DisableXvClipping> event)
+void VideoOutput::process(boost::shared_ptr<DisableXvClipping>)
 {
     if (xfVideo)
     {
@@ -327,7 +327,7 @@ void VideoOutput::process(boost::shared_ptr<DisableXvClipping> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
+void VideoOutput::process(boost::shared_ptr<CommandPlay>)
 {
     if (isOpen())
     {
@@ -337,7 +337,7 @@ void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<CommandPause> event)
+void VideoOutput::process(boost::shared_ptr<CommandPause>)
 {
     if (isOpen())
     {

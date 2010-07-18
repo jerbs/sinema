@@ -17,17 +17,13 @@ void ConfigFileTest::process(boost::shared_ptr<CommonInitEvent> event)
     configFile = event->configFile;
 }
 
-void ConfigFileTest::process(boost::shared_ptr<StartConfigFileTest> event)
-{
-}
-
 void ConfigFileTest::process(boost::shared_ptr<ConfigurationData> event)
 {
     TRACE_DEBUG();
     configFile->queue_event(event);
 }
 
-void ConfigFileTest::process(boost::shared_ptr<ConfigurationFileWritten> event)
+void ConfigFileTest::process(boost::shared_ptr<ConfigurationFileWritten>)
 {
     TRACE_DEBUG();
     m_event_processor->terminate();
@@ -59,9 +55,6 @@ void ConfigFileTestApp::operator()()
 {
     sendInitEvents();
 
-    boost::shared_ptr<StartConfigFileTest> startTest(new StartConfigFileTest());
-    configFileTest->queue_event(startTest);
-
     // Execute testEventProcessor in main thread:
     testEventProcessor->get_callable()();
 }
@@ -75,7 +68,7 @@ void ConfigFileTestApp::sendInitEvents()
     configFile->queue_event(initEvent);
 }
 
-int main(int argc, char *argv[])
+int main()
 {
     ConfigFileTestApp configFileTestApp;
     configFileTestApp();

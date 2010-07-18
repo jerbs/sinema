@@ -59,7 +59,7 @@ private:
 
     void sendInitEvents();
 
-    virtual void process(boost::shared_ptr<NotificationFileInfo> event) {};
+    virtual void process(boost::shared_ptr<NotificationFileInfo>) {};
 };
 
 #endif
