@@ -16,11 +16,15 @@
 
 using namespace std;
 
+int tidVideoOutput = 0;
+
 void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 {
     if (state == IDLE)
     {
 	TRACE_DEBUG(<< "tid = " << gettid());
+
+	tidVideoOutput = gettid();
 
 	mediaPlayer = event->mediaPlayer;
 	demuxer = event->demuxer;
@@ -130,6 +134,8 @@ void VideoOutput::process(boost::shared_ptr<DeleteXFVideoImage>)
     // This class is running in the GUI thread. Here it is safe to delete
     // X11 resources. The XvImage contained in the XFVideoImage object
     // is deleted by not storing the shared_ptr.
+
+    TRACE_DEBUG(<< "tid = " << gettid());
 }
 
 void VideoOutput::process(boost::shared_ptr<ShowNextFrame>)

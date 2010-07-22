@@ -311,7 +311,14 @@ struct DeleteXFVideoImage
 {
     DeleteXFVideoImage(boost::shared_ptr<XFVideoImage> image)
 	: image(image)
-    {}
+    {
+	TRACE_DEBUG(<< "tid = " << gettid());
+    }
+
+    ~DeleteXFVideoImage()
+    {
+	TRACE_DEBUG(<< "tid = " << gettid());
+    }
 
     boost::shared_ptr<XFVideoImage> image;
 };

@@ -35,10 +35,14 @@ VideoDecoder::VideoDecoder(event_processor_ptr_type evt_proc)
       swsContext(0),
       m_topFieldFirst(true),
       m_useOptimumImageFormat(true)
-{}
+{
+    TRACE_DEBUG(<< "tid = " << gettid());
+}
 
 VideoDecoder::~VideoDecoder()
 {
+    TRACE_DEBUG(<< "tid = " << gettid());
+
     if (avFrame)
     {
 	av_free(avFrame);

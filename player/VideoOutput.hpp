@@ -39,11 +39,14 @@ public:
 	  lastNotifiedTime(-1),
 	  displayedFramePTS(0)
     {
+	TRACE_DEBUG(<< "tid = " << gettid());
+
 	audioSnapshotTime.tv_sec  = 0; 
 	audioSnapshotTime.tv_nsec = 0;
     }
     ~VideoOutput()
     {
+	TRACE_DEBUG(<< "tid = " << gettid());
     }
 
 private:

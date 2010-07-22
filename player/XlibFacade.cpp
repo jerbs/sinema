@@ -21,6 +21,16 @@ using namespace std;
 
 // -------------------------------------------------------------------
 
+extern int tidVideoOutput;
+
+int segmentationFault()
+{
+    int* a = 0;
+    return *a;
+}
+
+// -------------------------------------------------------------------
+
 XFDisplay::XFDisplay()
 {
     m_display = XOpenDisplay( NULL );
@@ -701,12 +711,14 @@ void XFVideo::paintBorder()
 XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
     : pts(0)
 {
+    TRACE_DEBUG(<< "tid = " << gettid());
     init(xfVideo.get(), xfVideo->widthVid, xfVideo->heightVid, xfVideo->imageFormat);
 }
 
 XFVideoImage::XFVideoImage(XFVideo* xfVideo, int width, int height, int imageFormat)
     : pts(0)
 {
+    TRACE_DEBUG(<< "tid = " << gettid());
     init(xfVideo, width, height, imageFormat);
 }
 
@@ -774,6 +786,14 @@ void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int imageFormat
 
 XFVideoImage::~XFVideoImage()
 {
+    TRACE_DEBUG(<< "tid = " << gettid());
+
+    if (gettid() != tidVideoOutput)
+    {
+	TRACE_DEBUG(<< "tid = " << gettid() << ", Upps");
+	segmentationFault();
+    }
+
     // Detach shared memory from X server:
     XShmDetach(m_display, &yuvShmInfo);
 
