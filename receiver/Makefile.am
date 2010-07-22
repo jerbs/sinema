@@ -1,4 +1,4 @@
-## recorder/Makefile.am
+## receiver/Makefile.am
 
 ## Convinience library:
 noinst_LTLIBRARIES    = libreceiver.la

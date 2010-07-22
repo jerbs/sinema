@@ -18,7 +18,7 @@
 
 #include "x86-64_macros.inc"
 
-void DScalerFilterGreedyH::FUNCT_NAME(TDeinterlaceInfo* pInfo)
+void /* DScalerFilterGreedyH:: */ FUNCT_NAME(TDeinterlaceInfo* pInfo)
 {
     int64_t i;
     bool InfoIsOdd = (pInfo->PictureHistory[0]->Flags & PICTURE_INTERLACED_ODD) ? 1 : 0;
@@ -262,7 +262,7 @@ void DScalerFilterGreedyH::FUNCT_NAME(TDeinterlaceInfo* pInfo)
 	       [oldbx]           "m"(oldbx)
 
              : XAX, XCX, XDX, XSI, XDI,
-#ifdef ARCH_386
+#if defined(__i386__) || defined(__x86_64__)
                "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)",
 #endif
 #ifdef __MMX__
@@ -286,7 +286,7 @@ void DScalerFilterGreedyH::FUNCT_NAME(TDeinterlaceInfo* pInfo)
     }
 
     // clear out the MMX registers ready for doing floating point again
-#ifdef ARCH_386
+#if defined(__i386__) || defined(__x86_64__)
     __asm__ __volatile__ ("emms\n\t");
 #endif
 }

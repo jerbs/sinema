@@ -50,7 +50,7 @@ static void interpolate_packed422_scanline_c( uint8_t *output, uint8_t *top,
     }
 }
 
-#ifdef ARCH_X86
+#if defined(__i386__) || defined(__x86_64__)
 static void interpolate_packed422_scanline_mmx( uint8_t *output, uint8_t *top,
                                                 uint8_t *bot, int width )
 {
@@ -120,7 +120,7 @@ static void interpolate_packed422_scanline_mmx( uint8_t *output, uint8_t *top,
 }
 #endif
 
-#ifdef ARCH_X86
+#if defined(__i386__) || defined(__x86_64__)
 static void interpolate_packed422_scanline_mmxext( uint8_t *output, uint8_t *top,
                                                    uint8_t *bot, int width )
 {
@@ -171,7 +171,7 @@ static void interpolate_packed422_scanline_mmxext( uint8_t *output, uint8_t *top
 #endif
 
 /* linux kernel __memcpy (from: /include/asm/string.h) */
-#ifdef ARCH_X86
+#if defined(__i386__) || defined(__x86_64__)
 static inline __attribute__ ((always_inline,const)) void small_memcpy( void *to, const void *from, size_t n )
 {
     int d0, d1, d2;
@@ -197,7 +197,7 @@ static void fast_memcpy_c( void *dest, const void *src, size_t n )
     }
 }
 
-#ifdef ARCH_X86
+#if defined(__i386__) || defined(__x86_64__)
 static void fast_memcpy_mmx( void *d, const void *s, size_t n )
 {
     const uint8_t *src = s;
@@ -241,7 +241,7 @@ static void fast_memcpy_mmx( void *d, const void *s, size_t n )
 }
 #endif
 
-#ifdef ARCH_X86
+#if defined(__i386__) || defined(__x86_64__)
 static void fast_memcpy_mmxext( void *d, const void *s, size_t n )
 {
     const uint8_t *src = s;
@@ -291,14 +291,14 @@ static void blit_packed422_scanline_c( uint8_t *dest, const uint8_t *src, int wi
     fast_memcpy_c( dest, src, width*2 );
 }
 
-#ifdef ARCH_X86
+#if defined(__i386__) || defined(__x86_64__)
 static void blit_packed422_scanline_mmx( uint8_t *dest, const uint8_t *src, int width )
 {
     fast_memcpy_mmx( dest, src, width*2 );
 }
 #endif
 
-#ifdef ARCH_X86
+#if defined(__i386__) || defined(__x86_64__)
 static void blit_packed422_scanline_mmxext( uint8_t *dest, const uint8_t *src, int width )
 {
     fast_memcpy_mmxext( dest, src, width*2 );
@@ -316,7 +316,7 @@ void setup_copyfunctions( uint32_t accel )
     blit_packed422_scanline = blit_packed422_scanline_c;
     fast_memcpy = fast_memcpy_c;
 
-#ifdef ARCH_X86
+#if defined(__i386__) || defined(__x86_64__)
     if( copy_accel & MM_ACCEL_X86_MMXEXT ) {
         interpolate_packed422_scanline = interpolate_packed422_scanline_mmxext;
         blit_packed422_scanline = blit_packed422_scanline_mmxext;

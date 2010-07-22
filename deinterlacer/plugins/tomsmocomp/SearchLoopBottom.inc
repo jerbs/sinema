@@ -98,7 +98,7 @@
           "m"(oldbx)
 
         : XAX, XCX, XDX, XSI, XDI,
-#ifdef ARCH_386
+#if defined(__i386__) || defined(__x86_64__)
           "st", "st(1)", "st(2)", "st(3)", "st(4)", "st(5)", "st(6)", "st(7)",
 #endif
 #ifdef __MMX__

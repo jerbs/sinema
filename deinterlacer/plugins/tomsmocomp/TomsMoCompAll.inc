@@ -194,7 +194,7 @@ void FUNCT_NAME(TDeinterlaceInfo* pInfo)
 		}
 	}
 
-#ifdef ARCH_386
+#if defined(__i386__) || defined(__x86_64__)
     __asm__ __volatile__("emms");
 #endif
 }

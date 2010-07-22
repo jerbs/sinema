@@ -65,7 +65,7 @@
 
 // end of macros
 
-#ifdef IS_SSE2
+#ifdef __SSE2__
 
 #define MERGE4PIXavg(PADDR1, PADDR2)                                                     \
     "movdqu  "PADDR1",   %%xmm0\n\t"       /* our 4 pixels */                            \

@@ -1,4 +1,4 @@
-## platform/Makefile.am
+## player/Makefile.am
 
 ## Convinience library:
 noinst_LTLIBRARIES    = libplayer.la

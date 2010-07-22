@@ -29,6 +29,7 @@ public:
     DScalerFilterGreedyH() {}
     virtual ~DScalerFilterGreedyH() {}
 
+#if defined __SSE__
 #define IS_SSE
 #define SSE_TYPE SSE
 #define FUNCT_NAME filterDScaler_SSE
@@ -36,7 +37,9 @@ public:
 #undef SSE_TYPE
 #undef IS_SSE
 #undef FUNCT_NAME
+#endif
 
+#if defined __3DNOW__
 #define IS_3DNOW
 #define FUNCT_NAME filterDScaler_3DNOW
 #define SSE_TYPE 3DNOW
@@ -44,7 +47,9 @@ public:
 #undef SSE_TYPE
 #undef IS_3DNOW
 #undef FUNCT_NAME
+#endif
 
+#if defined __MMX__
 #define IS_MMX
 #define SSE_TYPE MMX
 #define FUNCT_NAME filterDScaler_MMX
@@ -52,6 +57,7 @@ public:
 #undef SSE_TYPE
 #undef IS_MMX
 #undef FUNCT_NAME
+#endif
 
     unsigned int GreedyMaxComb;
     unsigned int GreedyMotionThreshold;
@@ -68,18 +74,24 @@ void greedyh_init( void )
     filter->GreedyMotionSense = MOTIONSENSE_DEFAULT;
 }
 
+#if defined __MMX__
 void greedyh_filter_mmx( TDeinterlaceInfo* pInfo )
 {
     filter->filterDScaler_MMX( pInfo );
 }
+#endif
 
+#if defined __3DNOW__
 void greedyh_filter_3dnow( TDeinterlaceInfo* pInfo )
 {
     filter->filterDScaler_3DNOW( pInfo );
 }
+#endif
 
+#if defined __SSE__
 void greedyh_filter_sse( TDeinterlaceInfo* pInfo )
 {
     filter->filterDScaler_SSE( pInfo );
 }
+#endif
 

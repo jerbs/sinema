@@ -34,7 +34,7 @@
 
 #ifndef XAX
 
-#if defined (ARCH_386)
+#if defined (__i386__)
 
 #define XAX   "eax"
 #define XBX   "ebx"
@@ -54,7 +54,7 @@
 #define SHRX  "shrl"
 #define SUBX  "subl"
 
-#elif defined (ARCH_X86_64)
+#elif defined (__x86_64__)
 
 #define XAX   "rax"
 #define XBX   "rbx"
@@ -75,7 +75,7 @@
 #define SUBX  "subq"
 
 #else
-#error Undefined architecture. Define either ARCH_X86 or ARCH_X86_64.
+#error Undefined architecture.
 #endif
 
 #endif

@@ -29,29 +29,35 @@ public:
     DScalerFilterTomsMoComp() {}
     virtual ~DScalerFilterTomsMoComp() {}
 
+#if defined __MMX__
 #define IS_MMX
 #define SSE_TYPE MMX
-#define FUNCT_NAME DScalerFilterTomsMoComp::filterDScaler_MMX
+#define FUNCT_NAME /* DScalerFilterTomsMoComp:: */ filterDScaler_MMX
 #include "tomsmocomp/TomsMoCompAll.inc"
 #undef  IS_MMX
 #undef  SSE_TYPE
 #undef  FUNCT_NAME
+#endif
 
+#if defined __3DNOW__
 #define IS_3DNOW
 #define SSE_TYPE 3DNOW
-#define FUNCT_NAME DScalerFilterTomsMoComp::filterDScaler_3DNOW
+#define FUNCT_NAME /* DScalerFilterTomsMoComp:: */ filterDScaler_3DNOW
 #include "tomsmocomp/TomsMoCompAll.inc"
 #undef  IS_3DNOW
 #undef  SSE_TYPE
 #undef  FUNCT_NAME
+#endif
 
+#if defined __SSE__
 #define IS_SSE
 #define SSE_TYPE SSE
-#define FUNCT_NAME DScalerFilterTomsMoComp::filterDScaler_SSE
+#define FUNCT_NAME /* DScalerFilterTomsMoComp:: */ filterDScaler_SSE
 #include "tomsmocomp/TomsMoCompAll.inc"
 #undef  IS_SSE
 #undef  SSE_TYPE
 #undef  FUNCT_NAME
+#endif
 
 protected:
     int Fieldcopy(void *dest, const void *src, size_t count, 
@@ -97,18 +103,24 @@ void tomsmocomp_init( void )
     filter->UseStrangeBob = UseStrangeBobDefault;
 }
 
+#if defined __MMX__
 void tomsmocomp_filter_mmx( TDeinterlaceInfo* pInfo )
 {
     filter->filterDScaler_MMX( pInfo );
 }
+#endif
 
+#if defined __3DNOW__
 void tomsmocomp_filter_3dnow( TDeinterlaceInfo* pInfo )
 {
     filter->filterDScaler_3DNOW( pInfo );
 }
+#endif
 
+#if defined __SSE__
 void tomsmocomp_filter_sse( TDeinterlaceInfo* pInfo )
 {
     filter->filterDScaler_SSE( pInfo );
 }
+#endif
 
