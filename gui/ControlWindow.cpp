@@ -108,10 +108,12 @@ void ControlWindow::on_button_next()
 
 void ControlWindow::on_button_rewind()
 {
+    m_MediaPlayer.jumpSeconds(-10);
 }
 
 void ControlWindow::on_button_forward()
 {
+    m_MediaPlayer.jumpSeconds(+10);
 }
 
 void ControlWindow::set_title(Glib::ustring title)

@@ -65,6 +65,7 @@ private:
     void process(boost::shared_ptr<CloseAudioOutputReq> event);
     void process(boost::shared_ptr<AFAudioFrame> event);
     void process(boost::shared_ptr<PlayNextChunk> event);
+    void process(boost::shared_ptr<FlushReq> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);

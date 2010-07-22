@@ -107,6 +107,34 @@ void AudioOutput::process(boost::shared_ptr<PlayNextChunk> event)
     }
 }
 
+void AudioOutput::process(boost::shared_ptr<FlushReq> event)
+{
+    if (isOpen())
+    {
+	DEBUG();
+
+	// Flush audio output buffer in driver:
+	alsa->stop();
+
+	// Send received frames back to VideoDecoder without showing them:
+	while (!frameQueue.empty())
+	{
+	    boost::shared_ptr<AFAudioFrame> frame(frameQueue.front());
+	    frameQueue.pop();
+	    frame->reset();
+	    audioDecoder->queue_event(frame);
+	}
+
+	// Timeout event PlayNextChunk may be received after the timer is
+	// stopped. In this case the frameQueue is empty and the event will
+	// be ignored.
+	stop_timer(chunkTimer);
+
+	// No frame available to display.
+	state = OPEN;
+    }
+}
+
 void AudioOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
@@ -169,7 +197,6 @@ void AudioOutput::playNextChunk()
 	if (state != PLAYING ||   // Restarting after pause.
 	    nextAudioFrame)       // Periodic AudioSyncInfo events.
 	{
-	    // Here audio is playing and latency can be determined.
 	    sendAudioSyncInfo(alsa->getNextPTS());
 	}
 

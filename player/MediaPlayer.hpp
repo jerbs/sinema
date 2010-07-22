@@ -55,6 +55,8 @@ public:
     void skipBack();
     void skipForward();
 
+    void jumpSeconds(int secondsDelta);
+
     // protected:
     void processEventQueue();
 

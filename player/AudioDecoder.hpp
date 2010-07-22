@@ -64,6 +64,7 @@ private:
     void process(boost::shared_ptr<CloseAudioOutputResp> event);
     void process(boost::shared_ptr<AudioPacketEvent> event);
     void process(boost::shared_ptr<AFAudioFrame> event);
+    void process(boost::shared_ptr<FlushReq> event);
 
     void decode();
 };

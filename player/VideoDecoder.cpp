@@ -26,7 +26,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
     {
 	DEBUG(<< "streamIndex = " << event->streamIndex);
 
-    int videoStreamIndex = event->streamIndex;
+    videoStreamIndex = event->streamIndex;
     avFormatContext = event->avFormatContext;
 
     if (videoStreamIndex >= 0 &&
@@ -152,7 +152,9 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq> event)
 	// Throw away all queued frames:
 	while (!frameQueue.empty())
 	{
+	    boost::shared_ptr<XFVideoImage> xfVideoImage(frameQueue.front());
 	    frameQueue.pop();
+	    videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
 	}
 
 	videoOutput->queue_event(boost::make_shared<CloseVideoOutputReq>());
@@ -172,6 +174,8 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp> event)
 	avCodec = 0;
 	avStream = 0;
 	videoStreamIndex = -1;
+
+	video_pkt_pts = AV_NOPTS_VALUE;
 
 	// Keep avFrame.
 	avFrameIsFree = true;
@@ -203,6 +207,32 @@ void VideoDecoder::process(boost::shared_ptr<XFVideoImage> event)
 	frameQueue.push(event);
 	queue();
 	decode();
+    }
+}
+
+void VideoDecoder::process(boost::shared_ptr<FlushReq> event)
+{
+    if (state == Opened)
+    {
+	DEBUG();
+
+	// Flush buffers in ffmpeg decoder:
+	avcodec_flush_buffers(avCodecContext);
+
+	// Throw away everything received from the Demuxer:
+	boost::shared_ptr<ConfirmVideoPacketEvent> confirm(new ConfirmVideoPacketEvent());
+	while (!packetQueue.empty())
+	{
+	    packetQueue.pop();
+	    demuxer->queue_event(confirm);
+	}
+
+	avFrameIsFree = true;
+	video_pkt_pts = AV_NOPTS_VALUE;
+	pts = 0;
+
+	// Forward event to VideoOutput:
+	videoOutput->queue_event(event);
     }
 }
 

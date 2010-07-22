@@ -23,6 +23,7 @@ void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 	DEBUG();
 
 	mediaPlayer = event->mediaPlayer;
+	demuxer = event->demuxer;
 #ifdef SYNCTEST
 	syncTest = event->syncTest;
 #else
@@ -71,6 +72,8 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq> event)
 
 	state = INIT;
 	audioSync = false;
+	lastNotifiedTime = -1;
+	displayedFramePTS = 0;
 
 	videoDecoder->queue_event(boost::make_shared<CloseVideoOutputResp>());
     }
@@ -147,6 +150,39 @@ void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
     }
 }
 
+void VideoOutput::process(boost::shared_ptr<FlushReq> event)
+{
+    if (isOpen())
+    {
+	DEBUG();
+
+	// Send received frames back to VideoDecoder without showing them:
+	while (!frameQueue.empty())
+	{
+	    boost::shared_ptr<XFVideoImage> image(frameQueue.front());
+	    frameQueue.pop();
+	    videoDecoder->queue_event(image);
+	}
+
+	// Timeout event ShowNextFrame may be received after the timer is
+	// stopped. In this case the frameQueue is empty and the event will
+	// be ignored.
+	stop_timer(frameTimer);
+
+	// No frame available to display.
+	state = STILL;
+
+	// Audio synchronization has to be reestablished:
+	audioSync = false;
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<SeekRelativeReq> event)
+{
+    event->displayedFramePTS = displayedFramePTS;
+    demuxer->queue_event(event);
+}
+
 void VideoOutput::process(boost::shared_ptr<CommandPlay> event)
 {
     if (isOpen())
@@ -179,8 +215,6 @@ void VideoOutput::createVideoImage()
 
 void VideoOutput::displayNextFrame()
 {
-    DEBUG();
-
     if (frameQueue.empty())
     {
 	// No frame available to display.
@@ -188,12 +222,15 @@ void VideoOutput::displayNextFrame()
 	return;
     }
 
+    DEBUG();
+
     boost::shared_ptr<XFVideoImage> image(frameQueue.front());
     frameQueue.pop();
 
+    displayedFramePTS = image->getPTS();
+
     {
 	// For debugging only:
-	double displayedFramePTS = image->getPTS();
 	timespec_t currentTime = frameTimer.get_current_time();
 	timespec_t audioDeltaTime = currentTime - audioSnapshotTime;
 	double currentAudioPTS = audioSnapshotPTS + getSeconds(audioDeltaTime);
@@ -232,8 +269,6 @@ void VideoOutput::displayNextFrame()
 
 void VideoOutput::startFrameTimer()
 {
-    DEBUG();
-
     if (frameQueue.empty() || !audioSync)
     {
 	// To calculate the timer the next frame and audio synchronization 
@@ -241,6 +276,8 @@ void VideoOutput::startFrameTimer()
 	state = STILL;
 	return;
     }
+
+    DEBUG();
 
     boost::shared_ptr<XFVideoImage> nextFrame(frameQueue.front());
 

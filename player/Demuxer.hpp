@@ -82,6 +82,9 @@ private:
     void process(boost::shared_ptr<CloseAudioStreamResp> event);
     void process(boost::shared_ptr<CloseVideoStreamResp> event);
 
+    void process(boost::shared_ptr<SeekRelativeReq> event);
+    void process(boost::shared_ptr<FlushReq> event);
+
     void process(boost::shared_ptr<ConfirmAudioPacketEvent> event);
     void process(boost::shared_ptr<ConfirmVideoPacketEvent> event);
 

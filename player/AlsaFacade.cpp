@@ -290,19 +290,19 @@ int AFPCMDigitalAudioInterface::xrun_recovery(int err)
 
 bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 {
-    DEBUG();
-
     bool finished;
 
     while(1)
     {
 	snd_pcm_state_t state = snd_pcm_state(handle);
+	DEBUG(<< "state: " << snd_pcm_state_name(state));
+
 	if (state == SND_PCM_STATE_XRUN)
 	{
 	    int err = xrun_recovery(-EPIPE);
 	    if (err < 0)
 	    {
-		printf("XRUN recovery failed: %s\n", snd_strerror(err));
+		ERROR(<< "XRUN recovery failed: " << snd_strerror(err));
 		exit(EXIT_FAILURE);
 	    }
 	    first = true;
@@ -312,10 +312,23 @@ bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
 	    int err = xrun_recovery(-ESTRPIPE);
 	    if (err < 0)
 	    {
-		printf("SUSPEND recovery failed: %s\n", snd_strerror(err));
+		ERROR(<< "SUSPEND recovery failed: " << snd_strerror(err));
 		exit(EXIT_FAILURE);
 	    }
 	}
+	else if (state == SND_PCM_STATE_SETUP)
+	{
+	    // This case occurs when restarting after snd_pcm_drop, not at
+	    // the initial startup of playback.
+	    int err = snd_pcm_prepare(handle);
+	    if (err < 0)
+	    {
+		ERROR(<< "snd_pcm_prepare failed: " << snd_strerror(err));
+		exit(EXIT_FAILURE);
+	    }
+
+	    first = true;
+       	}
 
 	snd_pcm_sframes_t avail = snd_pcm_avail_update(handle);
 
@@ -508,6 +521,6 @@ void AFPCMDigitalAudioInterface::pause(bool enable)
 
 void AFPCMDigitalAudioInterface::stop()
 {
-    // Stop PCM dropping pending frames:
+    // Stop PCM dropping pending frames, state SND_PCM_STATE_SETUP is entered:
     snd_pcm_drop(handle);
 }

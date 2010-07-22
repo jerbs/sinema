@@ -267,6 +267,46 @@ void Demuxer::updateSystemStreamStatusClosing()
     }
 }
 
+void Demuxer::process(boost::shared_ptr<SeekRelativeReq> event)
+{   
+    if (systemStreamStatus==SystemStreamOpened ||
+	systemStreamStatus==SystemStreamOpening)
+    {
+	DEBUG();
+
+	// Timestamps in streams are measured in frames.
+	// frames = seconds * time_base (fps).
+	// The default timebase for streamIndex -1 is AV_TIME_BASE = 1.000.000.
+	// For other streams it is avFormatContext->streams[streamIndex]->time_base.
+
+	int64_t seekTarget = event->seekOffset + event->displayedFramePTS * AV_TIME_BASE;
+	AVRational time_base = avFormatContext->streams[videoStreamIndex]->time_base;
+	int64_t targetTimestamp = av_rescale_q(seekTarget, AV_TIME_BASE_Q, time_base);
+
+	int seekFlags = 0;  // AVSEEK_FLAG_BACKWARD
+
+	int ret = av_seek_frame(avFormatContext, videoStreamIndex,
+				targetTimestamp, seekFlags);
+	if (ret >= 0)
+	{
+	    // success
+	    boost::shared_ptr<FlushReq> flushReq(new FlushReq());
+	    process(flushReq);
+	}
+	else
+	{
+	    ERROR(<< "av_seek_frame failed: ret=" << ret);
+	}
+    }
+}
+
+void Demuxer::process(boost::shared_ptr<FlushReq> event)
+{
+    DEBUG();
+    videoDecoder->queue_event(event);
+    audioDecoder->queue_event(event);
+}
+
 void Demuxer::process(boost::shared_ptr<SystemStreamChunkEvent> event)
 {
     DEBUG();

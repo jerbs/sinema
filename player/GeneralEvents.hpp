@@ -131,6 +131,20 @@ struct CloseVideoStreamResp {};
 
 // ===================================================================
 
+struct SeekRelativeReq
+{
+    SeekRelativeReq(int64_t seekOffset)
+	: seekOffset(seekOffset),
+	  displayedFramePTS(0)
+    {}
+    int64_t seekOffset;  // seconds * AV_TIME_BASE
+    double displayedFramePTS;
+};
+
+struct FlushReq {};
+
+// ===================================================================
+
 struct AudioPacketEvent
 {
     AudioPacketEvent(AVPacket* avp)
@@ -218,6 +232,8 @@ struct AudioSyncInfo
     double pts;
     struct timespec abstime;
 };
+
+// ===================================================================
 
 class XFVideoImage;
 

@@ -186,6 +186,32 @@ void AudioDecoder::process(boost::shared_ptr<AFAudioFrame> event)
     }
 }
 
+void AudioDecoder::process(boost::shared_ptr<FlushReq> event)
+{
+    if (state == Opened)
+    {
+	DEBUG();
+
+	// Flush buffers in ffmpeg decoder:
+	avcodec_flush_buffers(avCodecContext);
+
+	// Throw away everything received from the Demuxer:
+	boost::shared_ptr<ConfirmAudioPacketEvent> confirm(new ConfirmAudioPacketEvent());
+	while (!packetQueue.empty())
+	{
+	    packetQueue.pop();
+	    demuxer->queue_event(confirm);
+	}
+
+	posCurrentPacket = 0;
+	numFramesCurrentPacket = 0;
+
+	// Forward event to AudioOutput:
+	audioOutput->queue_event(event);
+    }
+}
+
+
 extern std::ostream& operator<<(std::ostream& strm, AVRational r);
 
 void AudioDecoder::decode()

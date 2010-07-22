@@ -82,6 +82,7 @@ private:
     void process(boost::shared_ptr<CloseVideoOutputResp> event);
     void process(boost::shared_ptr<VideoPacketEvent> event);
     void process(boost::shared_ptr<XFVideoImage> event);
+    void process(boost::shared_ptr<FlushReq> event);
 
     void decode();
     void queue();
