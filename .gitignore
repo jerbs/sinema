@@ -25,6 +25,7 @@ log
 m4/l*.m4
 Makefile
 Makefile.in
+platform/eventTest
 player/synctest
 common/configFileTest
 gui/player
