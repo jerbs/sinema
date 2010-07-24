@@ -1,7 +1,7 @@
 //
 // Inhibit Screen Saver
 //
-// Copyright (C) Joachim Erbs
+// Copyright (C) Joachim Erbs, 2010
 //
 
 #ifndef INHIBIT_SCREEN_SAVER_HPP
@@ -10,7 +10,6 @@
 #include <boost/shared_ptr.hpp>
 #include <gtkmm/widget.h>
 
-class InhibitScreenSaverImpl;
 class XScreenSaverInterface;
 
 class InhibitScreenSaver
@@ -22,7 +21,6 @@ public:
     void simulateUserActivity();
 
 private:
-    boost::shared_ptr<InhibitScreenSaverImpl> m_impl;
     boost::shared_ptr<XScreenSaverInterface> m_XScreenSaverInterface;
 };
 
