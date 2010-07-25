@@ -1,7 +1,7 @@
 //
 // Inter Thread Communication - Event Receiver
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #ifndef EVENT_RECEIVER_HPP
@@ -29,6 +29,12 @@ public:
     void queue_event(boost::shared_ptr<Event> event)
     {
 	m_event_processor->queue_event(event, static_cast<most_derived*>(this));
+    }
+
+    template<class Event>
+    void queue_event(std::unique_ptr<Event> event)
+    {
+	m_event_processor->queue_event(std::move(event), static_cast<most_derived*>(this));
     }
 
     template<class Event>

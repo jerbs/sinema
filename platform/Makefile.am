@@ -8,5 +8,5 @@ libplatform_la_CXXFLAGS = -std=c++0x
 ## Event Test
 bin_PROGRAMS = eventTest
 eventTest_SOURCES = eventTest.cpp Logging.cpp
-eventTest_CPPFLAGS = $(AM_CFLAGS) $(BOOST_CPPFLAGS)
+eventTest_CPPFLAGS = $(AM_CFLAGS) $(BOOST_CPPFLAGS) -std=c++0x
 eventTest_LDFLAGS = -lz -lm $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB)

@@ -1,7 +1,7 @@
 //
 // Inter Thread Communication - Event Processor
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009, 2010
 //
 
 #ifndef EVENT_PROCESSOR_HPP
@@ -13,10 +13,20 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/shared_ptr.hpp>
+#include <memory>
 
 struct QuitEvent
 {
 };
+
+template<class Event, class EventReceiver>
+void unique_dispatch(void (EventReceiver::*process_fct)(std::unique_ptr<Event>),
+		     EventReceiver* obj,
+		     Event* data_ptr)
+{
+    std::unique_ptr<Event> event(data_ptr);
+    ((*obj).*(process_fct))(std::move(event));
+}
 
 typedef boost::function<void ()> receive_fct_t;
 
@@ -62,8 +72,6 @@ public:
 	(*loop)();
     }
 
-
-
     // Return callable to create Boost thread with custom main loop:
     template<class CustomLoop>
     main_loop_fct_t get_callable(CustomLoop& loop)
@@ -95,6 +103,21 @@ public:
 	// tmp variable avoids a static_cast<>
 	process_fct_t tmp = &EventReceiver::process;
 	receive_fct_t fct = boost::bind(tmp, obj, event);
+	m_events_queue.push(fct);
+    }
+
+    template<class Event, class EventReceiver>
+    void queue_event(std::unique_ptr<Event> event, EventReceiver* obj)
+    {
+	typedef void (EventReceiver::*process_fct_t)(std::unique_ptr<Event>);
+	process_fct_t tmp = &EventReceiver::process;
+
+	// Binding a unique_ptr parameter is not possible:
+	Event* ptr = event.release();
+	receive_fct_t fct = std::bind(unique_dispatch<Event, EventReceiver>, tmp, obj, ptr);
+	
+	// Here the function object is copied, this would not work,
+	// if the function object contains a unique_ptr:
 	m_events_queue.push(fct);
     }
 

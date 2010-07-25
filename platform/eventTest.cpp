@@ -34,6 +34,10 @@ struct Ping {
     }
 
     int n;
+
+private:
+    Ping(const Ping&);
+
 };
 
 struct Pong {
@@ -86,7 +90,7 @@ public:
 
 private:
     void process(boost::shared_ptr<InitEvent> event);
-    void process(boost::shared_ptr<Ping> event);
+    void process(std::unique_ptr<Ping> event);
 
     boost::shared_ptr<Foo> foo;
 };
@@ -130,18 +134,20 @@ void Foo::process(boost::shared_ptr<InitEvent> event)
     TRACE_DEBUG(<< "tid = " << gettid());
     fooTid = gettid();
     bar = event->bar;
-    bar->queue_event(boost::make_shared<Ping>(0));
+    std::unique_ptr<Ping> ping(new Ping(0));
+    bar->queue_event(std::move(ping));
 }
 
 void Foo::process(boost::shared_ptr<Pong> event)
 {
     TRACE_DEBUG(<< "tid = " << gettid() << ", n = " << event->n);
     m_count++;
-    if (m_count == 10) m_terminated = true;
-    boost::shared_ptr<Ping> ping(new Ping(event->n + 1));
-    bar->queue_event(ping);
-    // ping.reset();
-    usleep(100*1000);
+    if (m_count == 10000) m_terminated = true;
+    std::unique_ptr<Ping> ping(new Ping(event->n + 1));
+    bar->queue_event(std::move(ping));
+
+    // Now the ping receiver bar most probably already has deleted its
+    // smart point to the ping event.
 }
 
 // -------------------------------------------------------------------
@@ -164,7 +170,7 @@ void Bar::process(boost::shared_ptr<InitEvent> event)
     foo = event->foo;
 }
 
-void Bar::process(boost::shared_ptr<Ping> event)
+void Bar::process(std::unique_ptr<Ping> event)
 {
     TRACE_DEBUG(<< "tid = " << gettid() << ", n = " << event->n);
     foo->queue_event(boost::make_shared<Pong>(event->n + 1));
@@ -215,6 +221,9 @@ void Appl::run()
 
 int main()
 {
+    std::cout << "Only Pong objects may sometimes be deleted in the wrong thread."
+	      << std::endl;
+
     TRACE_DEBUG(<< "tid = " << gettid());
 
     Appl app;
