@@ -58,9 +58,9 @@ struct StartRecordingResp
 struct StartRecordingSReq
 {
     StartRecordingSReq(boost::shared_ptr<StartRecordingReq> request,
-		       boost::detail::thread_move_t<boost::promise<boost::shared_ptr<StartRecordingResp> > > promise)
+		       boost::promise<boost::shared_ptr<StartRecordingResp> >&& promise)
 	: request(request),
-	  promise(promise)
+	  promise(std::move(promise))
     {}
 
     boost::shared_ptr<StartRecordingReq> request;
@@ -83,9 +83,9 @@ struct StopRecordingResp
 struct StopRecordingSReq
 {
     StopRecordingSReq(boost::shared_ptr<StopRecordingReq> request,
-		      boost::detail::thread_move_t<boost::promise<boost::shared_ptr<StopRecordingResp> > > promise)
+		      boost::promise<boost::shared_ptr<StopRecordingResp> >&& promise)
 	: request(request),
-	  promise(promise)
+	  promise(std::move(promise))
     {}
 
     boost::shared_ptr<StopRecordingReq> request;
