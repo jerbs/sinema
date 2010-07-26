@@ -13,7 +13,7 @@
 #include <sys/ipc.h>  // to allocate shared memory
 #include <sys/shm.h>  // to allocate shared memory
 
-#include <queue>
+#include <list>
 
 #include <boost/shared_ptr.hpp>
 
@@ -28,26 +28,8 @@ class VideoOutput : public event_receiver<VideoOutput,
     friend class event_processor<concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >;
 
 public:
-    VideoOutput(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc),
-	  eos(false),
-	  state(IDLE),
-	  audioSync(false),
-	  audioSnapshotPTS(0),
-	  ignoreAudioSync(0),
-	  videoStreamOnly(false),
-	  lastNotifiedTime(-1),
-	  displayedFramePTS(0)
-    {
-	TRACE_DEBUG(<< "tid = " << gettid());
-
-	audioSnapshotTime.tv_sec  = 0; 
-	audioSnapshotTime.tv_nsec = 0;
-    }
-    ~VideoOutput()
-    {
-	TRACE_DEBUG(<< "tid = " << gettid());
-    }
+    VideoOutput(event_processor_ptr_type evt_proc);
+    ~VideoOutput();
 
 private:
     MediaPlayer* mediaPlayer;
@@ -57,7 +39,7 @@ private:
     timer frameTimer;
 
     boost::shared_ptr<XFVideo> xfVideo;
-    std::queue<boost::shared_ptr<XFVideoImage> > frameQueue;
+    std::list<std::unique_ptr<XFVideoImage> > frameQueue;
 
     bool eos;
 
@@ -92,8 +74,8 @@ private:
     void process(boost::shared_ptr<OpenVideoOutputReq> event);
     void process(boost::shared_ptr<CloseVideoOutputReq> event);
     void process(boost::shared_ptr<ResizeVideoOutputReq> event);
-    void process(boost::shared_ptr<XFVideoImage> event);
-    void process(boost::shared_ptr<DeleteXFVideoImage> event);
+    void process(  std::unique_ptr<XFVideoImage> event);
+    void process(  std::unique_ptr<DeleteXFVideoImage> event);
     void process(boost::shared_ptr<ShowNextFrame> event);
     void process(boost::shared_ptr<AudioSyncInfo> event);
     void process(boost::shared_ptr<FlushReq> event);

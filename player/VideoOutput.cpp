@@ -18,6 +18,28 @@ using namespace std;
 
 int tidVideoOutput = 0;
 
+VideoOutput::VideoOutput(event_processor_ptr_type evt_proc)
+    : base_type(evt_proc),
+      eos(false),
+      state(IDLE),
+      audioSync(false),
+      audioSnapshotPTS(0),
+      ignoreAudioSync(0),
+      videoStreamOnly(false),
+      lastNotifiedTime(-1),
+      displayedFramePTS(0)
+{
+    TRACE_DEBUG(<< "tid = " << gettid());
+
+    audioSnapshotTime.tv_sec  = 0; 
+    audioSnapshotTime.tv_nsec = 0;
+}
+
+VideoOutput::~VideoOutput()
+{
+    TRACE_DEBUG(<< "tid = " << gettid());
+}
+
 void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 {
     if (state == IDLE)
@@ -63,7 +85,7 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq>)
 	// Throw away all queued frames:
 	while ( !frameQueue.empty() )
 	{
-	    frameQueue.pop();
+	    frameQueue.pop_front();
 	}
 
 	state = INIT;
@@ -98,14 +120,14 @@ void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<XFVideoImage> event)
+void VideoOutput::process(std::unique_ptr<XFVideoImage> event)
 {
     if (isOpen())
     {
 	TRACE_DEBUG();
 
 	eos = false;
-	frameQueue.push(event);
+	frameQueue.push_back(std::move(event));
 
 	switch (state)
 	{
@@ -129,7 +151,7 @@ void VideoOutput::process(boost::shared_ptr<XFVideoImage> event)
     }
 }
 
-void VideoOutput::process(boost::shared_ptr<DeleteXFVideoImage>)
+void VideoOutput::process(std::unique_ptr<DeleteXFVideoImage>)
 {
     // This class is running in the GUI thread. Here it is safe to delete
     // X11 resources. The XvImage contained in the XFVideoImage object
@@ -188,9 +210,9 @@ void VideoOutput::process(boost::shared_ptr<FlushReq>)
 	// Send received frames back to VideoDecoder without showing them:
 	while (!frameQueue.empty())
 	{
-	    boost::shared_ptr<XFVideoImage> image(frameQueue.front());
-	    frameQueue.pop();
-	    videoDecoder->queue_event(image);
+	    std::unique_ptr<XFVideoImage> image(std::move(frameQueue.front()));
+	    frameQueue.pop_front();
+	    videoDecoder->queue_event(std::move(image));
 	}
 
 	// Timeout event ShowNextFrame may be received after the timer is
@@ -356,7 +378,7 @@ void VideoOutput::process(boost::shared_ptr<CommandPause>)
 
 void VideoOutput::createVideoImage()
 {
-    videoDecoder->queue_event(boost::make_shared<XFVideoImage>(xfVideo));
+    videoDecoder->queue_event(std::unique_ptr<XFVideoImage>(new XFVideoImage(xfVideo)));
 }
 
 void VideoOutput::displayNextFrame()
@@ -374,8 +396,8 @@ void VideoOutput::displayNextFrame()
 
     TRACE_DEBUG();
 
-    boost::shared_ptr<XFVideoImage> image(frameQueue.front());
-    frameQueue.pop();
+    std::unique_ptr<XFVideoImage> image(std::move(frameQueue.front()));
+    frameQueue.pop_front();
 
     displayedFramePTS = image->getPTS();
 
@@ -396,18 +418,17 @@ void VideoOutput::displayNextFrame()
 		   << ", audioDeltaTime=" << audioDeltaTime);
     }
 
-    boost::shared_ptr<XFVideoImage> previousImage = xfVideo->show(image);
-
     int currentTime = image->getPTS();
     if (currentTime != lastNotifiedTime)
     {
 	mediaPlayer->queue_event(boost::make_shared<NotificationCurrentTime>(currentTime));
 	lastNotifiedTime = currentTime;
     }
-   
+
+    std::unique_ptr<XFVideoImage> previousImage = std::move(xfVideo->show(std::move(image)));
     if (previousImage)
     {
-	videoDecoder->queue_event(previousImage);
+	videoDecoder->queue_event(std::move(previousImage));
     }
 
     startFrameTimer();
@@ -440,12 +461,12 @@ void VideoOutput::startFrameTimer()
 
     TRACE_DEBUG();
 
-    boost::shared_ptr<XFVideoImage> nextFrame(frameQueue.front());
+    std::list<std::unique_ptr<XFVideoImage> >::iterator itNextFrame = frameQueue.begin();
 
     timespec_t currentTime = frameTimer.get_current_time();
     timespec_t audioDeltaTime = currentTime - audioSnapshotTime;
     double currentPTS = audioSnapshotPTS + getSeconds(audioDeltaTime);
-    double nextFrameVideoPTS = nextFrame->getPTS();
+    double nextFrameVideoPTS = (*itNextFrame)->getPTS();
     double videoDeltaPTS = nextFrameVideoPTS - currentPTS;
 
     if (videoDeltaPTS > 0)
@@ -472,11 +493,11 @@ void VideoOutput::startFrameTimer()
 
 void VideoOutput::showBlackFrame()
 {
-    boost::shared_ptr<XFVideoImage> yuvImage(new XFVideoImage(xfVideo));
+    std::unique_ptr<XFVideoImage> yuvImage(new XFVideoImage(xfVideo));
     yuvImage->createBlackImage();
     // yuvImage->createPatternImage();
     // yuvImage->createDemoImage();
-    xfVideo->show(yuvImage);
+    xfVideo->show(std::move(yuvImage));
 }
 
 void VideoOutput::sendNotificationVideoSize(boost::shared_ptr<NotificationVideoSize> event)

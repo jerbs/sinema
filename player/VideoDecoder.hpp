@@ -39,7 +39,7 @@ class VideoDecoder : public event_receiver<VideoDecoder>
     bool avFrameIsFree;
     double pts;
     int m_imageFormat;
-    std::queue<boost::shared_ptr<XFVideoImage> > frameQueue;
+    std::queue<std::unique_ptr<XFVideoImage> > frameQueue;
     std::queue<boost::shared_ptr<VideoPacketEvent> > packetQueue;
 
     bool eos;
@@ -67,7 +67,7 @@ private:
     void process(boost::shared_ptr<CloseVideoStreamReq> event);
     void process(boost::shared_ptr<CloseVideoOutputResp> event);
     void process(boost::shared_ptr<VideoPacketEvent> event);
-    void process(boost::shared_ptr<XFVideoImage> event);
+    void process(  std::unique_ptr<XFVideoImage> event);
     void process(boost::shared_ptr<FlushReq> event);
     void process(boost::shared_ptr<EndOfVideoStream> event);
     void process(boost::shared_ptr<EnableOptimalPixelFormat> event);

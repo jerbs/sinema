@@ -24,8 +24,8 @@ class Deinterlacer : public event_receiver<Deinterlacer>
 {
     friend class event_processor<>;
 
-    std::queue<boost::shared_ptr<XFVideoImage> > m_emptyImages;
-    std::list<boost::shared_ptr<XFVideoImage> > m_interlacedImages;
+    std::queue<std::unique_ptr<XFVideoImage> > m_emptyImages;
+    std::list<std::unique_ptr<XFVideoImage> > m_interlacedImages;
     bool m_topFieldFirst;
     deinterlace_method_t * m_deinterlacer;
     bool m_nextImageHasContent;
@@ -43,7 +43,7 @@ private:
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<CloseVideoOutputReq> event);
 
-    void process(boost::shared_ptr<XFVideoImage> event);
+    void process(  std::unique_ptr<XFVideoImage> event);
     void process(boost::shared_ptr<TopFieldFirst> event);
     void process(boost::shared_ptr<BottomFieldFirst> event);
 

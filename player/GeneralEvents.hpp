@@ -34,6 +34,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <list>
+#include <memory>
 #include <string>
 #include <time.h>
 
@@ -309,18 +310,10 @@ class XFVideoImage;
 
 struct DeleteXFVideoImage
 {
-    DeleteXFVideoImage(boost::shared_ptr<XFVideoImage> image)
-	: image(image)
-    {
-	TRACE_DEBUG(<< "tid = " << gettid());
-    }
+    DeleteXFVideoImage(std::unique_ptr<XFVideoImage>&& image);
+    ~DeleteXFVideoImage();
 
-    ~DeleteXFVideoImage()
-    {
-	TRACE_DEBUG(<< "tid = " << gettid());
-    }
-
-    boost::shared_ptr<XFVideoImage> image;
+    std::unique_ptr<XFVideoImage> image;
 };
 
 // ===================================================================

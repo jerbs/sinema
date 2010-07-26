@@ -15,6 +15,16 @@
 #include <math.h>
 #include <stdint.h>
 
+SyncTest::SyncTest(event_processor_ptr_type evt_proc)
+    : base_type(evt_proc),
+      m_pts(0)
+{
+}
+
+SyncTest::~SyncTest()
+{
+}
+
 void SyncTest::process(boost::shared_ptr<InitEvent> event)
 {
     TRACE_DEBUG();
@@ -43,7 +53,7 @@ void SyncTest::process(boost::shared_ptr<AFAudioFrame> event)
     generate();
 }
 
-void SyncTest::process(boost::shared_ptr<XFVideoImage> event)
+void SyncTest::process(std::unique_ptr<XFVideoImage> event)
 {
     if (event->width() != m_conf.width ||
 	event->height() != m_conf.height ||
@@ -56,7 +66,7 @@ void SyncTest::process(boost::shared_ptr<XFVideoImage> event)
 	return;
     }
 
-    videoFrameQueue.push(event);
+    videoFrameQueue.push(std::move(event));
     generate();
 }
 
@@ -68,17 +78,17 @@ void SyncTest::generate()
 	boost::shared_ptr<AFAudioFrame> audioFrame(audioFrameQueue.front());
 	audioFrameQueue.pop();
 
-	boost::shared_ptr<XFVideoImage> videoFrame(videoFrameQueue.front());
+	std::unique_ptr<XFVideoImage> videoFrame(std::move(videoFrameQueue.front()));
 	videoFrameQueue.pop();
 
 	generateAudioFrame(audioFrame);
-	generateVideoFrame(videoFrame);
+	generateVideoFrame(videoFrame.get());
 
 	audioFrame->setPTS(m_pts);
 	videoFrame->setPTS(m_pts);
 
 	audioOutput->queue_event(audioFrame);
-	videoOutput->queue_event(videoFrame);
+	videoOutput->queue_event(std::move(videoFrame));
 
 	m_pts += 1;
     }
@@ -127,7 +137,7 @@ void SyncTest::generateAudioFrame(boost::shared_ptr<AFAudioFrame> audioFrame)
     }
 }
 
-void SyncTest::generateVideoFrame(boost::shared_ptr<XFVideoImage> videoFrame)
+void SyncTest::generateVideoFrame(XFVideoImage* videoFrame)
 {
     //unsigned int& width = m_conf.width;
     //unsigned int& height = m_conf.height;

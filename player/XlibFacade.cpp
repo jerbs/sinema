@@ -439,10 +439,10 @@ void XFVideo::calculateDestinationArea(NotificationVideoSize::Reason reason)
     sendNotificationVideoSize(nvs);
 }
 
-boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yuvImage)
+std::unique_ptr<XFVideoImage> XFVideo::show(std::unique_ptr<XFVideoImage> yuvImage)
 {    
-    boost::shared_ptr<XFVideoImage> previousImage = m_displayedImage;
-    m_displayedImage = yuvImage;
+    std::unique_ptr<XFVideoImage> previousImage = std::move(m_displayedImage);
+    m_displayedImage = std::move(yuvImage);
 
     if (m_noClippingNeeded || m_useXvClipping)
     {
@@ -450,13 +450,14 @@ boost::shared_ptr<XFVideoImage> XFVideo::show(boost::shared_ptr<XFVideoImage> yu
     }
     else
     {
-	boost::shared_ptr<XFVideoImage> tmp = m_displayedImageClipped;
+	std::unique_ptr<XFVideoImage> tmp = std::move(m_displayedImageClipped);
 	m_displayedImageClipped.reset();
 	// FIXME: Do not allocate a new image each time:
-	m_displayedImageClipped = boost::make_shared<XFVideoImage>(this, widthSrc,  heightSrc,
-								   m_displayedImage->yuvImage->id);
+	m_displayedImageClipped = std::unique_ptr<XFVideoImage>(new XFVideoImage(this, widthSrc,  heightSrc,
+										 m_displayedImage->yuvImage->id));
 
-	clip(m_displayedImage, m_displayedImageClipped);
+	clip(m_displayedImage->yuvImage,
+	     m_displayedImageClipped->yuvImage);
 
 	show();
     }
@@ -589,16 +590,13 @@ void XFVideo::clipSrc(int videoLeft, int videoRight, int videoTop, int videoBott
 	// Update widget:
 	calculateDestinationArea(NotificationVideoSize::ClippingChanged);
 	paintBorder();
-	show(m_displayedImage);
+	show(std::move(m_displayedImage));
     }
 }
 
-void XFVideo::clip(boost::shared_ptr<XFVideoImage> in,
-		   boost::shared_ptr<XFVideoImage> out)
+void XFVideo::clip(XvImage* yuvImageIn,
+		   XvImage* yuvImageOut)
 {
-    XvImage* yuvImageIn  = in->yuvImage;
-    XvImage* yuvImageOut = out->yuvImage;
-
     if (yuvImageIn->id == GUID_YUV12_PLANAR)
     {
 	char* Yin = yuvImageIn->data + yuvImageIn->offsets[0];
@@ -955,5 +953,18 @@ void XFVideoImage::createDemoImage()
 //    headroom in {236, 237, ..., 254}
 //    sync.  in {0, 255}
 // Cb, Cr      in {16, 17, ..., 240}
+
+// -------------------------------------------------------------------
+
+DeleteXFVideoImage::DeleteXFVideoImage(std::unique_ptr<XFVideoImage>&& image)
+    : image(std::move(image))
+{
+    TRACE_DEBUG(<< "tid = " << gettid());
+}
+
+DeleteXFVideoImage::~DeleteXFVideoImage()
+{
+    TRACE_DEBUG(<< "tid = " << gettid());
+}
 
 // -------------------------------------------------------------------

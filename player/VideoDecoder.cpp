@@ -216,9 +216,9 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq>)
 	// Throw away all queued frames:
 	while (!frameQueue.empty())
 	{
-	    boost::shared_ptr<XFVideoImage> xfVideoImage(frameQueue.front());
+	    std::unique_ptr<XFVideoImage> xfVideoImage(std::move(frameQueue.front()));
 	    frameQueue.pop();
-	    videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
+	    videoOutput->queue_event(std::move(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(xfVideoImage)))));
 	}
 
 	// Do the same as the Deinterlacer when receiving CloseVideoOutputReq:
@@ -276,7 +276,7 @@ void VideoDecoder::process(boost::shared_ptr<VideoPacketEvent> event)
     }
 }
 
-void VideoDecoder::process(boost::shared_ptr<XFVideoImage> event)
+void VideoDecoder::process(std::unique_ptr<XFVideoImage> event)
 {
     if (state == Opened || state == Opening)
     {
@@ -297,7 +297,7 @@ void VideoDecoder::process(boost::shared_ptr<XFVideoImage> event)
 			<< std::dec << " got: " << width << "*" << height
 			<< std::hex << ", 0x" << imageFormat );
 
-	    videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(event));
+	    videoOutput->queue_event(std::move(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(event)))));
 
 	    requestNewFrame();
 
@@ -305,9 +305,13 @@ void VideoDecoder::process(boost::shared_ptr<XFVideoImage> event)
 	}
 
 	// Add XFVideoImage with correct size and format to frameQueue:
-	frameQueue.push(event);
+	frameQueue.push(std::move(event));
 	queue();
 	decode();
+    }
+    else
+    {
+      	videoOutput->queue_event(std::move(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(event)))));
     }
 }
 
@@ -504,7 +508,7 @@ void VideoDecoder::queue()
 	}
     }
 
-    boost::shared_ptr<XFVideoImage> xfVideoImage(frameQueue.front());
+    std::unique_ptr<XFVideoImage> xfVideoImage(std::move(frameQueue.front()));
     frameQueue.pop();
 
     TRACE_DEBUG( << "interlaced_frame = " << avFrame->interlaced_frame
@@ -585,16 +589,16 @@ void VideoDecoder::queue()
 	}
 
 	// The deinterlacer needs two frames.
-	deinterlacer->queue_event(xfVideoImage);
+	deinterlacer->queue_event(std::move(xfVideoImage));
 
-	boost::shared_ptr<XFVideoImage> xfVideoImage2(frameQueue.front());
+	std::unique_ptr<XFVideoImage> xfVideoImage2(std::move(frameQueue.front()));
 	frameQueue.pop();
 
-	deinterlacer->queue_event(xfVideoImage2);
+	deinterlacer->queue_event(std::move(xfVideoImage2));
     }
     else
     {
-	videoOutput->queue_event(xfVideoImage);
+	videoOutput->queue_event(std::move(xfVideoImage));
     }
 
     avFrameIsFree = true;
@@ -614,9 +618,9 @@ void VideoDecoder::setImageFormat(int imageFormat)
 	// Throw away all queued frames:
 	while(!frameQueue.empty())
 	{
-	    boost::shared_ptr<XFVideoImage> xfVideoImage(frameQueue.front());
+	    std::unique_ptr<XFVideoImage> xfVideoImage(std::move(frameQueue.front()));
 	    frameQueue.pop();
-	    videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
+	    videoOutput->queue_event(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(xfVideoImage))));
 
 	    requestNewFrame();
 	}

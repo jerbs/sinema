@@ -31,21 +31,14 @@ class SyncTest : public event_receiver<SyncTest>
     friend class event_processor<>;
 
     std::queue<boost::shared_ptr<AFAudioFrame> > audioFrameQueue;
-    std::queue<boost::shared_ptr<XFVideoImage> > videoFrameQueue;
+    std::queue<  std::unique_ptr<XFVideoImage> > videoFrameQueue;
 
     StartTest m_conf;
     double m_pts;
 
 public:
-    SyncTest(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc),
-	  m_pts(0)
-    {
-    }
-
-    ~SyncTest()
-    {
-    }
+    SyncTest(event_processor_ptr_type evt_proc);
+    ~SyncTest();
 
 private:
     boost::shared_ptr<AudioOutput> audioOutput;
@@ -54,7 +47,7 @@ private:
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<StartTest> event);
     void process(boost::shared_ptr<AFAudioFrame> event);
-    void process(boost::shared_ptr<XFVideoImage> event);
+    void process(  std::unique_ptr<XFVideoImage> event);
 
     // Stubs for MediaPlayer, Demuxer, AudioDecoder and VideoDecoder:
     void process(boost::shared_ptr<OpenAudioOutputResp>) {}
@@ -72,7 +65,7 @@ private:
 
     void generate();
     void generateAudioFrame(boost::shared_ptr<AFAudioFrame> audioFrame);
-    void generateVideoFrame(boost::shared_ptr<XFVideoImage> videoFrame);
+    void generateVideoFrame(XFVideoImage* videoFrame);
 };
 
 class SyncTestApp

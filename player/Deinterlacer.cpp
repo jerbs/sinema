@@ -61,17 +61,17 @@ void Deinterlacer::process(boost::shared_ptr<CloseVideoOutputReq> event)
     // Throw away all queued empty frames:
     while(!m_emptyImages.empty())
     {
-	boost::shared_ptr<XFVideoImage> xfVideoImage(m_emptyImages.front());
+	std::unique_ptr<XFVideoImage> xfVideoImage(std::move(m_emptyImages.front()));
 	m_emptyImages.pop();
-	videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
+	videoOutput->queue_event(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(xfVideoImage))));
     }
 
     // Throw away all queued interlaced images:
     while(!m_interlacedImages.empty())
     {
-	boost::shared_ptr<XFVideoImage> xfVideoImage(m_interlacedImages.front());
+	std::unique_ptr<XFVideoImage> xfVideoImage(std::move(m_interlacedImages.front()));
 	m_interlacedImages.pop_front();
-	videoOutput->queue_event(boost::make_shared<DeleteXFVideoImage>(xfVideoImage));
+	videoOutput->queue_event(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(xfVideoImage))));
     }
 
     // Reset member data:
@@ -83,14 +83,14 @@ void Deinterlacer::process(boost::shared_ptr<CloseVideoOutputReq> event)
     videoOutput->queue_event(event);
 }
 
-void Deinterlacer::process(boost::shared_ptr<XFVideoImage> event)
+void Deinterlacer::process(std::unique_ptr<XFVideoImage> event)
 {
     TRACE_DEBUG(<< m_interlacedImages.size() << ", " << m_emptyImages.size());
 
     if (m_nextImageHasContent)
-	m_interlacedImages.push_back(event);
+	m_interlacedImages.push_back(std::move(event));
     else
-	m_emptyImages.push(event);
+	m_emptyImages.push(std::move(event));
 
     m_nextImageHasContent = !m_nextImageHasContent;
 
@@ -130,17 +130,17 @@ void Deinterlacer::process(boost::shared_ptr<FlushReq> event)
     // Send all queued empty frames pack to VideoDecoder:
     while(!m_emptyImages.empty())
     {
-	boost::shared_ptr<XFVideoImage> image(m_emptyImages.front());
+	std::unique_ptr<XFVideoImage> image(std::move(m_emptyImages.front()));
 	m_emptyImages.pop();
-	videoDecoder->queue_event(image);
+	videoDecoder->queue_event(std::move(image));
     }
 
     // Send all queued interlaced images pack to VideoDecoder:
     while(!m_interlacedImages.empty())
     {
-	boost::shared_ptr<XFVideoImage> image(m_interlacedImages.front());
+	std::unique_ptr<XFVideoImage> image(std::move(m_interlacedImages.front()));
 	m_interlacedImages.pop_front();
-	videoDecoder->queue_event(image);
+	videoDecoder->queue_event(std::move(image));
     }
 
     // Do not reset member data here.
@@ -160,18 +160,18 @@ void Deinterlacer::process(boost::shared_ptr<EndOfVideoStream> event)
     // Send all queued empty frames pack to VideoDecoder:
     while(!m_emptyImages.empty())
     {
-	boost::shared_ptr<XFVideoImage> image(m_emptyImages.front());
+	std::unique_ptr<XFVideoImage> image(std::move(m_emptyImages.front()));
 	m_emptyImages.pop();
-	videoDecoder->queue_event(image);
+	videoDecoder->queue_event(std::move(image));
     }
 
     // Forward all queued interlaced images to VideoOutput. It is not possible
     // to deinterlace the last frames:
     while(!m_interlacedImages.empty())
     {
-	boost::shared_ptr<XFVideoImage> image(m_interlacedImages.front());
+	std::unique_ptr<XFVideoImage> image(std::move(m_interlacedImages.front()));
 	m_interlacedImages.pop_front();
-	videoOutput->queue_event(image);
+	videoOutput->queue_event(std::move(image));
     }
 
     // Finally forward EndOfVideoStream indication to VideoOutput:
@@ -321,7 +321,7 @@ static inline void intpLine(deinterlace_interp_scanline_t intp, int line, XvImag
 void Deinterlacer::deinterlace()
 {
     TRACE_DEBUG();
-    boost::shared_ptr<XFVideoImage> image(m_emptyImages.front());
+    std::unique_ptr<XFVideoImage> image(std::move(m_emptyImages.front()));
     m_emptyImages.pop();
 
     XvImage* yuvImage = image->xvImage();
@@ -329,7 +329,7 @@ void Deinterlacer::deinterlace()
     int h = yuvImage->height;
     //char* Packed = yuvImage->data + yuvImage->offsets[0];
 
-    std::list<boost::shared_ptr<XFVideoImage> >::iterator it = m_interlacedImages.begin();
+    std::list<std::unique_ptr<XFVideoImage> >::iterator it = m_interlacedImages.begin();
 
     double pts;
 
@@ -421,13 +421,13 @@ void Deinterlacer::deinterlace()
     if (m_topField != m_topFieldFirst)
     {
 	// Processed both fields of the image.
-	boost::shared_ptr<XFVideoImage> img(m_interlacedImages.front());
+	std::unique_ptr<XFVideoImage> img(std::move(m_interlacedImages.front()));
 	m_interlacedImages.pop_front();
-	m_emptyImages.push(img);
+	m_emptyImages.push(std::move(img));
     }
 
     image->setPTS(pts);
-    videoOutput->queue_event(image);
+    videoOutput->queue_event(std::move(image));
 
     m_topField = !m_topField;
 }

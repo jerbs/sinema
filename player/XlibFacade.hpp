@@ -16,6 +16,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
 #include <list>
+#include <memory>
 #include <string>
 
 #include "player/GeneralEvents.hpp"
@@ -81,7 +82,7 @@ public:
     void resize(unsigned int width, unsigned int height,
 		unsigned int sarNom, unsigned int sarDen,
 		int imageFormat);
-    boost::shared_ptr<XFVideoImage> show(boost::shared_ptr<XFVideoImage> xfVideoImage);
+    std::unique_ptr<XFVideoImage> show(std::unique_ptr<XFVideoImage> xfVideoImage);
     void show();
     void handleConfigureEvent(boost::shared_ptr<WindowConfigureEvent> event);
     void handleExposeEvent();
@@ -99,8 +100,8 @@ private:
     void calculateDestinationArea(NotificationVideoSize::Reason reason);
     void paintBorder();
 
-    void clip(boost::shared_ptr<XFVideoImage> in,
-	      boost::shared_ptr<XFVideoImage> out);
+    void clip(XvImage* yuvImageIn,
+	      XvImage* yuvImageOut);
 
     int xWindow(int xVideo);
     int yWindow(int yVideo);
@@ -109,8 +110,8 @@ private:
 
     bool isImageFormatValid(int imageFormat);
 
-    boost::shared_ptr<XFVideoImage> m_displayedImage;
-    boost::shared_ptr<XFVideoImage> m_displayedImageClipped;
+    std::unique_ptr<XFVideoImage> m_displayedImage;
+    std::unique_ptr<XFVideoImage> m_displayedImageClipped;
     Display* m_display;
     Window m_window;
     
