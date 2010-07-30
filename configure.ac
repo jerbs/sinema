@@ -116,4 +116,4 @@ dnl --------------------------
 dnl
 dnl Generate Makefiles
 
-AC_OUTPUT(platform/Makefile common/Makefile player/Makefile deinterlacer/Makefile deinterlacer/src/Makefile deinterlacer/plugins/Makefile receiver/Makefile recorder/Makefile gui/Makefile Makefile)
+AC_OUTPUT(tools/Makefile platform/Makefile common/Makefile player/Makefile deinterlacer/Makefile deinterlacer/src/Makefile deinterlacer/plugins/Makefile receiver/Makefile recorder/Makefile gui/Makefile Makefile)
