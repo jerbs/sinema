@@ -50,6 +50,8 @@ public:
     sigc::signal<void, bool> signal_playback_switch;
     sigc::signal<void, const ChannelData&> signalSetFrequency;
     sigc::signal<void, boost::shared_ptr<ConfigurationData> > signalConfigurationDataChanged;
+    sigc::signal<void> showHelpDialog;
+    sigc::signal<void> showAboutDialog;
 
     SignalDispatcher(GtkmmPlayList& playList);
     ~SignalDispatcher();

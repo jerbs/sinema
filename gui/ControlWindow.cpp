@@ -8,9 +8,8 @@
 #include <iomanip>
 
 #include "gui/ControlWindow.hpp"
+#include "gui/General.hpp"
 #include "gui/SignalDispatcher.hpp"
-
-extern std::string applicationName;
 
 ControlWindow::ControlWindow(SignalDispatcher& signalDispatcher)
     : Gtk::Window(),

@@ -6,6 +6,7 @@
 
 #include "gui/ConfigWindow.hpp"
 #include "gui/ComboBoxDialog.hpp"
+#include "gui/General.hpp"
 #include "receiver/ChannelFrequencyTable.hpp"
 #include "platform/Logging.hpp"
 #include "platform/temp_value.hpp"
@@ -14,8 +15,6 @@
 #include <gtkmm/cellrendererspin.h>
 
 #include <stdlib.h>
-
-extern std::string applicationName;
 
 // #undef TRACE_DEBUG 
 // #define TRACE_DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;

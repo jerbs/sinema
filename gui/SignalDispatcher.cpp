@@ -1107,11 +1107,13 @@ void SignalDispatcher::on_channel_selected(int num)
 void SignalDispatcher::on_help_help()
 {
     TRACE_DEBUG();
+    showHelpDialog();
 }
 
 void SignalDispatcher::on_help_about()
 {
     TRACE_DEBUG();
+    showAboutDialog();
 }
 
 void SignalDispatcher::on_position_changed()

@@ -30,5 +30,6 @@ platform/eventTest
 player/synctest
 common/configFileTest
 gui/sinema
+gui/COPYING.inc
 stamp-h1
 typescript

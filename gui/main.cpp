@@ -4,6 +4,7 @@
 // Copyright (C) Joachim Erbs, 2009-2010
 //
 
+#include "gui/About.hpp"
 #include "gui/ConfigWindow.hpp"
 #include "gui/ChannelConfigWidget.hpp"
 #include "gui/PlayerConfigWidget.hpp"
@@ -52,6 +53,8 @@ int main(int argc, char *argv[])
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
     GtkmmMediaRecorder mediaRecorder;
     InhibitScreenSaver inhibitScreenSaver;
+    HelpDialog helpDialog;
+    AboutDialog aboutDialog;
 
     controlWindow.set_transient_for(mainWindow);
     configWindow.set_transient_for(mainWindow);
@@ -206,6 +209,11 @@ int main(int argc, char *argv[])
     mediaPlayer.notificationCurrentTime.connect( sigc::hide_functor<0, sigc::bound_mem_functor0<void, InhibitScreenSaver> >
 						 (sigc::mem_fun(inhibitScreenSaver, &InhibitScreenSaver::simulateUserActivity) ) );
     mediaPlayer.signal_realize().connect(sigc::bind(sigc::mem_fun(inhibitScreenSaver, &InhibitScreenSaver::on_realize), &mediaPlayer) );
+
+    // ---------------------------------------------------------------
+    // Signals: SignalDispatcher -> AboutDialog, HelpDialog
+    signalDispatcher.showHelpDialog.connect(sigc::mem_fun(helpDialog, &HelpDialog::show));
+    signalDispatcher.showAboutDialog.connect(sigc::mem_fun(aboutDialog, &AboutDialog::show));
 
     // ---------------------------------------------------------------
     // Send init events to all threads of all subsystems:

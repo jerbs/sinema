@@ -15,8 +15,6 @@
 
 #include <stdlib.h>
 
-extern std::string applicationName;
-
 // #undef TRACE_DEBUG 
 // #define TRACE_DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
 

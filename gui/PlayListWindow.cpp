@@ -5,9 +5,8 @@
 //
 
 #include "gui/PlayListWindow.hpp"
+#include "gui/General.hpp"
 #include "platform/Logging.hpp"
-
-extern std::string applicationName;
 
 PlayListWindow::PlayListWindow(GtkmmPlayList& playList)
     : m_PlayList(playList),

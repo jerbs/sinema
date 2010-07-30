@@ -7,10 +7,9 @@
 #include <iostream>
 
 #include "platform/timer.hpp"
+#include "gui/General.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
-
-std::string applicationName = "sinema";
 
 MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
 		       SignalDispatcher& signalDispatcher)
