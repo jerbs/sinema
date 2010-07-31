@@ -1,7 +1,7 @@
 //
 // Main Window
 //
-// Copyright (C) Joachim Erbs, 2009
+// Copyright (C) Joachim Erbs, 2009-2010
 //
 
 #include <iostream>
@@ -10,7 +10,7 @@
 #include "gui/MainWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 
-std::string applicationName = "player";
+std::string applicationName = "sinema";
 
 MainWindow::MainWindow(GtkmmMediaPlayer& gtkmmMediaPlayer,
 		       SignalDispatcher& signalDispatcher)

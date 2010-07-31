@@ -11,7 +11,7 @@ dnl --------------
 dnl
 dnl AC_INIT must be the first.
 
-AC_INIT([player], [1.0])
+AC_INIT([sinema], [0.1])
 AC_CONFIG_AUX_DIR(config)
 AC_CONFIG_MACRO_DIR([m4])
 AM_INIT_AUTOMAKE

@@ -29,6 +29,6 @@ tools/wrap
 platform/eventTest
 player/synctest
 common/configFileTest
-gui/player
+gui/sinema
 stamp-h1
 typescript
