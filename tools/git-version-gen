@@ -1,0 +1,80 @@
+#!/usr/bin/perl -w
+
+#
+# get-version-gen
+#
+# Copyright (C) Joachim Erbs, 2010
+#
+
+use strict;
+
+use English;
+
+# --------------------------------------------------------------------
+# Checking command line parameters:
+
+my $silent = 0;
+
+if ($ARGV[0] eq "-silent")
+{
+    $silent = 1;
+    shift @ARGV;
+}
+
+if (scalar(@ARGV) != 1)
+{
+    print("Usage: git-version-gen [-silent] <version-file>\n");
+    exit(-1);
+}
+
+my ($versionFile) = @ARGV;
+
+# --------------------------------------------------------------------
+# Read version file, if it already exists:
+
+my $oldContent = "";
+
+if (-e $versionFile)
+{
+    open(VER, $versionFile) || die "Opening $versionFile failed: $!";
+    while (my $line = <VER>)
+    {
+	chomp($line);
+	$oldContent .= $line;
+    }
+    close(VER);
+}
+
+# --------------------------------------------------------------------
+# Determine currently selected git version:
+
+my $version = `git describe --always --dirty`;
+chomp($version);
+print("Found git version $version\n") if not $silent;
+
+# Possible version strings returned by this git describe command are:
+# v0.1.0                  : Taged version
+# v0.1.0-dirty            : Taged version + working files
+# v0.1.0-1-g07624a9       : Taged version + one additional commit
+# v0.1.0-1-g07624a9-dirty : Taged version + add. commit + working files
+# c6a659b                 : No previous annotated label
+
+# --------------------------------------------------------------------
+# Update version file, if necessary:
+
+if ($version ne $oldContent)
+{
+    print("Updating file \'$versionFile\'\n") if not $silent;
+    open(VER, ">$versionFile") || die "Opening $versionFile failed: $!";
+    print(VER $version, "\n");
+    close(VER);
+}
+else
+{
+    print("File \'$versionFile\' is up to date\n") if not $silent;
+}
+
+# --------------------------------------------------------------------
+# Output version number:
+
+print($version, "\n");

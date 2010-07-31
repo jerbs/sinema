@@ -6,6 +6,8 @@
 *.la
 *.lo
 *.o
+*.gz
+*.tgz
 .deps
 .libs
 aclocal.m4
@@ -31,5 +33,7 @@ player/synctest
 common/configFileTest
 gui/sinema
 gui/COPYING.inc
+gui/version.inc
 stamp-h1
 typescript
+version

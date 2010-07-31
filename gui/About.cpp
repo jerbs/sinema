@@ -22,6 +22,7 @@
 #include "gui/About.hpp"
 #include "gui/General.hpp"
 #include "gui/COPYING.inc"
+#include "gui/version.inc"
 // #include "gui/logo.xpm"
 
 const std::string applicationName("sinema");
@@ -31,8 +32,9 @@ const std::string applicationName("sinema");
 AboutDialog::AboutDialog()
 {
     std::string copying(&COPYING[0], sizeof(COPYING));
+    std::string version(&::version[0], sizeof(::version));
     set_program_name(applicationName);
-    set_version("0.0.0");
+    set_version(version);
     set_comments("A Media Player and TV Viewer");
     set_copyright("Copyright (C) Joachim Erbs, 2009-2010");
     // set_website("");
