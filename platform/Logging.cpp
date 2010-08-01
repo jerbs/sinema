@@ -14,6 +14,7 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/make_shared.hpp>
 #include <fstream>
+#include <stdlib.h>
 
 class TraceReceiver : public event_receiver<TraceReceiver>
 {
@@ -23,14 +24,27 @@ public:
     
     TraceReceiver(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc),
-	  log("/tmp/log")
+	  log()
     {
+	const char* logFileName = getenv("SINEMA_LOG");
+	if (logFileName)
+	{
+	    log.open(logFileName);
+	}
+    }
+
+    inline bool isOpen()
+    {
+	return log.is_open();
     }
 
 private:
     void process(boost::shared_ptr<std::string> event)
     {
-	log << *event << std::endl;
+	if (log.is_open())
+	{
+	    log << *event << std::endl;
+	}
     }
 
     std::ofstream log;
@@ -55,7 +69,7 @@ private:
 	traceThread.join();
     }
 
-    static SystemTrace* getInstance()
+    static inline SystemTrace* getInstance()
     {
 	if (instance == 0)
 	{
@@ -63,6 +77,11 @@ private:
 	}
 
 	return instance;
+    }
+
+    inline bool isEnabled()
+    {
+	return traceReceiver->isOpen();
     }
 
 private:
@@ -77,7 +96,10 @@ SystemTrace* SystemTrace::instance = 0;
 
 TraceUnit::~TraceUnit()
 {
-    SystemTrace::getInstance()->
-	traceReceiver->
-	queue_event(boost::make_shared<std::string>(str()));
+    SystemTrace* st = SystemTrace::getInstance();
+    if (st->isEnabled())
+    {
+	st->traceReceiver->
+	    queue_event(boost::make_shared<std::string>(str()));
+    }
 }
