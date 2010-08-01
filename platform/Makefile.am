@@ -12,7 +12,7 @@ libplatform_la_SOURCES = concurrent_queue.hpp \
 libplatform_la_CXXFLAGS = -std=c++0x
 
 ## Event Test
-bin_PROGRAMS = eventTest
+noinst_PROGRAMS = eventTest
 eventTest_SOURCES = eventTest.cpp Logging.cpp
 eventTest_CPPFLAGS = $(AM_CFLAGS) \
 		     $(BOOST_CPPFLAGS) \

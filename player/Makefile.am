@@ -18,7 +18,7 @@ libplayer_la_SOURCES = AlsaFacade.cpp AlsaFacade.hpp \
 libplayer_la_CXXFLAGS = -std=c++0x
 
 ## Audio/Video Sync Test
-bin_PROGRAMS = synctest
+noinst_PROGRAMS = synctest
 synctest_SOURCES = AlsaFacade.cpp AlsaFacade.hpp \
 		   AlsaMixer.cpp AlsaMixer.hpp \
 		   AudioOutput.cpp AudioOutput.hpp \

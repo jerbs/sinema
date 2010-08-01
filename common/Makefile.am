@@ -8,7 +8,7 @@ libcommon_la_SOURCES = ConfigFile.cpp ConfigFile.hpp \
 libcommon_la_CXXFLAGS = -std=c++0x
 
 ## Parser/Generator Test
-bin_PROGRAMS = configFileTest
+noinst_PROGRAMS = configFileTest
 configFileTest_SOURCES = ConfigFile.cpp ConfigFile.hpp \
 			 ConfigFileTest.cpp ConfigFileTest.hpp
 configFileTest_CPPFLAGS = -DCONFIG_FILE_TEST $(AM_CFLAGS) $(BOOST_CPPFLAGS)
