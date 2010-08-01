@@ -32,9 +32,12 @@ sinema_LDFLAGS = $(PLAYER_LIBS) \
 		 -lasound \
 		 $(GUI_LIBS)
 
-About.cpp: COPYING.inc version.inc
+About.cpp: COPYING.inc README.inc version.inc
 
 COPYING.inc: ../COPYING
+	../tools/wrap $< $@
+
+README.inc: ../README
 	../tools/wrap $< $@
 
 version.inc: ../version

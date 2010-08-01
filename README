@@ -1,0 +1,63 @@
+
+                            Sinema
+
+                  A Media Player and TV Viewer	
+
+
+
+Sinema is a free, GPL licensed media player and TV application.
+
+FFmpeg is used for video and audio decoding. Sinema can play every
+format supported by the installed FFmpeg library.
+
+ALSA is used to access the sound card. Accessing ALSA directly is
+possible from a single application only. Usually this is not wanted.
+It can be avoided by using Pulse Audio with a virtual ALSA device.
+Using Pulse Audio directly is not supported.
+
+XVideo is the only supported video output interface.
+
+TV viewing is only supported with analog TV cards having an
+MPEG hardware encoder. It is expected, that the encoded MPEG data is
+available at /dev/video0. The command "cp /dev/video0 tv.mpg" should
+produce a valid MPEG file. Otherwise watching TV will not be possible
+with Sinema. Watching TV is tested with the IVTV driver. See
+<http://ivtvdriver.org> for details about supported TV cards.
+
+The time shifting implementation is still very basic. Live TV is
+written to /tmp/tv.mpg and simultaneously that file is played. The
+file name is hard-coded. During a TV session that file isn't truncated.
+Ensure that the partition at /tmp provides enough free space.
+
+Cropping the video picture is possible to avoid black borders. Some
+cropping areas are predefined and can be enabled via the View menu.
+Alternatively the cropping area can intuitively be selected using the
+mouse. Move the mouse pointer to the edges and press the right mouse
+button. The shape of the mouse pointer indicates the action. Pressing
+the right mouse button, when the mouse is placed in the middle of the
+video picture, undoes any cropping.
+
+Pressing the middle mouse button shows and hides an additional control
+window. Pressing the right mouse button opens a context menu with the
+most important items also available in the main menu. This is especially
+useful for the full screen mode.
+
+
+
+Hot Keys	
+
+Cursor-Left                  Jump 10 seconds back
+Cursor-Right                 Jump 10 seconds forward
+Shift + Cursor-Left          Jump 30 seconds back
+Shift + Cursor-Right         Jump 30 seconds forward
+Ctrl + Cursor-Left           Jump 60 seconds back
+Ctrl + Cursor-Right          Jump 60 seconds forward
+Ctrl + Shift + Cursor-Left   Jump 180 seconds back
+Ctrl + Shift + Cursor-Right  Jump 180 seconds forward
+Space                        Toggle play/pause
+Page Up                      Skip to previous play list entry
+Page Down                    Skip to next play list entry
+Cursor-Up                    Increase volume
+Cursor-Down                  Decrease volume
+m                            Toggle mute mode
+Escape                       Leave full screen mode
