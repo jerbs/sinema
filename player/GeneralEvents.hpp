@@ -250,6 +250,7 @@ struct OpenAudioOutputReq
 {
     unsigned int sample_rate;
     unsigned int channels;
+    SampleFormat sample_format;
     unsigned int frame_size;
 };
 

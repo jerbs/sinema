@@ -133,6 +133,23 @@ void CopyLog::operator()()
 
 // ===================================================================
 
+snd_pcm_format_t convert(SampleFormat sf)
+{
+    switch(sf)
+    {
+    case SAMPLE_FMT_NONE: return SND_PCM_FORMAT_UNKNOWN;
+    case SAMPLE_FMT_U8:   return SND_PCM_FORMAT_U8;
+    case SAMPLE_FMT_S16:  return SND_PCM_FORMAT_S16;
+    case SAMPLE_FMT_S32:  return SND_PCM_FORMAT_S32;
+    case SAMPLE_FMT_FLT:  return SND_PCM_FORMAT_FLOAT;
+    case SAMPLE_FMT_DBL:  return SND_PCM_FORMAT_FLOAT64;
+    default: break;
+    }
+    return SND_PCM_FORMAT_UNKNOWN;
+}
+
+// ===================================================================
+
 AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAudioOutputReq> req)
     : device(deviceName),
       handle(0),
@@ -142,7 +159,7 @@ AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAud
       sampleRate(req->sample_rate),
       channels(req->channels),
       frameSize(req->frame_size),
-      format(SND_PCM_FORMAT_S16),  // sample format
+      format(convert(req->sample_format)),
       buffer_size(0),
       period_size(4096),
       buffer_time(500000), // ring buffer length in us
@@ -186,11 +203,6 @@ AFPCMDigitalAudioInterface::AFPCMDigitalAudioInterface(boost::shared_ptr<OpenAud
 
     // bytes per sample
     bytesPerSample = snd_pcm_format_width(format) / 8;
-    if (bytesPerSample != 2)
-    {
-	TRACE_ERROR(<< "Expecting format with 2 bytes per sample per channel.");
-	exit(-1);
-    }
 
     dump();
 }
@@ -239,7 +251,7 @@ void AFPCMDigitalAudioInterface::setPcmHwParams()
 	exit(-1);
     }
 
-    ret = snd_pcm_hw_params_set_format(handle, hwparams, SND_PCM_FORMAT_S16);
+    ret = snd_pcm_hw_params_set_format(handle, hwparams, format);
     if (ret < 0)
     {
 	TRACE_ERROR(<< "snd_pcm_hw_params_set_format failed: " << snd_strerror(ret));
@@ -537,7 +549,7 @@ void AFPCMDigitalAudioInterface::start()
 void AFPCMDigitalAudioInterface::skip(boost::shared_ptr<AFAudioFrame> frame, double seconds)
 {
     snd_pcm_uframes_t frames = seconds * double(sampleRate);
-    int bytes = frames * channels * 2;
+    int bytes = frames * channels * bytesPerSample;
     frame->consume(bytes);
 }
 
@@ -551,7 +563,7 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
     int err;
 
     // Number of frames(samples) available:
-    snd_pcm_uframes_t frames = frame->getFrameByteSize()/ (channels * 2);
+    snd_pcm_uframes_t frames = frame->getFrameByteSize()/ (channels * bytesPerSample);
     err = snd_pcm_mmap_begin(handle, &my_areas, &offset, &frames);
     // Here frames is the number of free continous samples in the playback buffer.
     if (err < 0)
@@ -593,7 +605,7 @@ bool AFPCMDigitalAudioInterface::copyFrame(const snd_pcm_channel_area_t *areas,
 					   snd_pcm_uframes_t offset,
 					   int frames, boost::shared_ptr<AFAudioFrame> frame)
 {
-    u_int16_t* src = (u_int16_t*)frame->consume(frames*2*channels);
+    char* src = frame->consume(frames * channels * bytesPerSample);
 
     unsigned char *samples[channels];
     int steps[channels]; 
@@ -609,7 +621,7 @@ bool AFPCMDigitalAudioInterface::copyFrame(const snd_pcm_channel_area_t *areas,
 
 	samples[chn] = (((unsigned char *)areas[chn].addr) + (areas[chn].first / 8));
 
-	if ((areas[chn].step % 16) != 0)
+	if ((areas[chn].step % 8) != 0)
 	{
 	    TRACE_ERROR(<< "areas[" << chn << "].step == " << areas[chn].first << ", aborting...");
 	    exit(EXIT_FAILURE);
@@ -623,18 +635,10 @@ bool AFPCMDigitalAudioInterface::copyFrame(const snd_pcm_channel_area_t *areas,
     /* fill the channel areas */
     while (frames-- > 0)
     {
-	union
-	{
-	    int i;
-	    unsigned char c[4];
-	} ires;
-
 	for (unsigned int chn = 0; chn < channels; chn++)
 	{
-	    ires.i = *src++;
-
 	    for (unsigned int byte = 0; byte < bytesPerSample; byte++)
-		*(samples[chn] + byte) = ires.c[byte]++;
+		*(samples[chn] + byte) = *src++;
 
 	    samples[chn] += steps[chn];
 	}
