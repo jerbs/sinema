@@ -27,7 +27,7 @@
 
 #include <boost/shared_ptr.hpp>
 
-class AFAudioFrame;
+class AudioFrame;
 class XFVideoImage;
 class XFWindow;
 
@@ -45,7 +45,7 @@ class SyncTest : public event_receiver<SyncTest>
 {
     friend class event_processor<>;
 
-    std::queue<boost::shared_ptr<AFAudioFrame> > audioFrameQueue;
+    std::queue<boost::shared_ptr<AudioFrame> > audioFrameQueue;
     std::queue<  std::unique_ptr<XFVideoImage> > videoFrameQueue;
 
     StartTest m_conf;
@@ -61,7 +61,7 @@ private:
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<StartTest> event);
-    void process(boost::shared_ptr<AFAudioFrame> event);
+    void process(boost::shared_ptr<AudioFrame> event);
     void process(  std::unique_ptr<XFVideoImage> event);
 
     // Stubs for MediaPlayer, Demuxer, AudioDecoder and VideoDecoder:
@@ -79,7 +79,7 @@ private:
     void process(boost::shared_ptr<SeekRelativeReq>) {}
 
     void generate();
-    void generateAudioFrame(boost::shared_ptr<AFAudioFrame> audioFrame);
+    void generateAudioFrame(boost::shared_ptr<AudioFrame> audioFrame);
     void generateVideoFrame(XFVideoImage* videoFrame);
 };
 

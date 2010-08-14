@@ -25,7 +25,7 @@
 #include "player/GeneralEvents.hpp"
 #include "platform/event_receiver.hpp"
 
-class AFAudioFrame;
+class AudioFrame;
 
 class AudioDecoder : public event_receiver<AudioDecoder>
 {
@@ -49,7 +49,7 @@ class AudioDecoder : public event_receiver<AudioDecoder>
     int posCurrentPacket; // Offset in avPacket in packetQueue.front()
     int numFramesCurrentPacket; // Number of samples added to frameQueue.front()
 
-    std::queue<boost::shared_ptr<AFAudioFrame> > frameQueue;
+    std::queue<boost::shared_ptr<AudioFrame> > frameQueue;
     std::queue<boost::shared_ptr<AudioPacketEvent> > packetQueue;
 
     bool eos;
@@ -81,7 +81,7 @@ private:
     void process(boost::shared_ptr<CloseAudioStreamReq> event);
     void process(boost::shared_ptr<CloseAudioOutputResp> event);
     void process(boost::shared_ptr<AudioPacketEvent> event);
-    void process(boost::shared_ptr<AFAudioFrame> event);
+    void process(boost::shared_ptr<AudioFrame> event);
     void process(boost::shared_ptr<FlushReq> event);
     void process(boost::shared_ptr<EndOfAudioStream> event);
 

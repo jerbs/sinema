@@ -21,7 +21,7 @@
 
 #include "player/AudioDecoder.hpp"
 #include "player/AudioOutput.hpp"
-#include "player/AlsaFacade.hpp"
+#include "player/AudioFrame.hpp"
 #include "player/Demuxer.hpp"
 
 #include <boost/make_shared.hpp>
@@ -195,7 +195,7 @@ void AudioDecoder::process(boost::shared_ptr<AudioPacketEvent> event)
     }
 }
 
-void AudioDecoder::process(boost::shared_ptr<AFAudioFrame> event)
+void AudioDecoder::process(boost::shared_ptr<AudioFrame> event)
 {
     if (state == Opened || state == Opening)
     {
@@ -258,7 +258,7 @@ void AudioDecoder::decode()
 	    !frameQueue.empty() )
     {
         boost::shared_ptr<AudioPacketEvent> audioPacketEvent(packetQueue.front());
-	boost::shared_ptr<AFAudioFrame> audioFrame(frameQueue.front());
+	boost::shared_ptr<AudioFrame> audioFrame(frameQueue.front());
 
         AVPacket& avPacket = audioPacketEvent->avPacket;
 
@@ -323,7 +323,7 @@ void AudioDecoder::decode()
 		    frameQueue.pop();
 		    numFramesCurrentPacket = 0;
 		    audioFrame->setPTS(framePTS);
-		    TRACE_DEBUG(<< "Queueing AFAudioFrame");
+		    TRACE_DEBUG(<< "Queueing AudioFrame");
 		    audioOutput->queue_event(audioFrame);
 		}
 	    }

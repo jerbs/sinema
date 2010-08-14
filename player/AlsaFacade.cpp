@@ -445,7 +445,7 @@ int AFPCMDigitalAudioInterface::xrun_recovery(int err)
 }
 
 
-bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AFAudioFrame> frame)
+bool AFPCMDigitalAudioInterface::play(boost::shared_ptr<AudioFrame> frame)
 {
     bool finished;
 
@@ -546,14 +546,14 @@ void AFPCMDigitalAudioInterface::start()
     }
 }
 
-void AFPCMDigitalAudioInterface::skip(boost::shared_ptr<AFAudioFrame> frame, double seconds)
+void AFPCMDigitalAudioInterface::skip(boost::shared_ptr<AudioFrame> frame, double seconds)
 {
     snd_pcm_uframes_t frames = seconds * double(sampleRate);
     int bytes = frames * channels * bytesPerSample;
     frame->consume(bytes);
 }
 
-bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> frame)
+bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AudioFrame> frame)
 {
     TRACE_DEBUG();
 
@@ -603,7 +603,7 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AFAudioFrame> fra
 
 bool AFPCMDigitalAudioInterface::copyFrame(const snd_pcm_channel_area_t *areas,
 					   snd_pcm_uframes_t offset,
-					   int frames, boost::shared_ptr<AFAudioFrame> frame)
+					   int frames, boost::shared_ptr<AudioFrame> frame)
 {
     char* src = frame->consume(frames * channels * bytesPerSample);
 

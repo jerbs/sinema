@@ -62,7 +62,7 @@ void SyncTest::process(boost::shared_ptr<StartTest> event)
     videoOutput->queue_event(videoReq);
 }
 
-void SyncTest::process(boost::shared_ptr<AFAudioFrame> event)
+void SyncTest::process(boost::shared_ptr<AudioFrame> event)
 {
     audioFrameQueue.push(event);
     generate();
@@ -90,7 +90,7 @@ void SyncTest::generate()
     while ( !audioFrameQueue.empty() &&
 	    !videoFrameQueue.empty() )
     {
-	boost::shared_ptr<AFAudioFrame> audioFrame(audioFrameQueue.front());
+	boost::shared_ptr<AudioFrame> audioFrame(audioFrameQueue.front());
 	audioFrameQueue.pop();
 
 	std::unique_ptr<XFVideoImage> videoFrame(std::move(videoFrameQueue.front()));
@@ -109,7 +109,7 @@ void SyncTest::generate()
     }
 }
 
-void SyncTest::generateAudioFrame(boost::shared_ptr<AFAudioFrame> audioFrame)
+void SyncTest::generateAudioFrame(boost::shared_ptr<AudioFrame> audioFrame)
 {
     int byteSize = m_conf.sample_rate * m_conf.channels * 2;
 

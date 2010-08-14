@@ -23,6 +23,7 @@
 #define ALSA_FACADE_HPP
 
 #include "player/GeneralEvents.hpp"
+#include "player/AudioFrame.hpp"
 
 extern "C"
 {
@@ -36,78 +37,6 @@ extern "C"
 
 class CopyLog;
 
-class AFAudioFrame
-{
-public:
-    AFAudioFrame(int size)
-	: allocatedByteSize(size),
-	  frameByteSize(0),
-	  buf(new char[size]),
-	  pts(0),
-	  offset(0)
-    {}
-    ~AFAudioFrame()
-    {
-	delete[](buf);
-    }
-
-    void setFrameByteSize(int size) {frameByteSize = size;}
-    int getFrameByteSize() {return frameByteSize-offset;}
-    int numAllocatedBytes() {return allocatedByteSize;}
-    char* data() {return &buf[offset];}
-    char* consume(int bytes)
-    {
-	int off = offset;
-	offset += bytes;
-	if (offset > frameByteSize)
-	{
-	    TRACE_ERROR(<<"Consumed too much data.");
-	    exit(-1);
-	}
-	return &buf[off];
-    }
-
-    void setPTS(double pts_) {pts = pts_;}
-    double getPTS() {return pts;}
-
-    void setNextPTS(double pts_) {nextPts = pts_;}
-    double getNextPTS() {return nextPts;}
-
-    void reset()
-    {
-	frameByteSize = 0;
-	pts = 0;
-	offset = 0;
-    }
-
-    void restore()
-    {
-	offset = 0;
-    }
-
-    bool atBegin()
-    {
-	return (offset == 0) ? true : false;
-    }
-
-    bool atEnd()
-    {
-	return (offset == frameByteSize) ? true : false;
-    }
-
-
-private:
-    AFAudioFrame();
-    AFAudioFrame(const AFAudioFrame&);
-
-    int allocatedByteSize;
-    int frameByteSize;
-    char* buf;
-    double pts;
-    double nextPts;
-    int offset;
-};
-
 class AFPCMDigitalAudioInterface
 {
 public:
@@ -118,7 +47,7 @@ public:
 
     void setSendAudioSyncInfo(send_audio_sync_info_fct_t fct);
 
-    bool play(boost::shared_ptr<AFAudioFrame> frame);
+    bool play(boost::shared_ptr<AudioFrame> frame);
     bool getOverallLatency(snd_pcm_sframes_t& delay);
     snd_pcm_sframes_t getBufferFillLevel();
     double getNextPTS();
@@ -127,7 +56,7 @@ public:
     bool pause(bool enable);
     void stop();
 
-    void skip(boost::shared_ptr<AFAudioFrame> frame, double seconds);
+    void skip(boost::shared_ptr<AudioFrame> frame, double seconds);
 
 private:
     AFPCMDigitalAudioInterface();
@@ -158,10 +87,10 @@ private:
     double nextPTS;  // PTS of the next frame written to playback buffer
 
     int xrun_recovery(int err);
-    bool directWrite(boost::shared_ptr<AFAudioFrame> frame);
+    bool directWrite(boost::shared_ptr<AudioFrame> frame);
     bool copyFrame(const snd_pcm_channel_area_t *areas,
 		   snd_pcm_uframes_t offset,
-		   int frames, boost::shared_ptr<AFAudioFrame> frame);
+		   int frames, boost::shared_ptr<AudioFrame> frame);
 
     boost::shared_ptr<CopyLog> m_CopyLog;
 };

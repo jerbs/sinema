@@ -117,7 +117,7 @@ void AudioOutput::process(boost::shared_ptr<CloseAudioOutputReq>)
     }
 }
 
-void AudioOutput::process(boost::shared_ptr<AFAudioFrame> event)
+void AudioOutput::process(boost::shared_ptr<AudioFrame> event)
 {
     if (isOpen())
     {
@@ -166,7 +166,7 @@ void AudioOutput::process(boost::shared_ptr<FlushReq>)
 	// Send received frames back to VideoDecoder without playing them:
 	while (!frameQueue.empty())
 	{
-	    boost::shared_ptr<AFAudioFrame> frame(frameQueue.front());
+	    boost::shared_ptr<AudioFrame> frame(frameQueue.front());
 	    frameQueue.pop_front();
 	    frame->reset();
 
@@ -231,7 +231,7 @@ void AudioOutput::process(boost::shared_ptr<CommandPlay>)
 		// audio device with the dropped frames.
 		while(currentFrame != frameQueue.begin())
 		{
-		    boost::shared_ptr<AFAudioFrame> frame(*currentFrame);
+		    boost::shared_ptr<AudioFrame> frame(*currentFrame);
 		    if (frame->getPTS() > audiblePTS)
 		    {
 			// Complete frame has to be replayed.
@@ -241,7 +241,7 @@ void AudioOutput::process(boost::shared_ptr<CommandPlay>)
 		    else
 		    {
 			// Partial frame has to be replayed.
-			boost::shared_ptr<AFAudioFrame> frame(*currentFrame);
+			boost::shared_ptr<AudioFrame> frame(*currentFrame);
 			frame->restore();
 			double seconds = audiblePTS - frame->getPTS();
 			alsa->skip(frame, seconds);
@@ -289,7 +289,7 @@ void AudioOutput::createAudioFrame()
 {
     TRACE_DEBUG();
     numAudioFrames++;
-    audioDecoder->queue_event(boost::make_shared<AFAudioFrame>(frameSize));
+    audioDecoder->queue_event(boost::make_shared<AudioFrame>(frameSize));
 }
 
 void AudioOutput::playNextChunk()
@@ -322,7 +322,7 @@ void AudioOutput::playNextChunk()
 
 	TRACE_DEBUG(<< "time=" << chunkTimer.get_current_time());
 
-	boost::shared_ptr<AFAudioFrame> frame(*currentFrame);
+	boost::shared_ptr<AudioFrame> frame(*currentFrame);
 
 	if (frame->atBegin())
 	{
@@ -364,7 +364,7 @@ void AudioOutput::recycleObsoleteFrames()
     FrameQueue_t::iterator it(frameQueue.begin());
     while(it != currentFrame)
     {
-	boost::shared_ptr<AFAudioFrame> firstFrame(*it);
+	boost::shared_ptr<AudioFrame> firstFrame(*it);
 	double nextPTS = firstFrame->getNextPTS();
 	if (audiblePTS > nextPTS)
 	{

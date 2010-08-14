@@ -6,6 +6,7 @@ libplayer_la_SOURCES = AlsaFacade.cpp AlsaFacade.hpp \
 		       AlsaMixer.cpp AlsaMixer.hpp \
 		       AudioDecoder.cpp AudioDecoder.hpp \
 		       AudioOutput.cpp AudioOutput.hpp \
+		       AudioFrame.hpp \
 		       Deinterlacer.cpp Deinterlacer.hpp \
 		       Demuxer.cpp Demuxer.hpp \
 		       GeneralEvents.hpp \

@@ -30,7 +30,7 @@
 #include <boost/shared_ptr.hpp>
 
 class AFPCMDigitalAudioInterface;
-class AFAudioFrame;
+class AudioFrame;
 class AFMixer;
 class AlsaMixerElemEvent;
 
@@ -53,7 +53,7 @@ private:
 
     boost::shared_ptr<AFPCMDigitalAudioInterface> alsa;
     boost::shared_ptr<AFMixer> alsaMixer;
-    typedef std::list<boost::shared_ptr<AFAudioFrame> > FrameQueue_t;
+    typedef std::list<boost::shared_ptr<AudioFrame> > FrameQueue_t;
     FrameQueue_t frameQueue;
     FrameQueue_t::iterator currentFrame;
 
@@ -86,7 +86,7 @@ private:
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<OpenAudioOutputReq> event);
     void process(boost::shared_ptr<CloseAudioOutputReq> event);
-    void process(boost::shared_ptr<AFAudioFrame> event);
+    void process(boost::shared_ptr<AudioFrame> event);
     void process(boost::shared_ptr<PlayNextChunk> event);
     void process(boost::shared_ptr<FlushReq> event);
     void process(boost::shared_ptr<EndOfAudioStream> event);
