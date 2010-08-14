@@ -203,6 +203,10 @@ private:
     bool m_isEnabled_signalSetFrequency;
     Glib::RefPtr<Gtk::RadioAction> m_refNoChannel;
     int m_tunedFrequency;
+
+    bool m_isEnabled_showConfigWindow;
+    bool m_isEnabled_showControlWindow;
+    bool m_isEnabled_showPlayListWindow;
 };
 
 #endif

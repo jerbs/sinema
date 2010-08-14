@@ -53,7 +53,10 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
       m_visible(&m_visibleWindow),
       m_fullscreen(false),
       m_isEnabled_signalSetFrequency(true),
-      m_tunedFrequency(0)
+      m_tunedFrequency(0),
+      m_isEnabled_showConfigWindow(true),
+      m_isEnabled_showControlWindow(true),
+      m_isEnabled_showPlayListWindow(true)
 {
     // Create actions for menus and toolbars:
     m_refActionGroup = Gtk::ActionGroup::create();
@@ -826,6 +829,7 @@ void on_window_state_event(Glib::RefPtr<Gtk::ToggleAction> action, GdkEventWindo
 bool SignalDispatcher::on_config_window_state_event(GdkEventWindowState* event)
 {
     TRACE_DEBUG();
+    TemporaryDisable d(m_isEnabled_showConfigWindow);
     on_window_state_event(m_refConfigWindowVisible, event);
     return false;
 }
@@ -833,6 +837,7 @@ bool SignalDispatcher::on_config_window_state_event(GdkEventWindowState* event)
 bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)
 {
     TRACE_DEBUG();
+    TemporaryDisable d(m_isEnabled_showControlWindow);
     on_window_state_event(m_refControlWindowVisible, event);
     return false;
 }
@@ -840,6 +845,7 @@ bool SignalDispatcher::on_control_window_state_event(GdkEventWindowState* event)
 bool SignalDispatcher::on_play_list_window_state_event(GdkEventWindowState* event)
 {
     TRACE_DEBUG();
+    TemporaryDisable d(m_isEnabled_showPlayListWindow);
     on_window_state_event(m_refPlayListWindowVisible, event);
     return false;
 }
@@ -928,19 +934,28 @@ void SignalDispatcher::on_notification_clipping(const NotificationClipping& even
     }
 }
 
-void SignalDispatcher::on_view_controlwindow()
-{
-    showControlWindow(m_refControlWindowVisible->get_active());
-}
-
 void SignalDispatcher::on_view_configwindow()
 {
-    showConfigWindow(m_refConfigWindowVisible->get_active());
+    if (m_isEnabled_showConfigWindow)
+    {
+	showConfigWindow(m_refConfigWindowVisible->get_active());
+    }
+}
+
+void SignalDispatcher::on_view_controlwindow()
+{
+    if (m_isEnabled_showControlWindow)
+    {
+	showControlWindow(m_refControlWindowVisible->get_active());
+    }
 }
 
 void SignalDispatcher::on_view_playlistwindow()
 {
-    showPlayListWindow(m_refPlayListWindowVisible->get_active());
+    if (m_isEnabled_showPlayListWindow)
+    {
+	showPlayListWindow(m_refPlayListWindowVisible->get_active());
+    }
 }
     
 void SignalDispatcher::on_view_menubar()
