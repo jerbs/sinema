@@ -28,7 +28,7 @@ m4/l*.m4
 Makefile
 Makefile.in
 tools/wrap
-platform/eventTest
+platform/test/eventTest
 player/synctest
 common/configFileTest
 gui/sinema
