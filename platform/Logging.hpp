@@ -78,7 +78,7 @@ inline unsigned char upperNibble(unsigned char c)
     return (c & 0xF0) >> 4;
 }
 
-struct _HexDump{char* data; int len;};
+struct _HexDump{const char* data; int len;};
 
 template<typename PTR>
 inline _HexDump hexDump(PTR data, int len)
@@ -90,12 +90,20 @@ inline _HexDump hexDump(PTR data, int len)
     return x;
 }
 
+inline _HexDump hexDump(const std::string& s)
+{
+    _HexDump x;
+    x.data = s.data();
+    x.len = s.length();
+    return x;
+}
+
 template<typename _CharT, typename _Traits>
 std::basic_ostream<_CharT, _Traits>& operator<<(std::basic_ostream<_CharT, _Traits>& __os, _HexDump hexDump)
 {
     char hex[] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
-    char* pos = hexDump.data;
-    char* end = pos + hexDump.len;
+    const char* pos = hexDump.data;
+    const char* end = pos + hexDump.len;
 
     while(pos < end)
     {

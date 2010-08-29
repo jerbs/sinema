@@ -29,6 +29,8 @@ Makefile
 Makefile.in
 tools/wrap
 platform/test/eventTest
+platform/test/client
+platform/test/server
 player/synctest
 common/configFileTest
 gui/sinema

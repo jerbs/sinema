@@ -13,6 +13,7 @@
 
 #include "platform/concurrent_queue.hpp"
 #include "platform/timer.hpp"
+#include "platform/Logging.hpp"
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
