@@ -18,6 +18,7 @@
 #include <boost/enable_shared_from_this.hpp>
 
 #include "platform/Logging.hpp"
+#include "platform/dispatch.hpp"
 #include "my_interface.hpp"        // to be removed
 
 typedef boost::array<boost::asio::const_buffer, 2> buffer_list_type;
@@ -150,7 +151,8 @@ public:
 	if (!err)
 	{
 	    TRACE_DEBUG( << "Header = "<< m_rx_header);
-	    start_read_body<Indication>();
+	    // start_read_body<Indication>();
+	    PROCESS<MyItfMsgTypeValues, MyItf>(*this, m_rx_header.type);
 	}
 	else if (err != boost::asio::error::eof)
 	{
@@ -195,7 +197,7 @@ public:
 	TRACE_DEBUG();
 	if (m_socket.is_open())
 	{
-	    boost::shared_ptr<Header> header(new Header(1, sizeof(Event)));
+	    boost::shared_ptr<Header> header(new Header(getMsgType<Event>(), sizeof(Event)));
 	    message<Header, Event> msg(header, event);
 	    boost::asio::async_write(m_socket, msg,
 				     boost::bind(&tcp_connection::handle_write,

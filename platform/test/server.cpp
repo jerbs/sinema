@@ -52,13 +52,25 @@ private:
 	TRACE_DEBUG( << "AnnounceProxy");
 	proxy = event->proxy;
 
-	boost::shared_ptr<Indication> ind(new Indication(1,2,3));
+	boost::shared_ptr<MyItfIndication> ind(new MyItfIndication(1,2,3));
 	proxy->write_event(ind);
     }
 
-    void process(boost::shared_ptr<Indication> event)
+    void process(boost::shared_ptr<MyItfResourceCreateReq> event)
     {
-	TRACE_DEBUG( << "Indication" << *event);
+	TRACE_DEBUG( << "MyItfResourceCreateReq" << *event);
+	boost::shared_ptr<MyItfResourceCreateResp> resp(new MyItfResourceCreateResp(88));
+	proxy->write_event(resp);
+    }
+
+    void process(boost::shared_ptr<MyItfResourceCreateResp> event)
+    {
+	TRACE_DEBUG( << "MyItfResourceCreateResp" << *event);
+    }
+
+    void process(boost::shared_ptr<MyItfIndication> event)
+    {
+	TRACE_DEBUG( << "MyItfIndication" << *event);
 	event->a *= 2;
 	event->b *= 2;
 	event->c *= 2;
