@@ -16,10 +16,15 @@
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
+#include <boost/utility/enable_if.hpp>
+#include <boost/mpl/count_if.hpp>
+#include <boost/mpl/transform_view.hpp>
+#include <boost/mpl/contains.hpp>
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/if.hpp>
 
 #include "platform/Logging.hpp"
-#include "platform/dispatch.hpp"
-#include "my_interface.hpp"        // to be removed
+#include "platform/interface.hpp"
 
 typedef boost::array<boost::asio::const_buffer, 2> buffer_list_type;
 
@@ -110,17 +115,55 @@ struct AnnounceProxy
     boost::shared_ptr<Proxy> proxy;
 };
 
-template<class Receiver>
+template<class Receiver,
+	 typename Interface,
+	 typename Side>
 class tcp_connection
-    : public boost::enable_shared_from_this<tcp_connection<Receiver> >
+    : public boost::enable_shared_from_this<tcp_connection<Receiver,
+							   Interface,
+							   Side> >
 {
+    typedef tcp_connection<Receiver, Interface, Side> type;
+
+    typedef typename itf::get_message_list<Interface, Side, itf::Rx>::type RxMessageList;
+    typedef typename itf::get_message_list<Interface, Side, itf::Tx>::type TxMessageList;
+
+    typedef boost::function<void ()> fct_t;
+
 public:
     tcp_connection(boost::asio::io_service& io_service,
 		   boost::shared_ptr<Receiver> receiver)
 	: m_socket(io_service),
 	  m_receiver(receiver)
-    {}
+    {
+	boost::mpl::for_each<RxMessageList>(add_rx_callback(this));
+    }
 
+private:
+    struct add_rx_callback
+    {
+	add_rx_callback(type* parent)
+	    : parent(parent)
+	{}
+
+	template<typename Message>
+	void operator()(Message)
+	{
+	    TRACE_DEBUG();
+
+	    typedef void (type::*member_fct_t)();
+	    member_fct_t tmp = &type::start_read_body<typename Message::type>;
+	    fct_t fct = boost::bind(tmp, parent);
+
+	    typedef typename Message::msg_id msg_id;
+
+	    parent->m_rx_map.insert(std::make_pair(msg_id::value, fct));
+	}
+
+	type* parent;
+    };
+
+public:
     boost::asio::ip::tcp::socket& socket()
     {
 	return m_socket;
@@ -130,7 +173,7 @@ public:
     {
 	TRACE_DEBUG();
 	m_receiver->queue_event(boost::make_shared
-				<AnnounceProxy<tcp_connection<Receiver> > >
+				<AnnounceProxy<type> >
 				(this->shared_from_this()));
 	start_read_header();
     }
@@ -151,8 +194,19 @@ public:
 	if (!err)
 	{
 	    TRACE_DEBUG( << "Header = "<< m_rx_header);
-	    // start_read_body<Indication>();
-	    PROCESS<MyItfMsgTypeValues, MyItf>(*this, m_rx_header.type);
+
+	    std::map<int, fct_t>::iterator pos = m_rx_map.find(m_rx_header.type);
+
+	    if (pos != m_rx_map.end())
+	    {
+		// Calling start_read_body template method
+		// for the received message type:
+		pos->second();
+	    }
+	    else
+	    {
+		TRACE_ERROR(<< "Invalid message type: " << m_rx_header.type);
+	    }
 	}
 	else if (err != boost::asio::error::eof)
 	{
@@ -161,7 +215,8 @@ public:
     }
 
     template<class Event>
-    void start_read_body()
+    typename itf::enable_if_msg_in_list<Event, RxMessageList, void>::type
+    start_read_body()
     {
 	TRACE_DEBUG();
 	TRACE_DEBUG(<< "sizeof(Event) = " << sizeof(Event));
@@ -175,7 +230,8 @@ public:
     }
 
     template<class Event>
-    void handle_read_body(const boost::system::error_code& err,
+    typename itf::enable_if_msg_in_list<Event, RxMessageList, void>::type
+    handle_read_body(const boost::system::error_code& err,
 			  boost::shared_ptr<Event> event)
     {
 	TRACE_DEBUG();
@@ -192,12 +248,14 @@ public:
     }
 
     template<class Event>
-    void write_event(boost::shared_ptr<Event> event)
+    typename itf::enable_if_msg_in_list<Event, TxMessageList, void>::type
+    write_event(boost::shared_ptr<Event> event)
     {
 	TRACE_DEBUG();
 	if (m_socket.is_open())
 	{
-	    boost::shared_ptr<Header> header(new Header(getMsgType<Event>(), sizeof(Event)));
+	    const int msg_id = itf::get_message_id<Event, TxMessageList>::type::value;
+	    boost::shared_ptr<Header> header(new Header(msg_id, sizeof(Event)));
 	    message<Header, Event> msg(header, event);
 	    boost::asio::async_write(m_socket, msg,
 				     boost::bind(&tcp_connection::handle_write,
@@ -222,6 +280,8 @@ private:
     boost::asio::ip::tcp::socket m_socket;
     boost::shared_ptr<Receiver> m_receiver;
     Header m_rx_header;
+
+    std::map<int, fct_t> m_rx_map;
 };
 
 #endif

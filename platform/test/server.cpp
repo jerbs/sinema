@@ -8,12 +8,13 @@
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include "platform/Logging.hpp"
+
 #include "platform/event_receiver.hpp"
 #include "platform/tcp_connection.hpp"
 #include "platform/tcp_server.hpp"
-#include "platform/Logging.hpp"
 
-#include "my_interface.hpp"
+#include "ClientServerInterface.hpp"
 
 #include <ctime>
 #include <iostream>
@@ -22,6 +23,8 @@
 #include <boost/shared_ptr.hpp>
 #include <boost/enable_shared_from_this.hpp>
 #include <boost/asio.hpp>
+
+#include <boost/mpl/for_each.hpp>
 
 #undef TRACE_DEBUG
 #define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
@@ -33,9 +36,12 @@ struct InitEvent
 class Server : public event_receiver<Server>
 {
     friend class event_processor<>;
-    typedef tcp_connection<Server> tcp_connection_type;
 
 public :
+    typedef tcp_connection<Server,
+			   csif::Interface,
+			   itf::ServerSide> tcp_connection_type;
+
     Server(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc)
     {}
@@ -52,29 +58,29 @@ private:
 	TRACE_DEBUG( << "AnnounceProxy");
 	proxy = event->proxy;
 
-	boost::shared_ptr<MyItfIndication> ind(new MyItfIndication(1,2,3));
+	boost::shared_ptr<csif::Indication> ind(new csif::Indication(1,2,3));
 	proxy->write_event(ind);
     }
 
-    void process(boost::shared_ptr<MyItfResourceCreateReq> event)
+    void process(boost::shared_ptr<csif::CreateReq> event)
     {
-	TRACE_DEBUG( << "MyItfResourceCreateReq" << *event);
-	boost::shared_ptr<MyItfResourceCreateResp> resp(new MyItfResourceCreateResp(88));
+	TRACE_DEBUG( << "csif::CreateReq" << *event);
+	boost::shared_ptr<csif::CreateResp> resp(new csif::CreateResp(88));
 	proxy->write_event(resp);
     }
 
-    void process(boost::shared_ptr<MyItfResourceCreateResp> event)
+    void process(boost::shared_ptr<csif::Indication> event)
     {
-	TRACE_DEBUG( << "MyItfResourceCreateResp" << *event);
-    }
-
-    void process(boost::shared_ptr<MyItfIndication> event)
-    {
-	TRACE_DEBUG( << "MyItfIndication" << *event);
+	TRACE_DEBUG( << "csif::Indication" << *event);
 	event->a *= 2;
 	event->b *= 2;
 	event->c *= 2;
 	proxy->write_event(event);
+    }
+
+    void process(boost::shared_ptr<csif::DownLinkMsg> event)
+    {
+	TRACE_DEBUG( << "csif::DownLinkMsg" << *event);
     }
 
     boost::shared_ptr<tcp_connection_type> proxy;
@@ -125,8 +131,26 @@ private:
     boost::shared_ptr<Server> m_server;
 };
 
+struct printer
+{
+    template<typename T>
+    void operator()(T) {TRACE_DEBUG();}
+};
+
 int main()
 {
+    TRACE_DEBUG(<< "my_interface:");
+    boost::mpl::for_each<csif::Interface::type>(printer());
+
+    TRACE_DEBUG(<< "numbered:");
+    boost::mpl::for_each<itf::numbered<csif::Interface::type>::type>(printer());
+
+    TRACE_DEBUG(<< "downlink messages:");
+    boost::mpl::for_each<itf::message_list<csif::Interface::type, itf::firstColumn>::type>(printer());
+
+    TRACE_DEBUG(<< "uplink messages:");
+    boost::mpl::for_each<itf::message_list<csif::Interface::type, itf::secondColumn>::type>(printer());
+
     Appl appl;
     appl.run();
 

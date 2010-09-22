@@ -16,7 +16,7 @@
 template<class Receiver>
 class tcp_server
 {
-    typedef tcp_connection<Receiver> tcp_connection_type;
+    typedef typename Receiver::tcp_connection_type tcp_connection_type;
 
 public:
     tcp_server(boost::asio::io_service& io_service,

@@ -8,12 +8,13 @@
 //    http://www.boost.org/LICENSE_1_0.txt)
 //
 
+#include "platform/Logging.hpp"
+
 #include "platform/event_receiver.hpp"
 #include "platform/tcp_client.hpp"
 #include "platform/tcp_connection.hpp"
-#include "platform/Logging.hpp"
 
-#include "my_interface.hpp"
+#include "ClientServerInterface.hpp"
 
 #include <iostream>
 #include <istream>
@@ -32,9 +33,12 @@ struct InitEvent
 class Client : public event_receiver<Client>
 {
     friend class event_processor<>;
-    typedef tcp_connection<Client> tcp_connection_type;
 
 public :
+    typedef tcp_connection<Client,
+			   csif::Interface,
+			   itf::ClientSide> tcp_connection_type;
+
     Client(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc)
     {}
@@ -51,29 +55,29 @@ private:
 	TRACE_DEBUG( << "AnnounceProxy");
 	proxy = event->proxy;
 
-	boost::shared_ptr<MyItfIndication> ind1(new MyItfIndication(10,20,30));
+	boost::shared_ptr<csif::Indication> ind1(new csif::Indication(10,20,30));
 	proxy->write_event(ind1);
 
-	boost::shared_ptr<MyItfIndication> ind2(new MyItfIndication(11,22,33));
+	boost::shared_ptr<csif::Indication> ind2(new csif::Indication(11,22,33));
 	proxy->write_event(ind2);
 
-	boost::shared_ptr<MyItfResourceCreateReq> req(new MyItfResourceCreateReq(51,51,53));
+	boost::shared_ptr<csif::CreateReq> req(new csif::CreateReq(51,52,53));
 	proxy->write_event(req);
     }
 
-    void process(boost::shared_ptr<MyItfResourceCreateReq> event)
+    void process(boost::shared_ptr<csif::CreateResp> event)
     {
-	TRACE_DEBUG( << "MyItfResourceCreateReq" << *event);
+	TRACE_DEBUG( << "csif::CreateResp" << *event);
     }
 
-    void process(boost::shared_ptr<MyItfResourceCreateResp> event)
+    void process(boost::shared_ptr<csif::Indication> event)
     {
-	TRACE_DEBUG( << "MyItfResourceCreateResp" << *event);
+	TRACE_DEBUG( << "csif::Indication" << *event);
     }
 
-    void process(boost::shared_ptr<MyItfIndication> event)
+    void process(boost::shared_ptr<csif::UpLinkMsg> event)
     {
-	TRACE_DEBUG( << "MyItfIndication" << *event);
+	TRACE_DEBUG( << "csif::UpLinkMsg" << *event);
     }
 
     boost::shared_ptr<tcp_connection_type> proxy;
