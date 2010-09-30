@@ -43,48 +43,86 @@ public :
 			   itf::ServerSide> tcp_connection_type;
 
     Server(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc)
-    {}
+	: base_type(evt_proc),
+	  num(++cnt)
+    {
+	TRACE_DEBUG( << "[" << num << "]");
+    }
 
     ~Server()
-    {}
+    {
+	TRACE_DEBUG( << "[" << num << "]");
+    }
 
 private:
     void process(boost::shared_ptr<InitEvent> )
     {}
 
-    void process(boost::shared_ptr<AnnounceProxy<tcp_connection_type> > event)
+    void process(boost::shared_ptr<ConnectionEstablished<tcp_connection_type> > event)
     {
-	TRACE_DEBUG( << "AnnounceProxy");
+	TRACE_DEBUG( << "[" << num << "] " << "ConnectionEstablished");
 	proxy = event->proxy;
 
 	boost::shared_ptr<csif::Indication> ind(new csif::Indication(1,2,3));
 	proxy->write_event(ind);
     }
 
+    void process(boost::shared_ptr<ConnectionReleasedIndication<tcp_connection_type, Server> > event)
+    {
+	TRACE_DEBUG( << "[" << num << "] " << "ConnectionReleasedIndication");
+	// proxy may already be reset before calling this function.
+	proxy.reset();
+	boost::shared_ptr<tcp_connection_type> p = event->proxy;
+	p->process(boost::make_shared<ConnectionReleasedConfirm<tcp_connection_type> >(p));
+    }
+
+#if 0
+    // It not necessary to implement this method. The ConnectionReleaseResponse
+    // message is sent by the template class tcp_connection. The function sending
+    // the message is only generated when a ConnectionReleaseRequest is sent to
+    // tcp_connection.
+    void process(boost::shared_ptr<ConnectionReleaseResponse<Server> >)
+    {
+	TRACE_DEBUG( << "[" << num << "] " << "ConnectionReleaseResponse");
+	// Nothing to do here. event may contain the 
+	// last shared pointer to this object.
+    }
+#endif
+
     void process(boost::shared_ptr<csif::CreateReq> event)
     {
-	TRACE_DEBUG( << "csif::CreateReq" << *event);
-	boost::shared_ptr<csif::CreateResp> resp(new csif::CreateResp(88));
-	proxy->write_event(resp);
+	TRACE_DEBUG( << "[" << num << "] " << "csif::CreateReq" << *event);
+	if (proxy)
+	{
+	    boost::shared_ptr<csif::CreateResp> resp(new csif::CreateResp(88));
+	    proxy->write_event(resp);
+	}
     }
 
     void process(boost::shared_ptr<csif::Indication> event)
     {
-	TRACE_DEBUG( << "csif::Indication" << *event);
-	event->a *= 2;
-	event->b *= 2;
-	event->c *= 2;
-	proxy->write_event(event);
+	TRACE_DEBUG( << "[" << num << "] " << "csif::Indication" << *event);
+	if (proxy)
+	{
+	    event->a *= 2;
+	    event->b *= 2;
+	    event->c *= 2;
+	    proxy->write_event(event);
+	}
     }
 
     void process(boost::shared_ptr<csif::DownLinkMsg> event)
     {
-	TRACE_DEBUG( << "csif::DownLinkMsg" << *event);
+	TRACE_DEBUG( << "[" << num << "] " << "csif::DownLinkMsg" << *event);
     }
 
     boost::shared_ptr<tcp_connection_type> proxy;
+
+    int num;
+    static int cnt;
 };
+
+int Server::cnt = 0;
 
 class Appl
 {
@@ -94,11 +132,7 @@ public:
 	TRACE_DEBUG(<< "tid = " << gettid());
 
 	m_serverEventProcessor = boost::make_shared<event_processor<> >();
-	m_server = boost::make_shared<Server>(m_serverEventProcessor);
 	m_serverThread = boost::thread( m_serverEventProcessor->get_callable() );
-
-	boost::shared_ptr<InitEvent> initEvent(new InitEvent());
-	m_server->queue_event(initEvent);
     }
 
     ~Appl()
@@ -116,7 +150,9 @@ public:
 	{
 	    boost::asio::io_service io_service;
 	    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), 9999);
-	    tcp_server<Server> tcpServer(io_service, m_server, endpoint);
+	    tcp_server<Server> tcpServer(io_service,
+					 boost::bind(&Appl::createServer, this),
+					 endpoint);
 	    io_service.run();
 	}
 	catch (std::exception& e)
@@ -125,10 +161,22 @@ public:
 	}
     }
 
+    boost::shared_ptr<Server> createServer()
+    {
+	TRACE_DEBUG(<< "tid = " << gettid());
+
+	boost::shared_ptr<Server> server = boost::make_shared<Server>(m_serverEventProcessor);
+
+	boost::shared_ptr<InitEvent> initEvent(new InitEvent());
+	server->queue_event(initEvent);
+
+	return server;
+    }
+
 private:
     boost::thread m_serverThread;
     boost::shared_ptr<event_processor<> > m_serverEventProcessor;
-    boost::shared_ptr<Server> m_server;
+
 };
 
 struct printer

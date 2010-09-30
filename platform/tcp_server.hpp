@@ -20,10 +20,10 @@ class tcp_server
 
 public:
     tcp_server(boost::asio::io_service& io_service,
-	       boost::shared_ptr<Receiver> receiver,
+	       boost::function<boost::shared_ptr<Receiver> ()> create_receiver,
 	       boost::asio::ip::tcp::endpoint& endpoint)
 	: acceptor_(io_service, endpoint),
-	  m_receiver(receiver)
+	  m_create_receiver(create_receiver)
     {
 	start_accept();
     }
@@ -31,8 +31,9 @@ public:
 private:
     void start_accept()
     {
+	boost::shared_ptr<Receiver> receiver = m_create_receiver();
 	boost::shared_ptr<tcp_connection_type> new_connection(new tcp_connection_type(acceptor_.io_service(),
-										      m_receiver));
+										      receiver));
 
 	acceptor_.async_accept(new_connection->socket(),
 			       boost::bind(&tcp_server::handle_accept,
@@ -56,7 +57,7 @@ private:
     }
 
     boost::asio::ip::tcp::acceptor acceptor_;
-    boost::shared_ptr<Receiver> m_receiver;
+    boost::function<boost::shared_ptr<Receiver> ()> m_create_receiver;
 };
 
 #endif

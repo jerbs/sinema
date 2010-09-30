@@ -106,14 +106,65 @@ inline std::ostream& operator<<(std::ostream& strm,
     return strm;
 }
 
+// -------------------------------------------------------------------
+
 template<class Proxy>
-struct AnnounceProxy
+struct ConnectionEstablished
 {
-    AnnounceProxy(boost::shared_ptr<Proxy> proxy)
+    ConnectionEstablished(boost::shared_ptr<Proxy> proxy)
 	: proxy(proxy)
     {}
     boost::shared_ptr<Proxy> proxy;
 };
+
+// -------------------------------------------------------------------
+
+template<class Proxy, class Receiver>
+struct ConnectionReleasedIndication
+{
+    ConnectionReleasedIndication(boost::shared_ptr<Proxy> proxy,
+		       boost::shared_ptr<Receiver> receiver)
+	: proxy(proxy),
+	  receiver(receiver)
+    {}
+    boost::shared_ptr<Proxy> proxy;
+    boost::shared_ptr<Receiver> receiver; // This delays destruction of Receiver
+                                          // until this message is received.
+};
+
+template<class Proxy>
+struct ConnectionReleasedConfirm
+{
+    ConnectionReleasedConfirm(boost::shared_ptr<Proxy> proxy)
+	: proxy(proxy)
+    {}
+    boost::shared_ptr<Proxy> proxy;
+};
+
+template<class Proxy, class Receiver>
+struct ConnectionReleaseRequest
+{
+    ConnectionReleaseRequest(boost::shared_ptr<Proxy> proxy,
+			     boost::shared_ptr<Receiver> receiver)
+	: proxy(proxy),
+	  receiver(receiver)
+    {}
+    boost::shared_ptr<Proxy> proxy;
+    boost::shared_ptr<Receiver> receiver;
+};
+
+template<class Receiver>
+struct ConnectionReleaseResponse
+{
+    ConnectionReleaseResponse(boost::shared_ptr<Receiver> receiver)
+	: receiver(receiver)
+    {}
+    boost::shared_ptr<Receiver> receiver; // This delays destruction of Receiver
+                                          // until this message is received.
+};
+
+// -------------------------------------------------------------------
+
 
 template<class Receiver,
 	 typename Interface,
@@ -173,7 +224,7 @@ public:
     {
 	TRACE_DEBUG();
 	m_receiver->queue_event(boost::make_shared
-				<AnnounceProxy<type> >
+				<ConnectionEstablished<type> >
 				(this->shared_from_this()));
 	start_read_header();
     }
@@ -208,7 +259,11 @@ public:
 		TRACE_ERROR(<< "Invalid message type: " << m_rx_header.type);
 	    }
 	}
-	else if (err != boost::asio::error::eof)
+	else if (err == boost::asio::error::eof)
+	{
+	    handle_eof();
+	}
+	else
 	{
 	    TRACE_ERROR(<< err.message());
 	}
@@ -270,10 +325,42 @@ public:
 	if (!err)
 	{
 	}
-	else if (err != boost::asio::error::eof)
+	else if (err == boost::asio::error::eof)
+	{
+	    handle_eof();
+	}
+	else
 	{
 	    TRACE_ERROR(<< err.message());
 	}
+    }
+
+    void handle_eof()
+    {
+	m_receiver->queue_event(boost::make_shared
+				<ConnectionReleasedIndication<type, Receiver> >
+				(this->shared_from_this(),
+				 m_receiver) );
+	m_receiver.reset();
+    }
+
+    void process(boost::shared_ptr<ConnectionReleasedConfirm<type> >)
+    {
+	// Nothing to do here. event may contain the 
+	// last shared pointer to this object.
+    }
+
+    void process(boost::shared_ptr<ConnectionReleaseRequest<type, Receiver> > event)
+    {
+	boost::system::error_code err;
+	m_socket.close(err);
+
+	// m_receiver may already be reset before calling this function.
+	m_receiver.reset();
+	boost::shared_ptr<Receiver>& receiver = event->receiver;
+	receiver->queue_event(boost::make_shared
+			      <ConnectionReleaseResponse<Receiver> >
+			      (receiver) );
     }
 
 private:

@@ -30,7 +30,8 @@ struct InitEvent
 {
 };
 
-class Client : public event_receiver<Client>
+class Client : public event_receiver<Client>,
+	       public boost::enable_shared_from_this<Client>
 {
     friend class event_processor<>;
 
@@ -50,9 +51,9 @@ private:
     void process(boost::shared_ptr<InitEvent> )
     {}
 
-    void process(boost::shared_ptr<AnnounceProxy<tcp_connection_type> > event)
+    void process(boost::shared_ptr<ConnectionEstablished<tcp_connection_type> > event)
     {
-	TRACE_DEBUG( << "AnnounceProxy");
+	TRACE_DEBUG( << "ConnectionEstablished");
 	proxy = event->proxy;
 
 	boost::shared_ptr<csif::Indication> ind1(new csif::Indication(10,20,30));
@@ -65,9 +66,31 @@ private:
 	proxy->write_event(req);
     }
 
+    void process(boost::shared_ptr<ConnectionReleasedIndication<tcp_connection_type, Client> > event)
+    {
+	TRACE_DEBUG( << "ConnectionReleasedIndication");
+	// proxy may already be reset before calling this function.
+	proxy.reset();
+	boost::shared_ptr<tcp_connection_type> p = event->proxy;
+	p->process(boost::make_shared<ConnectionReleasedConfirm<tcp_connection_type> >(p));
+    }
+
+    void process(boost::shared_ptr<ConnectionReleaseResponse<Client> >)
+    {
+	TRACE_DEBUG( << "ConnectionReleaseResponse");
+	// Nothing to do here. event may contain the 
+	// last shared pointer to this object.
+    }
+    
     void process(boost::shared_ptr<csif::CreateResp> event)
     {
 	TRACE_DEBUG( << "csif::CreateResp" << *event);
+	if (proxy)
+	{
+	    proxy->process(boost::make_shared
+			   <ConnectionReleaseRequest<tcp_connection_type, Client> >
+			   (proxy, this->shared_from_this()) );
+	}
     }
 
     void process(boost::shared_ptr<csif::Indication> event)
