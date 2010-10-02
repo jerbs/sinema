@@ -263,6 +263,10 @@ public:
 	{
 	    handle_eof();
 	}
+	else if (err == boost::asio::error::operation_aborted)
+	{
+	    // nothing to do
+	}
 	else
 	{
 	    TRACE_ERROR(<< err.message());
@@ -296,7 +300,15 @@ public:
 	    m_receiver->queue_event(event);
 	    start_read_header();
 	}
-	else if (err != boost::asio::error::eof)
+	else if (err == boost::asio::error::eof)
+	{
+	    handle_eof();
+	}
+	else if (err == boost::asio::error::operation_aborted)
+	{
+	    // nothing to do
+	}
+	else
 	{
 	    TRACE_ERROR(<< err.message());
 	}
@@ -328,6 +340,10 @@ public:
 	else if (err == boost::asio::error::eof)
 	{
 	    handle_eof();
+	}
+	else if (err == boost::asio::error::operation_aborted)
+	{
+	    // nothing to do
 	}
 	else
 	{
