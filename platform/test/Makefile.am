@@ -17,7 +17,7 @@ client_CPPFLAGS = $(AM_CFLAGS) \
 		  $(BOOST_CPPFLAGS)
 client_CXXFLAGS = -std=c++0x
 client_LDADD = ../libplatform.la
-client_LDFLAGS = $(BOOST_LDFLAGS) -lboost_system $(BOOST_THREAD_LIB)
+client_LDFLAGS = $(BOOST_LDFLAGS) -lboost_system -lboost_serialization $(BOOST_THREAD_LIB)
 
 ## server
 server_SOURCES = server.cpp
@@ -25,5 +25,5 @@ server_CPPFLAGS = $(AM_CFLAGS) \
 		  $(BOOST_CPPFLAGS)
 server_CXXFLAGS = -std=c++0x
 server_LDADD = ../libplatform.la
-server_LDFLAGS = $(BOOST_LDFLAGS) -lboost_system $(BOOST_THREAD_LIB)
+server_LDFLAGS = $(BOOST_LDFLAGS) -lboost_system -lboost_serialization $(BOOST_THREAD_LIB)
 

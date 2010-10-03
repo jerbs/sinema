@@ -12,6 +12,10 @@
 #define TCP_CONNECTON_HPP
 
 #include <iostream>
+#include <sstream>
+#include <string>
+#include <vector>
+
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include <boost/shared_ptr.hpp>
@@ -22,26 +26,50 @@
 #include <boost/mpl/contains.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/if.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/iostreams/device/array.hpp>
+#include <boost/iostreams/stream.hpp>
 
 #include "platform/Logging.hpp"
 #include "platform/interface.hpp"
 
 typedef boost::array<boost::asio::const_buffer, 2> buffer_list_type;
 
-template<class Header, class Event>
-buffer_list_type make_buffer_list(boost::shared_ptr<Header> header,
-				  boost::shared_ptr<Event> event)
+template<int pos>
+inline char get_byte(unsigned int i)
+{
+    return (i>>(8*pos)) & 0xff;
+}
+
+struct Header
+{
+    Header() {}
+    Header(unsigned int type, unsigned int length)
+    {
+	header[0] = get_byte<1>(type);
+	header[1] = get_byte<0>(type);
+	header[2] = get_byte<1>(length);
+	header[3] = get_byte<0>(length);
+    }
+
+    unsigned int type() const {return (header[0] << 8) | header[1];}
+    unsigned int length() const {return (header[2] << 8) | header[3];}
+
+    unsigned char header[4];
+};
+
+buffer_list_type make_buffer_list(const Header& header,
+				  const std::string& body)
 {
     // Using braces in the initializer list is not possible.
     // The "return value optimization" should eliminate the 
     // temporary value to hold this function's return value.
-    buffer_list_type buffers = {{ boost::asio::buffer(&(*header),sizeof(Header)),
-				  boost::asio::buffer(&(*event), sizeof(Event))  }};
-    TRACE_DEBUG( << " length = " << sizeof(Header) << "+" << sizeof(Event));
+    buffer_list_type buffers = {{ boost::asio::buffer(&header,sizeof(Header)),
+				  boost::asio::buffer(body)  }};
     return buffers;
 }
 
-template<class Header, class Event>
 class message
 {
 public:
@@ -49,19 +77,19 @@ public:
     typedef boost::array<boost::asio::const_buffer, 2> buffer_list_type;
     typedef buffer_list_type::const_iterator const_iterator;
 
-    message( boost::shared_ptr<Header> header,
-	     boost::shared_ptr<Event> event)
-	: header(header),
-	  event(event),
-	  buffers(make_buffer_list(header, event))
+    message(const Header& header,
+	    const std::string& body)
+	: m_header(header),
+	  m_body(body),
+	  m_buffers(make_buffer_list(m_header, m_body))
     {
 	// TRACE_DEBUG();
     }
 
     message(const message& other)
-	: header(other.header),
-	  event(other.event),
-	  buffers(other.buffers)
+	: m_header(other.m_header),
+	  m_body(other.m_body),
+	  m_buffers(other.m_buffers)
     {
 	// TRACE_DEBUG();
     }
@@ -73,36 +101,24 @@ public:
 
     const_iterator begin() const
     {
-	return buffers.begin();
+	return m_buffers.begin();
     }
 
     const_iterator end() const
     {
-	return buffers.end();
+	return m_buffers.end();
     }
 
 private:
-
-    boost::shared_ptr<Header> header;
-    boost::shared_ptr<Event> event;
-    buffer_list_type buffers;
-};
-
-struct Header
-{
-    Header() {}
-    Header(int type, int length)
-	: type(type),
-	  length(length)
-    {}
-    int type;
-    int length;
+    Header m_header;
+    std::string m_body;
+    buffer_list_type m_buffers;
 };
 
 inline std::ostream& operator<<(std::ostream& strm,
 				const Header& header)
 {
-    strm << "(" << header.type << "," << header.length << ")";
+    strm << "(" << header.type() << "," << header.length() << ")";
     return strm;
 }
 
@@ -165,7 +181,6 @@ struct ConnectionReleaseResponse
 
 // -------------------------------------------------------------------
 
-
 template<class Receiver,
 	 typename Interface,
 	 typename Side>
@@ -179,7 +194,7 @@ class tcp_connection
     typedef typename itf::get_message_list<Interface, Side, itf::Rx>::type RxMessageList;
     typedef typename itf::get_message_list<Interface, Side, itf::Tx>::type TxMessageList;
 
-    typedef boost::function<void ()> fct_t;
+    typedef boost::function<void (int)> fct_t;
 
 public:
     tcp_connection(boost::asio::io_service& io_service,
@@ -187,6 +202,7 @@ public:
 	: m_socket(io_service),
 	  m_receiver(receiver)
     {
+	TRACE_DEBUG();
 	boost::mpl::for_each<RxMessageList>(add_rx_callback(this));
     }
 
@@ -202,12 +218,11 @@ private:
 	{
 	    TRACE_DEBUG();
 
-	    typedef void (type::*member_fct_t)();
+	    typedef void (type::*member_fct_t)(int);
 	    member_fct_t tmp = &type::start_read_body<typename Message::type>;
-	    fct_t fct = boost::bind(tmp, parent);
+	    fct_t fct = boost::bind(tmp, parent, _1);
 
 	    typedef typename Message::msg_id msg_id;
-
 	    parent->m_rx_map.insert(std::make_pair(msg_id::value, fct));
 	}
 
@@ -246,17 +261,17 @@ public:
 	{
 	    TRACE_DEBUG( << "Header = "<< m_rx_header);
 
-	    std::map<int, fct_t>::iterator pos = m_rx_map.find(m_rx_header.type);
+	    std::map<int, fct_t>::iterator pos = m_rx_map.find(m_rx_header.type());
 
 	    if (pos != m_rx_map.end())
 	    {
 		// Calling start_read_body template method
 		// for the received message type:
-		pos->second();
+		pos->second(m_rx_header.length());
 	    }
 	    else
 	    {
-		TRACE_ERROR(<< "Invalid message type: " << m_rx_header.type);
+		TRACE_ERROR(<< "Invalid message type: " << m_rx_header.type());
 	    }
 	}
 	else if (err == boost::asio::error::eof)
@@ -275,27 +290,35 @@ public:
 
     template<class Event>
     typename itf::enable_if_msg_in_list<Event, RxMessageList, void>::type
-    start_read_body()
+    start_read_body(int length)
     {
 	TRACE_DEBUG();
-	TRACE_DEBUG(<< "sizeof(Event) = " << sizeof(Event));
-	boost::shared_ptr<Event> event(new Event());
+	boost::shared_ptr<std::vector<char> > body(new std::vector<char>());
+	body->resize(length);
 	boost::asio::async_read(m_socket,
-				boost::asio::buffer(&(*event), sizeof(Event)),
+				boost::asio::buffer(*body),
 				boost::bind(&tcp_connection::handle_read_body<Event>,
 					    this->shared_from_this(),
 					    boost::asio::placeholders::error,
-					    event));
+					    body));
     }
 
     template<class Event>
     typename itf::enable_if_msg_in_list<Event, RxMessageList, void>::type
     handle_read_body(const boost::system::error_code& err,
-			  boost::shared_ptr<Event> event)
+		     const boost::shared_ptr<std::vector<char> > body)
     {
 	TRACE_DEBUG();
 	if (!err)
 	{
+	    // Create a stream reading from std::vector<char>:
+	    std::vector<char>& b = *body;
+	    boost::iostreams::stream<boost::iostreams::array_source> archive_stream(&b[0], b.size());
+	    boost::archive::text_iarchive archive(archive_stream);
+
+	    boost::shared_ptr<Event> event(new Event());
+	    archive >> *event;
+
 	    TRACE_DEBUG("ind = " << *event);
 	    m_receiver->queue_event(event);
 	    start_read_header();
@@ -321,9 +344,19 @@ public:
 	TRACE_DEBUG();
 	if (m_socket.is_open())
 	{
+	    // Serialize event:
+	    std::ostringstream archive_stream;
+	    boost::archive::text_oarchive archive(archive_stream);
+	    archive << *event;
+	    std::string body = archive_stream.str();
+
+	    // Serialize header:
 	    const int msg_id = itf::get_message_id<Event, TxMessageList>::type::value;
-	    boost::shared_ptr<Header> header(new Header(msg_id, sizeof(Event)));
-	    message<Header, Event> msg(header, event);
+	    const int body_size = body.size();
+	    Header header(msg_id, body_size);
+
+	    // Asynchronously send message:
+	    message msg(header, body);
 	    boost::asio::async_write(m_socket, msg,
 				     boost::bind(&tcp_connection::handle_write,
 						 this->shared_from_this(),

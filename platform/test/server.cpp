@@ -26,6 +26,10 @@
 
 #include <boost/mpl/for_each.hpp>
 
+#include <fstream>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+
 #undef TRACE_DEBUG
 #define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
@@ -94,7 +98,7 @@ private:
 	TRACE_DEBUG( << "[" << num << "] " << "csif::CreateReq" << *event);
 	if (proxy)
 	{
-	    boost::shared_ptr<csif::CreateResp> resp(new csif::CreateResp(88));
+	    boost::shared_ptr<csif::CreateResp> resp(new csif::CreateResp(88, std::string("pong")));
 	    proxy->write_event(resp);
 	}
     }
@@ -185,6 +189,37 @@ struct printer
     void operator()(T) {TRACE_DEBUG();}
 };
 
+void serialize()
+{
+    {
+	boost::shared_ptr<csif::CreateResp> resp(new csif::CreateResp(33, std::string("pong")));
+	TRACE_DEBUG(<< "save: " << *resp);
+
+	std::ofstream ofs("archive.CreateResp.msg");
+        boost::archive::text_oarchive oa(ofs);
+        oa << *resp;
+    }
+
+    {
+	boost::shared_ptr<csif::CreateReq> req(new csif::CreateReq(51,52,53, std::string("ping")));
+	TRACE_DEBUG(<< "save: " << *req);
+
+	std::ofstream ofs("archive.CreateReq.msg");
+        boost::archive::text_oarchive oa(ofs);
+        oa << *req;
+    }
+
+    {
+	boost::shared_ptr<csif::CreateReq> req(new csif::CreateReq());
+
+        std::ifstream ifs("archive.CreateReq.msg");
+        boost::archive::text_iarchive ia(ifs);
+        ia >> *req;
+
+        TRACE_DEBUG(<< "load: " << *req);
+    }
+}
+
 int main()
 {
     TRACE_DEBUG(<< "my_interface:");
@@ -198,6 +233,9 @@ int main()
 
     TRACE_DEBUG(<< "uplink messages:");
     boost::mpl::for_each<itf::message_list<csif::Interface::type, itf::secondColumn>::type>(printer());
+
+    serialize();
+    
 
     Appl appl;
     appl.run();

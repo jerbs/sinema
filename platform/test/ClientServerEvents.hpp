@@ -11,29 +11,54 @@
 #ifndef CLIENT_SERVER_MESSAGES_HPP
 #define CLIENT_SERVER_MESSAGES_HPP
 
+#include <string>
+#include <boost/serialization/string.hpp>
+
 namespace csif
 {
 
 struct CreateReq
 {
     CreateReq() {}
-    CreateReq(int x, int y, int z)
+    CreateReq(int x, int y, int z, const std::string& s)
 	: x(x),
 	  y(y),
-	  z(z)
+	  z(z),
+	  s(s)
     {}
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int /* version */)
+    {
+	ar & x;
+	ar & y;
+	ar & z;
+	ar & s;
+    }
+
     int x;
     int y;
     int z;
+    std::string s;
 };
 
 struct CreateResp
 {
     CreateResp() {}
-    CreateResp(int status)
-	: status(status)
+    CreateResp(int status, const std::string& s)
+	: status(status),
+	  s(s)
     {}
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int)
+    {
+	ar & status;
+	ar & s;
+    }
+
     int status;
+    std::string s;
 };
 
 struct Indication
@@ -42,6 +67,15 @@ struct Indication
     Indication(int a, int b, int c)
 	: a(a), b(b), c(c)
     {}
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int)
+    {
+	ar & a;
+	ar & b;
+	ar & c;
+    }
+
     int a;
     int b;
     int c;
@@ -49,10 +83,18 @@ struct Indication
 
 struct DownLinkMsg
 {
+    template<class Archive>
+    void serialize(Archive&, const unsigned int)
+    {
+    }
 };
 
 struct UpLinkMsg
 {
+    template<class Archive>
+    void serialize(Archive&, const unsigned int)
+    {
+    }
 };
 
 // ===================================================================
@@ -73,12 +115,12 @@ template<>           inline const char* getMsgName(const UpLinkMsg&)  {return "U
 
 inline std::ostream& operator<<(std::ostream& os, const CreateReq& req)
 {
-    return os << getMsgName(req) << "(" << req.x << "," << req.y << "," << req.z << ")";
+    return os << getMsgName(req) << "(" << req.x << "," << req.y << "," << req.z << "," << req.s << ")";
 }
 
 inline std::ostream& operator<<(std::ostream& os, const CreateResp& resp)
 {
-    return os << getMsgName(resp) << "(" << resp.status << ")";
+    return os << getMsgName(resp) << "(" << resp.status << "," << resp.s << ")";
 }
 
 inline std::ostream& operator<<(std::ostream& os, const Indication& ind)

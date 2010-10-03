@@ -62,7 +62,7 @@ private:
 	boost::shared_ptr<csif::Indication> ind2(new csif::Indication(11,22,33));
 	proxy->write_event(ind2);
 
-	boost::shared_ptr<csif::CreateReq> req(new csif::CreateReq(51,52,53));
+	boost::shared_ptr<csif::CreateReq> req(new csif::CreateReq(51,52,53, std::string("ping")));
 	proxy->write_event(req);
     }
 
