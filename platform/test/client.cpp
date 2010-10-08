@@ -13,6 +13,8 @@
 #include "platform/event_receiver.hpp"
 #include "platform/tcp_client.hpp"
 #include "platform/tcp_connection.hpp"
+#include "platform/tcp_connector.hpp"
+#include "platform/timer.hpp"
 
 #include "ClientServerInterface.hpp"
 
@@ -20,7 +22,6 @@
 #include <istream>
 #include <ostream>
 #include <string>
-#include <boost/asio.hpp>
 #include <boost/bind.hpp>
 
 #undef TRACE_DEBUG
@@ -28,6 +29,19 @@
 
 struct InitEvent
 {
+    InitEvent(boost::shared_ptr<tcp_connector> tcpConnector)
+	: tcpConnector(tcpConnector)
+    {}
+    boost::shared_ptr<tcp_connector> tcpConnector;
+};
+
+template<class Receiver>
+struct RetryTimer
+{
+    RetryTimer(boost::shared_ptr<Receiver> receiver)
+	: receiver(receiver)
+    {}
+    boost::shared_ptr<Receiver> receiver;
 };
 
 class Client : public event_receiver<Client>,
@@ -41,15 +55,52 @@ public :
 			   itf::ClientSide> tcp_connection_type;
 
     Client(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc)
+	: base_type(evt_proc),
+	  eventProcessor(evt_proc)
     {}
 
     ~Client()
     {}
 
 private:
-    void process(boost::shared_ptr<InitEvent> )
-    {}
+    void process(boost::shared_ptr<InitEvent> event)
+    {
+	TRACE_DEBUG();
+	tcpConnector = event->tcpConnector;
+	connect();
+    }
+
+    void process(boost::shared_ptr<ConnectionRefusedIndication>)
+    {
+	TRACE_DEBUG();
+	startRetryTimer();
+    }
+
+    void process(boost::shared_ptr<ConnectionTimedOut>)
+    {
+	TRACE_DEBUG();
+	startRetryTimer();
+    }
+
+    void startRetryTimer()
+    {
+	timespec_t retryTime = getTimespec(5);
+	retryTimer.relative(retryTime);
+	start_timer(boost::make_shared<RetryTimer<Client> >(this->shared_from_this()), retryTimer);
+    }
+
+    void process(boost::shared_ptr<RetryTimer<Client> >)
+    {
+	TRACE_DEBUG();
+	connect();
+    }
+
+    void connect()
+    {
+	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), 9999);
+	tcpConnector->queue_event(boost::make_shared<ConnectionRequest<Client> >
+				  (endpoint, this->shared_from_this()));
+    }
 
     void process(boost::shared_ptr<ConnectionEstablished<tcp_connection_type> > event)
     {
@@ -80,6 +131,9 @@ private:
 	TRACE_DEBUG( << "ConnectionReleaseResponse");
 	// Nothing to do here. event may contain the 
 	// last shared pointer to this object.
+
+	boost::shared_ptr<QuitEvent> quitEvent(new QuitEvent());
+	eventProcessor->queue_event(quitEvent);
     }
     
     void process(boost::shared_ptr<csif::CreateResp> event)
@@ -103,7 +157,10 @@ private:
 	TRACE_DEBUG( << "csif::UpLinkMsg" << *event);
     }
 
+    event_processor_ptr_type eventProcessor;
     boost::shared_ptr<tcp_connection_type> proxy;
+    boost::shared_ptr<tcp_connector> tcpConnector;
+    timer retryTimer;
 };
 
 class Appl
@@ -114,10 +171,11 @@ public:
 	TRACE_DEBUG(<< "tid = " << gettid());
 
 	m_clientEventProcessor = boost::make_shared<event_processor<> >();
-	m_client = boost::make_shared<Client>(m_clientEventProcessor);
-	m_clientThread = boost::thread( m_clientEventProcessor->get_callable() );
 
-	boost::shared_ptr<InitEvent> initEvent(new InitEvent());
+	m_client = boost::make_shared<Client>(m_clientEventProcessor);
+	m_tcpConnector = boost::make_shared<tcp_connector>(m_clientEventProcessor);
+
+	boost::shared_ptr<InitEvent> initEvent(new InitEvent(m_tcpConnector));
 	m_client->queue_event(initEvent);
     }
 
@@ -125,30 +183,19 @@ public:
     {
 	boost::shared_ptr<QuitEvent> quitEvent(new QuitEvent());
 	m_clientEventProcessor->queue_event(quitEvent);
-	m_clientThread.join();
     }
 
     void run()
     {
 	TRACE_DEBUG(<< "tid = " << gettid());
 
-	try
-	{
-	    boost::asio::io_service io_service;
-	    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), 9999);
-	    tcp_client<Client> tcpClient(io_service, m_client, endpoint);
-	    io_service.run();
-	}
-	catch (std::exception& e)
-	{
-	    std::cerr << e.what() << std::endl;
-	}
+	(*m_clientEventProcessor)();
     }
 
 private:
-    boost::thread m_clientThread;
     boost::shared_ptr<event_processor<> > m_clientEventProcessor;
     boost::shared_ptr<Client> m_client;
+    boost::shared_ptr<tcp_connector> m_tcpConnector;
 };
 
 int main()
