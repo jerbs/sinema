@@ -13,6 +13,7 @@
 #include "platform/event_receiver.hpp"
 #include "platform/tcp_connection.hpp"
 #include "platform/tcp_server.hpp"
+#include "platform/tcp_acceptor.hpp"
 
 #include "ClientServerInterface.hpp"
 
@@ -135,13 +136,22 @@ public:
     {
 	TRACE_DEBUG(<< "tid = " << gettid());
 
+	m_acceptorEventProcessor = boost::make_shared<event_processor<> >();
+	m_acceptor = boost::make_shared<tcp_acceptor>(m_acceptorEventProcessor);
+
 	m_serverEventProcessor = boost::make_shared<event_processor<> >();
 	m_serverThread = boost::thread( m_serverEventProcessor->get_callable() );
+
+	boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), 9999);
+	m_acceptor->queue_event(boost::make_shared<AcceptRequest<Server> >
+				(endpoint,
+				 boost::bind(&Appl::createServer, this)));
     }
 
     ~Appl()
     {
 	boost::shared_ptr<QuitEvent> quitEvent(new QuitEvent());
+	m_acceptorEventProcessor->queue_event(quitEvent);
 	m_serverEventProcessor->queue_event(quitEvent);
 	m_serverThread.join();
     }
@@ -150,19 +160,7 @@ public:
     {
 	TRACE_DEBUG(<< "tid = " << gettid());
 
-	try
-	{
-	    boost::asio::io_service io_service;
-	    boost::asio::ip::tcp::endpoint endpoint(boost::asio::ip::tcp::v4(), 9999);
-	    tcp_server<Server> tcpServer(io_service,
-					 boost::bind(&Appl::createServer, this),
-					 endpoint);
-	    io_service.run();
-	}
-	catch (std::exception& e)
-	{
-	    std::cerr << e.what() << std::endl;
-	}
+	(*m_acceptorEventProcessor)();
     }
 
     boost::shared_ptr<Server> createServer()
@@ -179,8 +177,9 @@ public:
 
 private:
     boost::thread m_serverThread;
+    boost::shared_ptr<event_processor<> > m_acceptorEventProcessor;
     boost::shared_ptr<event_processor<> > m_serverEventProcessor;
-
+    boost::shared_ptr<tcp_acceptor> m_acceptor;
 };
 
 struct printer

@@ -15,36 +15,46 @@
 
 template<class Receiver>
 class tcp_server
+    : public boost::enable_shared_from_this<tcp_server<Receiver> >
 {
+    friend class tcp_acceptor;
+
+    typedef Receiver receiver_type;
     typedef typename Receiver::tcp_connection_type tcp_connection_type;
+    typedef boost::function<boost::shared_ptr<Receiver> ()> create_receiver_fct_type;
 
-public:
     tcp_server(boost::asio::io_service& io_service,
-	       boost::function<boost::shared_ptr<Receiver> ()> create_receiver,
-	       boost::asio::ip::tcp::endpoint& endpoint)
-	: acceptor_(io_service, endpoint),
+	       boost::asio::ip::tcp::endpoint& endpoint,
+	       create_receiver_fct_type create_receiver)
+	: m_acceptor(io_service, endpoint),
 	  m_create_receiver(create_receiver)
-    {
-	start_accept();
-    }
+    {}
 
-private:
     void start_accept()
     {
-	boost::shared_ptr<Receiver> receiver = m_create_receiver();
-	boost::shared_ptr<tcp_connection_type> new_connection(new tcp_connection_type(acceptor_.io_service(),
-										      receiver));
+	TRACE_DEBUG(<< "tid = " << gettid());
 
-	acceptor_.async_accept(new_connection->socket(),
-			       boost::bind(&tcp_server::handle_accept,
-					   this,
-					   new_connection,
-					   boost::asio::placeholders::error));
+	boost::shared_ptr<Receiver> receiver = m_create_receiver();
+
+	//boost::shared_ptr<InitEvent> initEvent(new InitEvent());
+	//server->queue_event(initEvent);
+
+	boost::shared_ptr<tcp_connection_type> 
+	    new_connection(new tcp_connection_type(m_acceptor.io_service(),
+						   receiver));
+
+	m_acceptor.async_accept(new_connection->socket(),
+				boost::bind(&tcp_server::handle_accept,
+					    this->shared_from_this(),
+					    new_connection,
+					    boost::asio::placeholders::error));
     }
 
     void handle_accept(boost::shared_ptr<tcp_connection_type> new_connection,
 		       const boost::system::error_code& err)
     {
+	TRACE_DEBUG(<< "tid = " << gettid());
+
 	if (!err)
 	{
 	    new_connection->start_read();
@@ -56,8 +66,8 @@ private:
 	}
     }
 
-    boost::asio::ip::tcp::acceptor acceptor_;
-    boost::function<boost::shared_ptr<Receiver> ()> m_create_receiver;
+    boost::asio::ip::tcp::acceptor m_acceptor;
+    create_receiver_fct_type m_create_receiver;
 };
 
 #endif
