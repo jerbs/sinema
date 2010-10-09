@@ -181,6 +181,9 @@ struct ConnectionReleaseResponse
 
 // -------------------------------------------------------------------
 
+template<class Receiver> class tcp_client;
+template<class Receiver> class tcp_server;
+
 template<class Receiver,
 	 typename Interface,
 	 typename Side>
@@ -189,6 +192,9 @@ class tcp_connection
 							   Interface,
 							   Side> >
 {
+    friend class tcp_client<Receiver>;
+    friend class tcp_server<Receiver>;
+
     typedef tcp_connection<Receiver, Interface, Side> type;
 
     typedef typename itf::get_message_list<Interface, Side, itf::Rx>::type RxMessageList;
@@ -197,6 +203,13 @@ class tcp_connection
     typedef boost::function<void (int)> fct_t;
 
 public:
+    template<class Event>
+    void queue_event(boost::shared_ptr<Event> event)
+    {
+        process(event);
+    }
+
+private:
     tcp_connection(boost::asio::io_service& io_service,
 		   boost::shared_ptr<Receiver> receiver)
 	: m_socket(io_service),
@@ -206,7 +219,6 @@ public:
 	boost::mpl::for_each<RxMessageList>(add_rx_callback(this));
     }
 
-private:
     struct add_rx_callback
     {
 	add_rx_callback(type* parent)
@@ -229,7 +241,6 @@ private:
 	type* parent;
     };
 
-public:
     boost::asio::ip::tcp::socket& socket()
     {
 	return m_socket;
@@ -338,8 +349,8 @@ public:
     }
 
     template<class Event>
-    typename itf::enable_if_msg_in_list<Event, TxMessageList, void>::type
-    write_event(boost::shared_ptr<Event> event)
+    inline typename itf::enable_if_msg_in_list<Event, TxMessageList, void>::type
+    process(boost::shared_ptr<Event> event)
     {
 	TRACE_DEBUG();
 	if (m_socket.is_open())
@@ -393,13 +404,13 @@ public:
 	m_receiver.reset();
     }
 
-    void process(boost::shared_ptr<ConnectionReleasedConfirm<type> >)
+    inline void process(boost::shared_ptr<ConnectionReleasedConfirm<type> >)
     {
 	// Nothing to do here. event may contain the 
 	// last shared pointer to this object.
     }
 
-    void process(boost::shared_ptr<ConnectionReleaseRequest<type, Receiver> > event)
+    inline void process(boost::shared_ptr<ConnectionReleaseRequest<type, Receiver> > event)
     {
 	boost::system::error_code err;
 	m_socket.close(err);
@@ -412,7 +423,6 @@ public:
 			      (receiver) );
     }
 
-private:
     boost::asio::ip::tcp::socket m_socket;
     boost::shared_ptr<Receiver> m_receiver;
     Header m_rx_header;

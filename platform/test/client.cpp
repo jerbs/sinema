@@ -108,13 +108,13 @@ private:
 	proxy = event->proxy;
 
 	boost::shared_ptr<csif::Indication> ind1(new csif::Indication(10,20,30));
-	proxy->write_event(ind1);
+	proxy->queue_event(ind1);
 
 	boost::shared_ptr<csif::Indication> ind2(new csif::Indication(11,22,33));
-	proxy->write_event(ind2);
+	proxy->queue_event(ind2);
 
 	boost::shared_ptr<csif::CreateReq> req(new csif::CreateReq(51,52,53, std::string("ping")));
-	proxy->write_event(req);
+	proxy->queue_event(req);
     }
 
     void process(boost::shared_ptr<ConnectionReleasedIndication<tcp_connection_type, Client> > event)
@@ -123,7 +123,7 @@ private:
 	// proxy may already be reset before calling this function.
 	proxy.reset();
 	boost::shared_ptr<tcp_connection_type> p = event->proxy;
-	p->process(boost::make_shared<ConnectionReleasedConfirm<tcp_connection_type> >(p));
+	p->queue_event(boost::make_shared<ConnectionReleasedConfirm<tcp_connection_type> >(p));
     }
 
     void process(boost::shared_ptr<ConnectionReleaseResponse<Client> >)
@@ -141,9 +141,9 @@ private:
 	TRACE_DEBUG( << "csif::CreateResp" << *event);
 	if (proxy)
 	{
-	    proxy->process(boost::make_shared
-			   <ConnectionReleaseRequest<tcp_connection_type, Client> >
-			   (proxy, this->shared_from_this()) );
+	    proxy->queue_event(boost::make_shared
+			       <ConnectionReleaseRequest<tcp_connection_type, Client> >
+			       (proxy, this->shared_from_this()) );
 	}
     }
 

@@ -259,22 +259,26 @@ struct get_event
 //     is contained in MessageList. For all other types it is not possible to
 //     instantiate the template member method.
 
+//     Metafunction forwarding is used. Having an additional typedef in this 
+//     class to access enable_if<>::type results in a compiler failure when
+//     used together with function overloading. See [MPL Book, 9.9 Explicitly
+//     Managing the Overload Set] SFINAE (Substitution Failure Is Not An Error).
+
 template<typename Event,
 	 typename MessageList,
 	 typename ReturnType>
 struct enable_if_msg_in_list
-{
-    typedef typename boost::enable_if<
-	typename boost::mpl::contains<
-	    typename boost::mpl::transform_view<
-	        MessageList,
-	        get_event
-	    >::type,
-	    Event
-	>,
-        ReturnType
-    >::type  type;
-};
+    : boost::enable_if<
+          typename boost::mpl::contains<
+	      typename boost::mpl::transform_view<
+	          MessageList,
+	          get_event
+	      >::type,
+	      Event
+	  >,
+	  ReturnType
+      >
+{};
 
 // get_message_id<Event, MessageList>::type::value
 //     An metafunction to determine the unique id assigned to Event. Proxy 
