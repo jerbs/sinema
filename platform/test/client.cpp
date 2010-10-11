@@ -11,6 +11,7 @@
 #include "platform/Logging.hpp"
 
 #include "platform/event_receiver.hpp"
+#include "platform/process_starter.hpp"
 #include "platform/tcp_client.hpp"
 #include "platform/tcp_connection.hpp"
 #include "platform/tcp_connector.hpp"
@@ -29,10 +30,13 @@
 
 struct InitEvent
 {
-    InitEvent(boost::shared_ptr<tcp_connector> tcpConnector)
-	: tcpConnector(tcpConnector)
+    InitEvent(boost::shared_ptr<tcp_connector> tcpConnector,
+	      boost::shared_ptr<process_starter> processStarter)
+	: tcpConnector(tcpConnector),
+	  processStarter(processStarter)
     {}
     boost::shared_ptr<tcp_connector> tcpConnector;
+    boost::shared_ptr<process_starter> processStarter;
 };
 
 template<class Receiver>
@@ -56,7 +60,8 @@ public :
 
     Client(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc),
-	  eventProcessor(evt_proc)
+	  eventProcessor(evt_proc),
+	  serverAutoStartEnabled(true)
     {}
 
     ~Client()
@@ -67,12 +72,22 @@ private:
     {
 	TRACE_DEBUG();
 	tcpConnector = event->tcpConnector;
+	m_processStarter = event->processStarter;
 	connect();
+
+	listDirectory();
     }
 
     void process(boost::shared_ptr<ConnectionRefusedIndication>)
     {
 	TRACE_DEBUG();
+
+	if (serverAutoStartEnabled)
+	{
+	    m_processStarter->queue_event(boost::make_shared<StartProcessRequest<Client> >
+					  (this->shared_from_this(), "server"));
+	}
+
 	startRetryTimer();
     }
 
@@ -86,7 +101,9 @@ private:
     {
 	timespec_t retryTime = getTimespec(5);
 	retryTimer.relative(retryTime);
-	start_timer(boost::make_shared<RetryTimer<Client> >(this->shared_from_this()), retryTimer);
+	start_timer(boost::make_shared<RetryTimer<Client> >
+		    (this->shared_from_this()),
+		    retryTimer);
     }
 
     void process(boost::shared_ptr<RetryTimer<Client> >)
@@ -135,7 +152,19 @@ private:
 	boost::shared_ptr<QuitEvent> quitEvent(new QuitEvent());
 	eventProcessor->queue_event(quitEvent);
     }
+
     
+    void process(boost::shared_ptr<StartProcessResponse>)
+    {
+	TRACE_DEBUG();
+    }
+
+    void process(boost::shared_ptr<StartProcessFailed>)
+    {
+	TRACE_DEBUG();
+	serverAutoStartEnabled = false;
+    }
+
     void process(boost::shared_ptr<csif::CreateResp> event)
     {
 	TRACE_DEBUG( << "csif::CreateResp" << *event);
@@ -157,10 +186,21 @@ private:
 	TRACE_DEBUG( << "csif::UpLinkMsg" << *event);
     }
 
+    void listDirectory()
+    {
+	boost::shared_ptr<StartProcessRequest<Client> > req
+	    (new StartProcessRequest<Client>(this->shared_from_this(),
+					     "ls"));
+	(*req)("-l")("-a");
+	// m_processStarter->queue_event(req);
+    }
+
     event_processor_ptr_type eventProcessor;
     boost::shared_ptr<tcp_connection_type> proxy;
     boost::shared_ptr<tcp_connector> tcpConnector;
+    boost::shared_ptr<process_starter> m_processStarter;
     timer retryTimer;
+    bool serverAutoStartEnabled;
 };
 
 class Appl
@@ -174,8 +214,10 @@ public:
 
 	m_client = boost::make_shared<Client>(m_clientEventProcessor);
 	m_tcpConnector = boost::make_shared<tcp_connector>(m_clientEventProcessor);
+	m_processStarter = boost::make_shared<process_starter>(m_clientEventProcessor);
 
-	boost::shared_ptr<InitEvent> initEvent(new InitEvent(m_tcpConnector));
+	boost::shared_ptr<InitEvent> initEvent(new InitEvent(m_tcpConnector,
+							     m_processStarter));
 	m_client->queue_event(initEvent);
     }
 
@@ -196,6 +238,7 @@ private:
     boost::shared_ptr<event_processor<> > m_clientEventProcessor;
     boost::shared_ptr<Client> m_client;
     boost::shared_ptr<tcp_connector> m_tcpConnector;
+    boost::shared_ptr<process_starter> m_processStarter;
 };
 
 int main()
