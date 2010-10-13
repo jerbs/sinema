@@ -15,6 +15,7 @@
 
 #include <boost/foreach.hpp>
 
+#include <map>
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -22,6 +23,7 @@
 template<typename Sender>
 struct StartProcessRequest
 {
+    friend class process_starter;
     typedef StartProcessRequest<Sender> type;
 
     StartProcessRequest(boost::shared_ptr<Sender> sender,
@@ -32,11 +34,63 @@ struct StartProcessRequest
 
     type& operator()(std::string arg)
     {
-	argv.clear();
 	parameters.push_back(arg);
 	return *this;
     }
 
+    void clearEnv()
+    {
+	env.clear();
+    }
+
+    void copyCurrentEnv()
+    {
+	char** entry = environ;
+	while (*entry)
+	{
+	    std::cout << *entry << std::endl;
+	    char* begName = *entry;
+	    char* endName = begName;
+	    while(*endName != 0 && *endName != '=')
+	    {
+		endName++;
+	    }
+
+	    char* begValue = endName;
+	    if (*begValue == '=') begValue++;
+	    char* endValue = begValue;
+	    while(*endValue != 0)
+	    {
+		endValue++;
+	    }
+
+	    std::string name(begName, endName);
+	    std::string value(begValue, endValue);
+	    
+	    // std::cout << name << "==>" << value << std::endl;
+
+	    env[name] = value;
+
+	    entry++;
+	}
+    }
+
+    void eraseEnv(std::string name)
+    {
+	env.erase(name);
+    }
+
+    void insertEnv(std::string name, std::string value)
+    {
+	env[name] = value;
+    }
+    
+    boost::shared_ptr<Sender> sender;
+    const std::string command;
+    std::vector<std::string> parameters;
+    std::map<std::string, std::string> env;
+
+private:
     char const* const * getArgv()
     {
 	if (argv.empty())
@@ -52,13 +106,29 @@ struct StartProcessRequest
 
 	return &argv[0];
     }
-    
-    boost::shared_ptr<Sender> sender;
-    const std::string command;
-    std::vector<std::string> parameters;
 
-private:
+    char const* const* getEnvp()
+    {
+	envp.clear();
+	envn.clear();
+
+	// typedef std::map<std::string, std::string>::iterator iterator;
+	typedef std::pair<std::string, std::string> iterator;
+	BOOST_FOREACH(iterator it, env)
+	{
+	    std::cout << it.first << "==>" << it.second << std::endl;
+	    std::string entry = it.first + "=" + it.second;
+	    envn.push_back(entry);
+	    envp.push_back(envn.back().c_str());
+	}
+
+	envp.push_back(0);
+	return &envp[0];
+    }
+
     std::vector<char const *> argv;
+    std::vector<char const *> envp;
+    std::list<std::string> envn;
 };
 
 struct StartProcessResponse
@@ -90,6 +160,9 @@ private:
     {
 	TRACE_DEBUG(<< "command = " << event->command);
 
+	char const * const * argv = event->getArgv();
+	char const * const * envp = event->getEnvp();
+
 	int exec_errno = 0;
 
 	// vfork(2) man page:
@@ -113,8 +186,10 @@ private:
 	    // Here the parent is suspended until the child terminates or exec succeeds.
 	    // Memory is still shared.
 
-	    execvp(event->command.c_str(),
-		   (char* const*)event->getArgv());
+	    // execvpe is a GNU extension!
+	    execvpe(event->command.c_str(),
+		    (char* const*)argv,
+		    (char* const*)envp);
 
 	    // execvp failed.
 	    exec_errno = errno;

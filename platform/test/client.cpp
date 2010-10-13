@@ -84,8 +84,17 @@ private:
 
 	if (serverAutoStartEnabled)
 	{
-	    m_processStarter->queue_event(boost::make_shared<StartProcessRequest<Client> >
-					  (this->shared_from_this(), "server"));
+	    boost::shared_ptr<StartProcessRequest<Client> > req
+		(new StartProcessRequest<Client>(this->shared_from_this(),
+						 "server"));
+
+	    req->copyCurrentEnv();
+	    if (getenv("SINEMA_LOG"))
+	    {
+		req->insertEnv("SINEMA_LOG", "server.log");
+	    }
+
+	    m_processStarter->queue_event(req);
 	}
 
 	startRetryTimer();
