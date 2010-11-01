@@ -27,25 +27,71 @@
 #include "receiver/ChannelFrequencyTable.hpp"
 #include "receiver/GeneralEvents.hpp"
 
-struct TunerOpen {};
-struct TunerClose {};
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/serialization/string.hpp>
+
+class Server;
+
+struct TunerInit
+{
+    TunerInit(boost::shared_ptr<Server> server)
+	: server(server)
+    {}
+    boost::shared_ptr<Server> server;
+};
+
+struct TunerOpen
+{
+    template<class Archive>
+    void serialize(Archive&, const unsigned int)
+    {}
+};
+
+struct TunerClose
+{
+    template<class Archive>
+    void serialize(Archive&, const unsigned int)
+    {}
+};
 
 struct TunerTuneChannel
 {
     TunerTuneChannel(ChannelData channelData)
 	: channelData(channelData)
     {}
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int)
+    {
+	ar & channelData;
+    }
+
     ChannelData channelData;
+
+    // private:
+    TunerTuneChannel() {}
 };
 
-struct TunerCheckSignal {};
+struct TunerCheckSignal {
+};
 
 struct TunerNotifyChannelTuned
 {
     TunerNotifyChannelTuned(ChannelData channelData)
 	: channelData(channelData)
     {}
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int)
+    {
+	ar & channelData;
+    }
+
     ChannelData channelData;
+
+    // private:
+    TunerNotifyChannelTuned(){}
 };
 
 struct TunerNotifySignalDetected
@@ -53,7 +99,17 @@ struct TunerNotifySignalDetected
     TunerNotifySignalDetected(ChannelData channelData)
 	: channelData(channelData)
     {}
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int)
+    {
+	ar & channelData;
+    }
+
     ChannelData channelData;
+
+    // private:
+    TunerNotifySignalDetected(){}
 };
 
 struct TunerStartScan
@@ -61,13 +117,32 @@ struct TunerStartScan
     TunerStartScan(std::string standard)
 	: standard(standard)
     {}
+
+    template<class Archive>
+    void serialize(Archive& ar, const unsigned int)
+    {
+	ar & standard;
+    }
+
     std::string standard;
+
+    // private:
+    TunerStartScan() {}
 };
 
-struct TunerScanStopped {};
+struct TunerScanStopped
+{
+    template<class Archive>
+    void serialize(Archive&, const unsigned int)
+    {}
+};
 
-struct TunerScanFinished {};
-
+struct TunerScanFinished
+{
+    template<class Archive>
+    void serialize(Archive&, const unsigned int)
+    {}
+};
 
 class TunerFacade : public event_receiver<TunerFacade>
 {
@@ -76,7 +151,6 @@ class TunerFacade : public event_receiver<TunerFacade>
 public:
     TunerFacade(event_processor_ptr_type evt_proc)
 	: base_type(evt_proc),
-	  mediaReceiver(0),
 	  fd(-1),
 	  device("/dev/video0"),
 	  signalDetected(false),
@@ -91,7 +165,7 @@ public:
     {}
 
 private:
-    void process(boost::shared_ptr<ReceiverInitEvent> event);
+    void process(boost::shared_ptr<TunerInit> event);
     void process(boost::shared_ptr<TunerOpen> event);
     void process(boost::shared_ptr<TunerClose> event);
 
@@ -105,7 +179,7 @@ private:
     void setFrequency(const ChannelData& channelData);
     void setScanningFrequency();
 
-    MediaReceiver* mediaReceiver;
+    boost::shared_ptr<Server> server;
 
     int fd;
     char const * device;
@@ -123,5 +197,45 @@ private:
     int scanningChannel;
     
 };
+
+// ===================================================================
+// Message Catalog additions for debugging:
+
+inline std::ostream& operator<<(std::ostream& os, const TunerOpen&)
+{
+    return os << "TunerOpen()";
+}
+
+inline std::ostream& operator<<(std::ostream& os, const TunerClose&)
+{
+    return os << "TunerClose()";
+}
+
+inline std::ostream& operator<<(std::ostream& os, const TunerTuneChannel&)
+{
+    return os << "TunerTuneChannel()";
+}
+
+inline std::ostream& operator<<(std::ostream& os, const TunerStartScan&)
+{
+    return os << "TunerStartScan()";
+}
+
+inline std::ostream& operator<<(std::ostream& os, const TunerScanFinished&)
+{
+    return os << "TunerScanFinished()";
+}
+inline std::ostream& operator<<(std::ostream& os, const TunerScanStopped&)
+{
+    return os << "TunerScanStopped()";
+}
+inline std::ostream& operator<<(std::ostream& os, const TunerNotifySignalDetected&)
+{
+    return os << "TunerNotifySignalDetected()";
+}
+inline std::ostream& operator<<(std::ostream& os, const TunerNotifyChannelTuned&)
+{
+    return os << "TunerNotifyChannelTuned()";
+}
 
 #endif

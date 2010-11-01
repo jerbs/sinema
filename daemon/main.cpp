@@ -1,5 +1,5 @@
 //
-// Media Receiver Events
+// Sinema Daemon
 //
 // Copyright (C) Joachim Erbs, 2010
 //
@@ -19,42 +19,10 @@
 //    along with Sinema.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef RECEIVER_GENERAL_EVENTS_HPP
-#define RECEIVER_GENERAL_EVENTS_HPP
+#include "daemon/Daemon.hpp"
 
-#include <boost/shared_ptr.hpp>
-#include <string>
-
-class MediaReceiver;
-class TunerFacade;
-
-struct ReceiverInitEvent
+int main(/*int argc, char *argv[]*/)
 {
-    MediaReceiver* mediaReceiver;
-    boost::shared_ptr<TunerFacade> tunerFacade;
-};
-
-struct ChannelData
-{
-    ChannelData()
-	: frequency(0),
-	  finetune(0)
-    {}
-
-    template<class Archive>
-    void serialize(Archive& ar, const unsigned int)
-    {
-	ar & standard;
-	ar & channel;
-	ar & frequency;
-	ar & finetune;
-    }
-	    
-    std::string standard;
-    std::string channel;
-    int frequency;
-    int finetune;
-    int getTunedFrequency() const {return frequency+finetune;}
-};
-
-#endif
+    Daemon daemon;
+    daemon.run();
+}

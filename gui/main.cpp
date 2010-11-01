@@ -25,8 +25,8 @@
 #include "gui/PlayerConfigWidget.hpp"
 #include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
-#include "gui/GtkmmMediaReceiver.hpp"
 #include "gui/GtkmmMediaCommon.hpp"
+#include "gui/GtkmmDaemonProxy.hpp"
 #include "gui/InhibitScreenSaver.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/PlayListWindow.hpp"
@@ -57,8 +57,8 @@ int main(int argc, char *argv[])
     // Constructing the top level objects:
 
     GtkmmMediaPlayer mediaPlayer(playList);
-    GtkmmMediaReceiver mediaReceiver;
     GtkmmMediaCommon mediaCommon;
+    boost::shared_ptr<GtkmmDaemonProxy> daemonProxy(new GtkmmDaemonProxy());
     SignalDispatcher signalDispatcher(playList);
     ControlWindow controlWindow(signalDispatcher);
     ConfigWindow configWindow;
@@ -148,15 +148,15 @@ int main(int argc, char *argv[])
     mediaPlayer.notificationDeinterlacerList.connect( sigc::mem_fun(playerConfigWidget, &PlayerConfigWidget::on_deinterlacer_list) );
 
     // ---------------------------------------------------------------
-    // Signals: GtkmmMediaReceiver -> ChannelConfigWidget
-    mediaReceiver.notificationChannelTuned.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_channel_tuned) );
-    mediaReceiver.notificationSignalDetected.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_signal_detected) );
-    mediaReceiver.notificationScanStopped.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_scan_stopped) );
-    mediaReceiver.notificationScanFinished.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_scan_finished) );
+    // Signals: DaemonProxy -> ChannelConfigWidget
+    daemonProxy->notificationChannelTuned.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_channel_tuned) );
+    daemonProxy->notificationSignalDetected.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_signal_detected) );
+    daemonProxy->notificationScanStopped.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_scan_stopped) );
+    daemonProxy->notificationScanFinished.connect( sigc::mem_fun(&channelConfigWidget, &ChannelConfigWidget::on_tuner_scan_finished) );
 
-    // Signals: ChannelConfigWidget -> GtkmmMediaReceiver
-    channelConfigWidget.signalSetFrequency.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::setFrequency) );
-    channelConfigWidget.signalStartScan.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::startFrequencyScan) );
+    // Signals: ChannelConfigWidget -> DaemonProxy
+    channelConfigWidget.signalSetFrequency.connect( sigc::mem_fun(&*daemonProxy, &DaemonProxy::setFrequency) );
+    channelConfigWidget.signalStartScan.connect( sigc::mem_fun(&*daemonProxy, &DaemonProxy::startFrequencyScan) );
 
     // ---------------------------------------------------------------
     // Signals: ChannelConfigWidget -> SignalDispatcher
@@ -213,11 +213,11 @@ int main(int argc, char *argv[])
     playListWindow.signal_close.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::close) );
 
     // ---------------------------------------------------------------
-    // Signals: SignalDispatcher -> GtkmmMediaReceiver
-    signalDispatcher.signalSetFrequency.connect( sigc::mem_fun(&mediaReceiver, &GtkmmMediaReceiver::setFrequency) );
+    // Signals: SignalDispatcher -> GtkmmDaemonProxy
+    signalDispatcher.signalSetFrequency.connect( sigc::mem_fun(&*daemonProxy, &DaemonProxy::setFrequency) );
 
-    // Signals: GtkmmMediaReceiver -> SignalDispatcher
-    mediaReceiver.notificationChannelTuned.connect( sigc::mem_fun(&signalDispatcher, &SignalDispatcher::on_tuner_channel_tuned) );
+    // Signals: GtkmmDaemonProxy -> SignalDispatcher
+    daemonProxy->notificationChannelTuned.connect( sigc::mem_fun(&signalDispatcher, &SignalDispatcher::on_tuner_channel_tuned) );
 
     // ---------------------------------------------------------------
     // Signals: MediaPlayer -> InhibitScreenSaver
@@ -233,9 +233,9 @@ int main(int argc, char *argv[])
     // ---------------------------------------------------------------
     // Send init events to all threads of all subsystems:
     mediaPlayer.init();
-    mediaReceiver.init();
     mediaCommon.init();
     mediaRecorder.init();
+    daemonProxy->init();
 
     mainWindow.show();
 

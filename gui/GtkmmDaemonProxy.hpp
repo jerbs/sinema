@@ -1,5 +1,5 @@
 //
-// gtkmm Media Receiver
+// Gtkmm Daemon Proxy
 //
 // Copyright (C) Joachim Erbs, 2010
 //
@@ -19,19 +19,17 @@
 //    along with Sinema.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef GTKMM_MEDIA_RECEIVER_HPP
-#define GTKMM_MEDIA_RECEIVER_HPP
+#ifndef GTKMM_DAEMON_PROXY_HPP
+#define GTKMM_DAEMON_PROXY_HPP
 
-#include "receiver/MediaReceiver.hpp"
+#include "dproxy/DaemonProxy.hpp"
 
-#include <gtkmm/drawingarea.h>
 #include <glibmm/dispatcher.h>
-#include <gdkmm/cursor.h>
 #include <sigc++/signal.h>
 
 struct ChannelData;
 
-class GtkmmMediaReceiver : public MediaReceiver
+class GtkmmDaemonProxy : public DaemonProxy
 {
     static Glib::Dispatcher m_dispatcher;
 
@@ -41,8 +39,8 @@ public:
     sigc::signal<void> notificationScanStopped;
     sigc::signal<void> notificationScanFinished;
 
-    GtkmmMediaReceiver();
-    virtual ~GtkmmMediaReceiver();
+    GtkmmDaemonProxy();
+    virtual ~GtkmmDaemonProxy();
 
     static void notifyGuiThread();
 

@@ -1,6 +1,6 @@
 ## ./Makefile.am
 
-SUBDIRS = tools platform common player deinterlacer receiver recorder gui
+SUBDIRS = tools platform common player deinterlacer receiver recorder dproxy gui daemon
 
 ACLOCAL_AMFLAGS = -I m4
 

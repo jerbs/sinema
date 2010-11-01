@@ -1,5 +1,5 @@
 //
-// Media Receiver Events
+// Sinemad Interface
 //
 // Copyright (C) Joachim Erbs, 2010
 //
@@ -19,42 +19,29 @@
 //    along with Sinema.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#ifndef RECEIVER_GENERAL_EVENTS_HPP
-#define RECEIVER_GENERAL_EVENTS_HPP
+#ifndef SINEMAD_INTERFACE_HPP
+#define SINEMAD_INTERFACE_HPP
 
-#include <boost/shared_ptr.hpp>
-#include <string>
+#include "platform/interface.hpp"
+#include "receiver/TunerFacade.hpp"
 
-class MediaReceiver;
-class TunerFacade;
-
-struct ReceiverInitEvent
+namespace sdif
 {
-    MediaReceiver* mediaReceiver;
-    boost::shared_ptr<TunerFacade> tunerFacade;
+
+struct SinemadInterface
+{
+    typedef boost::mpl::vector<
+	itf::procedure<TunerOpen,        itf::none>,
+	itf::procedure<TunerClose,       itf::none>,
+	itf::procedure<TunerTuneChannel, itf::none>,
+	itf::procedure<TunerStartScan,   itf::none>,
+	itf::procedure<itf::none, TunerScanFinished>,
+	itf::procedure<itf::none, TunerScanStopped>,
+	itf::procedure<itf::none, TunerNotifySignalDetected>,
+	itf::procedure<itf::none, TunerNotifyChannelTuned>
+    > type;
 };
 
-struct ChannelData
-{
-    ChannelData()
-	: frequency(0),
-	  finetune(0)
-    {}
-
-    template<class Archive>
-    void serialize(Archive& ar, const unsigned int)
-    {
-	ar & standard;
-	ar & channel;
-	ar & frequency;
-	ar & finetune;
-    }
-	    
-    std::string standard;
-    std::string channel;
-    int frequency;
-    int finetune;
-    int getTunedFrequency() const {return frequency+finetune;}
-};
+}
 
 #endif

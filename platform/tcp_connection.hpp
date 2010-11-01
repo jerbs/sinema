@@ -59,8 +59,8 @@ struct Header
     unsigned char header[4];
 };
 
-buffer_list_type make_buffer_list(const Header& header,
-				  const std::string& body)
+inline buffer_list_type make_buffer_list(const Header& header,
+					 const std::string& body)
 {
     // Using braces in the initializer list is not possible.
     // The "return value optimization" should eliminate the 
@@ -267,7 +267,7 @@ private:
 
     void handle_read_header(const boost::system::error_code& err)
     {
-	TRACE_DEBUG();
+	TRACE_DEBUG(<< "err = " << err);
 	if (!err)
 	{
 	    TRACE_DEBUG( << "Header = "<< m_rx_header);
@@ -330,7 +330,7 @@ private:
 	    boost::shared_ptr<Event> event(new Event());
 	    archive >> *event;
 
-	    TRACE_DEBUG("ind = " << *event);
+	    TRACE_DEBUG("rx: " << *event);
 	    m_receiver->queue_event(event);
 	    start_read_header();
 	}

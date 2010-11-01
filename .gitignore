@@ -9,6 +9,7 @@
 *.gz
 *.tgz
 *.msg
+*.log
 .deps
 .libs
 aclocal.m4
@@ -38,6 +39,7 @@ gui/sinema
 gui/COPYING.inc
 gui/README.inc
 gui/version.inc
+daemon/sinemad
 stamp-h1
 typescript
 version

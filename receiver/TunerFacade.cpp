@@ -20,7 +20,7 @@
 //
 
 #include "receiver/TunerFacade.hpp"
-#include "receiver/MediaReceiver.hpp"
+#include "daemon/Server.hpp"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -30,9 +30,9 @@
 #include <sys/stat.h>
 #include <sys/ioctl.h>
 
-void TunerFacade::process(boost::shared_ptr<ReceiverInitEvent> event)
+void TunerFacade::process(boost::shared_ptr<TunerInit> event)
 {
-    mediaReceiver = event->mediaReceiver;
+    server = event->server;
 }
 
 void TunerFacade::process(boost::shared_ptr<TunerOpen>)
@@ -55,12 +55,14 @@ void TunerFacade::process(boost::shared_ptr<TunerClose>)
 
 void TunerFacade::process(boost::shared_ptr<TunerTuneChannel> event)
 {
+    TRACE_DEBUG(<< event->channelData.getTunedFrequency());
+
     if (fd < 0)
 	return;
 
     if (scanning)
     {
-	mediaReceiver->queue_event(boost::make_shared<TunerScanStopped>());
+	server->queue_event(boost::make_shared<TunerScanStopped>());
     }
 
     scanning = false;
@@ -84,7 +86,7 @@ void TunerFacade::getFrequency()
     }
 
     tunedChannelData.frequency = (vf.frequency * 1000) / 16;
-    mediaReceiver->queue_event(boost::make_shared<TunerNotifyChannelTuned>(tunedChannelData));
+    server->queue_event(boost::make_shared<TunerNotifyChannelTuned>(tunedChannelData));
     detectSignal();
 }
 
@@ -96,6 +98,8 @@ void TunerFacade::setFrequency(const ChannelData& channelData)
     vf.frequency = (channelData.getTunedFrequency() * 16)/1000;
     memset(vf.reserved, 0, sizeof(vf.reserved));
 
+    TRACE_DEBUG(<< vf.frequency);
+
     int result = ioctl(fd, VIDIOC_S_FREQUENCY, &vf);
 
     if (result < 0)
@@ -105,7 +109,7 @@ void TunerFacade::setFrequency(const ChannelData& channelData)
     }
 
     tunedChannelData = channelData;
-    mediaReceiver->queue_event(boost::make_shared<TunerNotifyChannelTuned>(channelData));
+    server->queue_event(boost::make_shared<TunerNotifyChannelTuned>(channelData));
     detectSignal();
 }
 
@@ -157,7 +161,7 @@ void TunerFacade::process(boost::shared_ptr<TunerCheckSignal> event)
 	// Signal detected.
 	signalDetected = true;
 	TRACE_DEBUG( << "signal detected: retry = " << retry );
-	mediaReceiver->queue_event(boost::make_shared<TunerNotifySignalDetected>(tunedChannelData));
+	server->queue_event(boost::make_shared<TunerNotifySignalDetected>(tunedChannelData));
     }
 
     // Has given up for this channel OR signal detected.
@@ -199,6 +203,6 @@ void TunerFacade::setScanningFrequency()
 	// Reached end of channel table.
 	scanning = false;
 	scanningChannel = 0;
-	mediaReceiver->queue_event(boost::make_shared<TunerScanFinished>());
+	server->queue_event(boost::make_shared<TunerScanFinished>());
     }
 }

@@ -1,5 +1,5 @@
 //
-// gtkmm Media Receiver
+// Gtkmm Daemon Proxy
 //
 // Copyright (C) Joachim Erbs, 2010
 //
@@ -19,43 +19,43 @@
 //    along with Sinema.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "gui/GtkmmMediaReceiver.hpp"
+#include "gui/GtkmmDaemonProxy.hpp"
 #include "receiver/TunerFacade.hpp"
 
-Glib::Dispatcher GtkmmMediaReceiver::m_dispatcher;
+Glib::Dispatcher GtkmmDaemonProxy::m_dispatcher;
 
-GtkmmMediaReceiver::GtkmmMediaReceiver()
-    : MediaReceiver()
+GtkmmDaemonProxy::GtkmmDaemonProxy()
+    : DaemonProxy()
 {
-    MediaReceiverThreadNotification::setCallback(&notifyGuiThread);
-    m_dispatcher.connect(sigc::mem_fun(this, &MediaReceiver::processEventQueue));
+    DaemonProxyThreadNotification::setCallback(&notifyGuiThread);
+    m_dispatcher.connect(sigc::mem_fun(this, &DaemonProxy::processEventQueue));
 }
 
-GtkmmMediaReceiver::~GtkmmMediaReceiver()
+GtkmmDaemonProxy::~GtkmmDaemonProxy()
 {
 }
 
-void GtkmmMediaReceiver::notifyGuiThread()
+void GtkmmDaemonProxy::notifyGuiThread()
 {
     m_dispatcher();
 }
 
-void GtkmmMediaReceiver::process(boost::shared_ptr<TunerNotifyChannelTuned> event)
+void GtkmmDaemonProxy::process(boost::shared_ptr<TunerNotifyChannelTuned> event)
 {
     notificationChannelTuned(event->channelData);
 }
 
-void GtkmmMediaReceiver::process(boost::shared_ptr<TunerNotifySignalDetected> event)
+void GtkmmDaemonProxy::process(boost::shared_ptr<TunerNotifySignalDetected> event)
 {
     notificationSignalDetected(event->channelData);
 }
 
-void GtkmmMediaReceiver::process(boost::shared_ptr<TunerScanStopped>)
+void GtkmmDaemonProxy::process(boost::shared_ptr<TunerScanStopped>)
 {
     notificationScanStopped();
 }
 
-void GtkmmMediaReceiver::process(boost::shared_ptr<TunerScanFinished>)
+void GtkmmDaemonProxy::process(boost::shared_ptr<TunerScanFinished>)
 {
     notificationScanFinished();
 }

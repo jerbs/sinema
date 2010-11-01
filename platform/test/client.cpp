@@ -40,9 +40,9 @@ struct InitEvent
 };
 
 template<class Receiver>
-struct RetryTimer
+struct RetryTimerExpired
 {
-    RetryTimer(boost::shared_ptr<Receiver> receiver)
+    RetryTimerExpired(boost::shared_ptr<Receiver> receiver)
 	: receiver(receiver)
     {}
     boost::shared_ptr<Receiver> receiver;
@@ -110,12 +110,12 @@ private:
     {
 	timespec_t retryTime = getTimespec(5);
 	retryTimer.relative(retryTime);
-	start_timer(boost::make_shared<RetryTimer<Client> >
+	start_timer(boost::make_shared<RetryTimerExpired<Client> >
 		    (this->shared_from_this()),
 		    retryTimer);
     }
 
-    void process(boost::shared_ptr<RetryTimer<Client> >)
+    void process(boost::shared_ptr<RetryTimerExpired<Client> >)
     {
 	TRACE_DEBUG();
 	connect();

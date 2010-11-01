@@ -7,8 +7,8 @@ sinema_SOURCES = About.cpp About.hpp \
 		 ControlWindow.cpp ControlWindow.hpp \
 		 General.hpp \
 		 GtkmmMediaCommon.cpp GtkmmMediaCommon.hpp \
+		 GtkmmDaemonProxy.cpp GtkmmDaemonProxy.hpp \
 		 GtkmmMediaPlayer.cpp GtkmmMediaPlayer.hpp \
-		 GtkmmMediaReceiver.cpp GtkmmMediaReceiver.hpp \
 		 GtkmmMediaRecorder.cpp GtkmmMediaRecorder.hpp \
 		 GtkmmPlayList.cpp GtkmmPlayList.hpp \
 		 InhibitScreenSaver.cpp InhibitScreenSaver.hpp \
@@ -23,11 +23,13 @@ sinema_LDADD   = ../receiver/libreceiver.la \
 		 ../player/libplayer.la \
 		 ../deinterlacer/libdeinterlacer.la \
 		 ../recorder/librecorder.la \
+		 ../dproxy/libdproxy.la \
 		 ../common/libcommon.la \
 		 ../platform/libplatform.la
 sinema_LDFLAGS = $(PLAYER_LIBS) \
 		 -lz -lm \
 		 $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
+		 -lboost_serialization \
 		 -L/usr/X11R6/lib -lX11 -lXext -lXv \
 		 -lasound \
 		 $(GUI_LIBS)

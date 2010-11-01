@@ -48,7 +48,8 @@ struct StartProcessRequest
 	char** entry = environ;
 	while (*entry)
 	{
-	    std::cout << *entry << std::endl;
+	    // std::cout << *entry << std::endl;
+
 	    char* begName = *entry;
 	    char* endName = begName;
 	    while(*endName != 0 && *endName != '=')
@@ -116,7 +117,7 @@ private:
 	typedef std::pair<std::string, std::string> iterator;
 	BOOST_FOREACH(iterator it, env)
 	{
-	    std::cout << it.first << "==>" << it.second << std::endl;
+	    TRACE_DEBUG(<< it.first << "==>" << it.second);
 	    std::string entry = it.first + "=" + it.second;
 	    envn.push_back(entry);
 	    envp.push_back(envn.back().c_str());
