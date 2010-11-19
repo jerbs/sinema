@@ -125,6 +125,16 @@ private:
 
     bool isImageFormatValid(int imageFormat);
 
+    bool grabXvPort(XvPortID xvPortId);
+    void grabXvPort();
+    void ungrabXvPort();
+    void regrabXvPort();
+
+    void dumpXvEncodings(XvPortID adaptorPort);
+    void dumpXvAttributes(XvPortID adaptorPort);
+    void dumpXvImageFormas(XvPortID adaptorPort);
+    void fillImageFormatList();
+
     std::unique_ptr<XFVideoImage> m_displayedImage;
     std::unique_ptr<XFVideoImage> m_displayedImageClipped;
     Display* m_display;
@@ -132,6 +142,7 @@ private:
     
     XvPortID xvPortId;
     int imageFormat;
+    int displayedImageFormat;
     std::list<int> imageFormatList;
     GC gc;
 

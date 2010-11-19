@@ -177,6 +177,9 @@ XFVideo::XFVideo(Display* display, Window window,
 		 send_notification_clipping_fct_t fct2)
     : m_display(display),
       m_window(window),
+      xvPortId(INVALID_XV_PORT_ID),
+      imageFormat(0),
+      displayedImageFormat(0),
       widthVid(width),
       heightVid(height),
       widthWin(width),
@@ -216,6 +219,53 @@ XFVideo::XFVideo(Display* display, Window window,
 	TRACE_THROW(XFException, << "No Xv extension available.");
     }
 
+    grabXvPort();
+
+    // Initialize image format:
+    imageFormat = GUID_YUV12_PLANAR;     // Best performance for non-interlaced video.
+    if (!isImageFormatValid(imageFormat))
+    {
+	imageFormat = GUID_YUY2_PACKED;  // Works with interlaced and non-interlaced video.
+	if (!isImageFormatValid(imageFormat))
+	{
+	    TRACE_THROW(std::string, << "None of the supported video formats is implemented.");
+	}
+    }
+
+    // Create a graphics context
+    gc = XCreateGC(display, window, 0, 0);
+
+    calculateDestinationArea(NotificationVideoSize::VideoSizeChanged);
+    paintBorder();
+}
+
+XFVideo::~XFVideo()
+{
+    XFreeGC(m_display, gc);
+    XvUngrabPort(m_display, xvPortId, CurrentTime );
+}
+
+bool XFVideo::grabXvPort(XvPortID adaptorPort)
+{
+    switch(XvGrabPort( m_display, adaptorPort, CurrentTime ))
+    {
+    case Success:
+	xvPortId = adaptorPort;
+	TRACE_DEBUG( << "xvPortId = " << xvPortId);
+	return true;
+    case XvAlreadyGrabbed:
+	TRACE_DEBUG( << "XvGrabPort failed: XvAlreadyGrabbed");
+	break;
+    default:
+	TRACE_ERROR( << "XvGrabPort failed for adaptorPort " 
+		     << adaptorPort << "." );
+    }
+
+    return false;
+}
+
+void XFVideo::grabXvPort()
+{
     // Querry XvAdapterInfo:
     unsigned int num_ai;
     XvAdaptorInfo* ai;
@@ -247,111 +297,126 @@ XFVideo::XFVideo(Display* display, Window window,
 		if ((ai[i].type & XvInputMask) &&
 		    (ai[i].type & XvImageMask))
 		{
-		    switch(XvGrabPort( m_display, adaptorPort, CurrentTime ))
+		    if (grabXvPort(adaptorPort))
 		    {
-		    case Success:
-			xvPortId = adaptorPort;
-			break;
-		    case XvAlreadyGrabbed:
-			TRACE_DEBUG( << "XvGrabPort failed: XvAlreadyGrabbed");
-			break;
-		    default:
-			TRACE_ERROR( << "XvGrabPort failed for adaptorPort " 
-				     << adaptorPort << "." );
+			dumpXvEncodings(adaptorPort);
+			dumpXvAttributes(adaptorPort);
+			dumpXvImageFormas(adaptorPort);
+
+			fillImageFormatList();
+
+			XvFreeAdaptorInfo(ai);
+
+			return;
 		    }
 		}
-	    }
-
-	    // Querry XvEncodingInfo:
-	    unsigned int num_ei;
-	    XvEncodingInfo* ei;
-	    switch(XvQueryEncodings(m_display, adaptorPort,
-				    &num_ei, &ei))
-	    {
-	    case Success:
-		break;
-	    default:
-		TRACE_THROW(XFException, << "XvQueryEncodings failed.");
-	    }
-
-	    for (unsigned int j=0; j<num_ei; j++)
-	    {
-		TRACE_DEBUG( << "XvEncodingInfo[" << j << "]:\n" << ei[j] );
-	    }
-
-	    XvFreeEncodingInfo(ei);
-
-	    // Querry XvAttributes
-	    int num_att;
-	    XvAttribute* att = XvQueryPortAttributes(m_display, adaptorPort, &num_att);
-	    if (att)
-	    {
-		for (int k=0; k<num_att; k++)
-		{
-		    TRACE_DEBUG( << "XvAttribute[" << k << "]\n" << att[k] );
-		}
-		XFree(att);
-	    }
-
-	    // Querry XvImageFormatValues
-	    int num_ifv;
-	    XvImageFormatValues* ifv = XvListImageFormats(m_display, adaptorPort, &num_ifv);
-	    if (ifv)
-	    {
-		for (int l=0; l<num_ifv; l++)
-		{
-		    TRACE_DEBUG( << "XvImageFormatValues[" << l << "]\n" << ifv[l] );
-		}
-		XFree(ifv);
-	    }
-
-	}
-
-	if (xvPortId != INVALID_XV_PORT_ID)
-	{
-	    int num_ifv;
-	    XvImageFormatValues* ifv = XvListImageFormats(m_display, xvPortId, &num_ifv);
-	    if (ifv)
-	    {
-		for (int l=0; l<num_ifv; l++)
-		{
-		    TRACE_DEBUG(<< "adding image format id " << std::hex << ifv[l].id)
-		    imageFormatList.push_back(ifv[l].id);
-		}
-		XFree(ifv);
 	    }
 	}
     }
 
     XvFreeAdaptorInfo(ai);
 
-    if (xvPortId == INVALID_XV_PORT_ID)
-    {
-	TRACE_THROW(XFException, << "No XvAdaptorPort found.");
-    }
-
-    // Initialize image format:
-    imageFormat = GUID_YUV12_PLANAR;     // Best performance for non-interlaced video.
-    if (!isImageFormatValid(imageFormat))
-    {
-	imageFormat = GUID_YUY2_PACKED;  // Works with interlaced and non-interlaced video.
-	if (!isImageFormatValid(imageFormat))
-	{
-	    TRACE_THROW(std::string, << "None of the supported video formats is implemented.");
-	}
-    }
-
-    // Create a graphics context
-    gc = XCreateGC(display, window, 0, 0);
-
-    calculateDestinationArea(NotificationVideoSize::VideoSizeChanged);
-    paintBorder();
+    TRACE_THROW(XFException, << "No XvAdaptorPort found."); 
 }
 
-XFVideo::~XFVideo()
+void XFVideo::ungrabXvPort()
 {
-    XFreeGC(m_display, gc);
-    XvUngrabPort(m_display, xvPortId, CurrentTime );
+    XvUngrabPort(m_display, xvPortId, CurrentTime);
+    xvPortId = INVALID_XV_PORT_ID;
+}
+
+void XFVideo::regrabXvPort()
+{
+    // Without this sequence the fglrx closed source driver for ATI/AMD graphic
+    // cards fails to display Xv images with different formats. The Y plane is 
+    // as expected, but UV is wrong.
+
+    // Using XvGrabPort on an Xv port already grabbed by the application returns
+    // SUCCESS. XvAlreadyGrabbed is returned by another application/X11 client
+    // only. Since the number of Xv port is very limited, the application should
+    // use only one port.
+
+    XvPortID oldXvPortId = xvPortId;
+    ungrabXvPort();
+
+    // Try to grab the same Xv port again:
+    grabXvPort(oldXvPortId);
+
+    // This may have failed.
+    if (xvPortId == INVALID_XV_PORT_ID)
+    {
+	// Try to grab an available Xv port:
+	grabXvPort();
+
+	// This may have failed too, but that's bad luck.
+    }
+}
+
+void XFVideo::dumpXvEncodings(XvPortID adaptorPort)
+{
+    // Querry XvEncodingInfo:
+    unsigned int num_ei;
+    XvEncodingInfo* ei;
+    switch(XvQueryEncodings(m_display, adaptorPort,
+			    &num_ei, &ei))
+    {
+    case Success:
+	break;
+    default:
+	TRACE_THROW(XFException, << "XvQueryEncodings failed.");
+    }
+
+    for (unsigned int j=0; j<num_ei; j++)
+    {
+	TRACE_DEBUG( << "XvEncodingInfo[" << j << "]:\n" << ei[j] );
+    }
+
+    XvFreeEncodingInfo(ei);
+}
+
+void XFVideo::dumpXvAttributes(XvPortID adaptorPort)
+{
+    // Querry XvAttributes
+    int num_att;
+    XvAttribute* att = XvQueryPortAttributes(m_display, adaptorPort, &num_att);
+    if (att)
+    {
+	for (int k=0; k<num_att; k++)
+	{
+	    TRACE_DEBUG( << "XvAttribute[" << k << "]\n" << att[k] );
+	}
+	XFree(att);
+    }
+}
+
+void XFVideo::dumpXvImageFormas(XvPortID adaptorPort)
+{
+    // Querry XvImageFormatValues
+    int num_ifv;
+    XvImageFormatValues* ifv = XvListImageFormats(m_display, adaptorPort, &num_ifv);
+    if (ifv)
+    {
+	for (int l=0; l<num_ifv; l++)
+	{
+	    TRACE_DEBUG( << "XvImageFormatValues[" << l << "]\n" << ifv[l] );
+	}
+	XFree(ifv);
+    }
+}
+
+void XFVideo::fillImageFormatList()
+{
+    int num_ifv;
+    XvImageFormatValues* ifv = XvListImageFormats(m_display, xvPortId, &num_ifv);
+    if (ifv)
+    {
+	for (int l=0; l<num_ifv; l++)
+	{
+	    TRACE_DEBUG(<< "adding image format id " << std::hex << ifv[l].id)
+		imageFormatList.push_back(ifv[l].id);
+	}
+	XFree(ifv);
+    }
 }
 
 void XFVideo::selectEvents()
@@ -482,11 +547,19 @@ std::unique_ptr<XFVideoImage> XFVideo::show(std::unique_ptr<XFVideoImage> yuvIma
 
 void XFVideo::show()
 {
-    TRACE_DEBUG(<< std::hex << m_displayedImage->yuvImage->id);
-
     if (m_displayedImage)
     {
-	if (m_noClippingNeeded || m_useXvClipping)
+	int id = m_displayedImage->yuvImage->id;
+
+	TRACE_DEBUG(<< std::hex << id);
+
+	if (displayedImageFormat != id)
+	{
+	    displayedImageFormat = id;
+	    regrabXvPort();
+	}
+
+        if (m_noClippingNeeded || m_useXvClipping)
 	{
 	    // Display srcArea of yuvImage on destArea of Drawable window:
 	    XvShmPutImage(m_display, xvPortId, m_window, gc, m_displayedImage->xvImage(),
