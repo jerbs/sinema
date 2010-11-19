@@ -171,11 +171,47 @@ XFWindow::~XFWindow()
 
 // -------------------------------------------------------------------
 
+NeedsXShm::NeedsXShm(Display* display)
+{
+    // Check to see if the shared memory extension is available:
+    bool shmExtAvailable = XShmQueryExtension(display);
+    if (!shmExtAvailable)
+    {
+	TRACE_THROW(XFException, << "No shared memory extension available.");
+    }
+}
+
+// -------------------------------------------------------------------
+
+NeedsXv::NeedsXv(Display* display)
+{
+    // Check to see if Xv extension is available:
+    XvVersionInfo xvi;
+    switch(XvQueryExtension(display,
+			    &xvi.version,
+			    &xvi.revision,
+			    &xvi.request_base,
+			    &xvi.event_base,
+			    &xvi.error_base))
+    {
+    case Success:
+	break;
+    case XvBadExtension:
+    case XvBadAlloc:
+    default:
+	TRACE_THROW(XFException, << "No Xv extension available.");
+    }
+}
+
+// -------------------------------------------------------------------
+
 XFVideo::XFVideo(Display* display, Window window,
 		 unsigned int width, unsigned int height,
 		 send_notification_video_size_fct_t fct,
 		 send_notification_clipping_fct_t fct2)
-    : m_display(display),
+    : NeedsXShm(display),
+      NeedsXv(display),
+      m_display(display),
       m_window(window),
       xvPortId(INVALID_XV_PORT_ID),
       imageFormat(0),
@@ -195,30 +231,6 @@ XFVideo::XFVideo(Display* display, Window window,
       sendNotificationVideoSize(fct),
       sendNotificationClipping(fct2)
 {
-    // Check to see if the shared memory extension is available:
-    bool shmExtAvailable = XShmQueryExtension(m_display);
-    if (!shmExtAvailable)
-    {
-	TRACE_THROW(XFException, << "No shared memory extension available.");
-    }
-
-    // Check to see if Xv extension is available:
-    XvVersionInfo xvi;
-    switch(XvQueryExtension(m_display,
-			    &xvi.version,
-			    &xvi.revision,
-			    &xvi.request_base,
-			    &xvi.event_base,
-			    &xvi.error_base))
-    {
-    case Success:
-	break;
-    case XvBadExtension:
-    case XvBadAlloc:
-    default:
-	TRACE_THROW(XFException, << "No Xv extension available.");
-    }
-
     grabXvPort();
 
     // Initialize image format:

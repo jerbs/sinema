@@ -42,6 +42,7 @@ struct XFException
     std::string s;
 };
 
+
 class XFDisplay
 {
 public:
@@ -53,6 +54,7 @@ public:
 private:
     Display* m_display;
 };
+
 
 class XFWindow
 {
@@ -77,9 +79,32 @@ private:
     unsigned int m_height;
 };
 
+
+class NeedsXShm
+{
+public:
+    NeedsXShm(Display* display);
+
+private:
+    NeedsXShm();
+};
+
+
+class NeedsXv
+{
+public:
+    NeedsXv(Display* display);
+
+private:
+    NeedsXv();
+};
+
+
 class XFVideoImage;
 
-class XFVideo
+
+class XFVideo : private NeedsXShm,
+		private NeedsXv
 {
     friend class XFVideoImage;
 
@@ -179,6 +204,7 @@ private:
     send_notification_video_size_fct_t sendNotificationVideoSize;
     send_notification_clipping_fct_t sendNotificationClipping;
 };
+
 
 class XFVideoImage
 {
