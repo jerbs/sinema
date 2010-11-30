@@ -50,6 +50,7 @@ protected:
     static int pvrOpen(URLContext *h, const char *filename, int flags);
     static int pvrRead(URLContext *h, unsigned char *buf, int size);
     static int pvrWrite(URLContext *h, unsigned char *buf, int size);
+    static int pvrWrite(URLContext *h, const unsigned char *buf, int size);
     static int64_t pvrSeek(URLContext *h, int64_t pos, int whence);
     static int pvrClose(URLContext *h);
 

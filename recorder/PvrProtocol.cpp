@@ -119,6 +119,11 @@ int StorageProtocol::pvrRead(URLContext *h, unsigned char *buf, int size)
 
 int StorageProtocol::pvrWrite(URLContext *h, unsigned char *buf, int size)
 {
+    return pvrWrite(h, (const unsigned char*)buf, size);
+}
+
+int StorageProtocol::pvrWrite(URLContext *h, const unsigned char *buf, int size)
+{
     TRACE_DEBUG();
     PvrContext* context = (PvrContext*)(h->priv_data);
     int& fd = context->m_fd;
