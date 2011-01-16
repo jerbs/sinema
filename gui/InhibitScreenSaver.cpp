@@ -1,7 +1,7 @@
 //
 // Inhibit Screen Saver
 //
-// Copyright (C) Joachim Erbs, 2010
+// Copyright (C) Joachim Erbs, 2010-2011
 //
 //    This file is part of Sinema.
 //
@@ -22,11 +22,57 @@
 #include "InhibitScreenSaver.hpp"
 #include "platform/Logging.hpp"
 
+#include <gio/gio.h>
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 
 // #undef TRACE_DEBUG 
 // #define TRACE_DEBUG(text) std::cout << __PRETTY_FUNCTION__ text << std::endl;
+
+// -------------------------------------------------------------------
+
+class DBusScreenSaverInterface
+{
+public:
+    DBusScreenSaverInterface();
+    ~DBusScreenSaverInterface();
+
+    void simulateUserActivity();
+
+private:
+    template<typename C, void(C::*M)(GObject*, GAsyncResult*)>
+    static void wrapper(GObject *source_object,
+			GAsyncResult *res,
+			gpointer user_data)
+    {
+	C* obj = (C*)user_data;
+	(obj->*M)(source_object, res);
+    }
+
+    struct DBusMethod
+    {
+	const gchar* bus_name;
+	const gchar* interface_name;
+	const gchar* object_path;
+	const gchar* method_name;
+    };
+
+    GDBusProxy* proxyDBusDaemon;
+    GDBusProxy* proxyScreenSaver;
+    const DBusMethod* screenSaver;
+
+    const DBusMethod dbusDaemon;
+    const DBusMethod gnomeScreenSaver;
+    const DBusMethod kdeScreenSaver;
+
+    void finishProxyDBusDaemonNew(GObject*,  // source_object
+				  GAsyncResult *res);
+    void sendDBusDaemonGetNameOwner();
+    void finishDBusDaemonGetNameOwner(GObject*,  // source_object
+				      GAsyncResult *res);
+    void finishProxyScreenSaverNew(GObject*,  // source_object
+				   GAsyncResult *res);
+};
 
 // -------------------------------------------------------------------
 
@@ -58,6 +104,7 @@ bool XScreenSaverInterface::gotBadWindow;
 
 InhibitScreenSaver::InhibitScreenSaver()
 {
+    m_DBusScreenSaverInterface = boost::make_shared<DBusScreenSaverInterface>();
 }
 
 extern Display * get_x_display(Gtk::Widget & widget);
@@ -71,6 +118,191 @@ void InhibitScreenSaver::simulateUserActivity()
 {
     if (m_XScreenSaverInterface)
 	m_XScreenSaverInterface->simulateUserActivity();
+
+    if (m_DBusScreenSaverInterface)
+	m_DBusScreenSaverInterface->simulateUserActivity();
+}
+
+// -------------------------------------------------------------------
+// Determine which ScreenSaver interface has to be used (Gnome or KDE):
+//   gdbus introspect --session --dest org.freedesktop.DBus --object-path /
+//   gdbus call --session --dest org.freedesktop.DBus --object-path / --method org.freedesktop.DBus.GetNameOwner org.gnome.ScreenSaver
+//   gdbus call --session --dest org.freedesktop.DBus --object-path / --method org.freedesktop.DBus.GetNameOwner org.freedesktop.ScreenSaver
+//
+// Accessing the ScreenSaver:
+//   gdbus introspect --session --dest org.gnome.ScreenSaver --object-path /
+//   gdbus introspect --session --dest org.freedesktop.ScreenSaver --object-path /ScreenSaver
+//   gdbus call --session --dest org.gnome.ScreenSaver --object-path / --method org.gnome.ScreenSaver.SimulateUserActivity
+//   gdbus call --session --dest org.freedesktop.ScreenSaver  --object-path /ScreenSaver org.freedesktop.ScreenSaver.SimulateUserActivity
+//   At least the Gnome screen saver does not send a response for SimulateUserActivity.
+//
+// Monitoring DBus:
+//   gdbus monitor --session --dest org.gnome.ScreenSaver --object-path /
+//
+// Documentation:
+//   gdbus documentation: http://library.gnome.org/devel/gio/2.26/gdbus.html
+
+DBusScreenSaverInterface::DBusScreenSaverInterface()
+    : proxyDBusDaemon(0),
+      proxyScreenSaver(0),
+      screenSaver(0),
+      dbusDaemon
+	 {"org.freedesktop.DBus",
+	  "org.freedesktop.DBus",
+	  "/",
+	  "org.freedesktop.DBus.GetNameOwner"},
+      gnomeScreenSaver
+	 {"org.gnome.ScreenSaver",
+	  "org.gnome.ScreenSaver",
+	  "/",
+	  "org.gnome.ScreenSaver.SimulateUserActivity"},
+      kdeScreenSaver
+	 {"org.freedesktop.ScreenSaver",
+	  "org.freedesktop.ScreenSaver",
+	  "/ScreenSaver",
+	  "org.freedesktop.ScreenSaver.SimulateUserActivity"}
+{
+    g_dbus_proxy_new_for_bus(G_BUS_TYPE_SESSION,
+			     G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+			     NULL,  // GDBusInterfaceInfo*
+			     dbusDaemon.bus_name,
+			     dbusDaemon.object_path,
+			     dbusDaemon.interface_name,
+			     NULL, // GCancellable*
+			     &wrapper<DBusScreenSaverInterface,
+			              &DBusScreenSaverInterface::finishProxyDBusDaemonNew>,
+			     this);
+}
+
+DBusScreenSaverInterface::~DBusScreenSaverInterface()
+{
+    // Fixme: Cancel open asynchronous operations before deleting the object.
+
+    if (proxyDBusDaemon)
+	g_object_unref(proxyDBusDaemon);
+
+    if (proxyScreenSaver)
+	g_object_unref(proxyScreenSaver);
+}
+
+void DBusScreenSaverInterface::finishProxyDBusDaemonNew(GObject*,  // source_object
+							GAsyncResult *res)
+{
+    GError* error = NULL;
+    proxyDBusDaemon = g_dbus_proxy_new_for_bus_finish(res, &error);
+    if (proxyDBusDaemon)
+    {
+	TRACE_DEBUG(<< "ok");
+	screenSaver = &kdeScreenSaver;
+	sendDBusDaemonGetNameOwner();
+    }
+    else
+    {
+	TRACE_ERROR(<< "failed");
+    }
+}
+
+void DBusScreenSaverInterface::sendDBusDaemonGetNameOwner()
+{
+    TRACE_DEBUG(<< screenSaver->bus_name);
+    g_dbus_proxy_call(proxyDBusDaemon,
+		      dbusDaemon.method_name,
+		      g_variant_new ("(s)", screenSaver->bus_name),
+		      G_DBUS_CALL_FLAGS_NO_AUTO_START,
+		      500,   // timeout in milliseconds, -1 use the proxy default timeout
+		      NULL,  //  GCancellable*
+		      &wrapper<DBusScreenSaverInterface,
+		               &DBusScreenSaverInterface::finishDBusDaemonGetNameOwner>,
+		      this);
+}
+
+void DBusScreenSaverInterface::finishDBusDaemonGetNameOwner(GObject*,  // source_object
+							    GAsyncResult *res)
+{
+    // GDBusProxy* proxy = (GDBusProxy*)source_object;
+    GError* error = NULL;
+    GVariant* gvariant = g_dbus_proxy_call_finish(proxyDBusDaemon, res, &error);
+
+    if (error != NULL)
+    {
+	// Don't print this as an error message:
+	TRACE_DEBUG(<< "Error: domain: " << error->domain
+		    << ", code: " << error->code
+		    << ", message: " << error->message);
+	g_error_free(error);
+
+	if (screenSaver == &kdeScreenSaver)
+	{
+	    screenSaver = &gnomeScreenSaver;
+	    sendDBusDaemonGetNameOwner();
+	}
+	else
+	{
+	    // No DBus screen saver found.
+	}
+    }
+    else
+    {
+	TRACE_DEBUG(<< "found " << screenSaver->bus_name);
+	if (gvariant)
+	{
+	    g_variant_unref(gvariant);
+	}
+
+	// Create DBus proxy for screen saver.
+	g_dbus_proxy_new_for_bus(G_BUS_TYPE_SESSION,
+				 G_DBUS_PROXY_FLAGS_DO_NOT_LOAD_PROPERTIES,
+				 NULL,  // GDBusInterfaceInfo*
+				 screenSaver->bus_name,
+				 screenSaver->object_path,
+				 screenSaver->interface_name,
+				 NULL, // GCancellable*
+				 &wrapper<DBusScreenSaverInterface,
+				          &DBusScreenSaverInterface::finishProxyScreenSaverNew>,
+				 this);
+    }
+}
+
+void DBusScreenSaverInterface::finishProxyScreenSaverNew(GObject*,  // source_object
+							 GAsyncResult *res)
+{
+    TRACE_DEBUG();
+
+    GError* error = NULL;
+    proxyScreenSaver = g_dbus_proxy_new_for_bus_finish(res, &error);
+    if (error != NULL)
+    {
+	TRACE_ERROR(<< "domain: " << error->domain
+		    << ", code: " << error->code
+		    << ", message: " << error->message);
+	g_error_free(error);
+    }
+    else if (proxyScreenSaver)
+    {
+	TRACE_DEBUG(<< "ok");
+    }
+    else
+    {
+	TRACE_ERROR(<< "failed");
+    }
+}
+
+void DBusScreenSaverInterface::simulateUserActivity()
+{
+    if (proxyScreenSaver)
+    {
+	TRACE_DEBUG();
+	// SimulateUserActivity has no output parameters. The screen saver
+	// will not send a response.
+	g_dbus_proxy_call(proxyScreenSaver,
+			  screenSaver->method_name,
+			  NULL,  // No parameters
+			  G_DBUS_CALL_FLAGS_NO_AUTO_START,
+			  500,   // timeout in milliseconds, -1 use the proxy default timeout
+			  NULL,  // GCancellable*
+			  NULL,  // No response
+			  this);
+    }
 }
 
 // -------------------------------------------------------------------

@@ -1,7 +1,7 @@
 //
 // Inhibit Screen Saver
 //
-// Copyright (C) Joachim Erbs, 2010
+// Copyright (C) Joachim Erbs, 2010-2011
 //
 //    This file is part of Sinema.
 //
@@ -25,6 +25,7 @@
 #include <boost/shared_ptr.hpp>
 #include <gtkmm/widget.h>
 
+class DBusScreenSaverInterface;
 class XScreenSaverInterface;
 
 class InhibitScreenSaver
@@ -36,6 +37,7 @@ public:
     void simulateUserActivity();
 
 private:
+    boost::shared_ptr<DBusScreenSaverInterface> m_DBusScreenSaverInterface;
     boost::shared_ptr<XScreenSaverInterface> m_XScreenSaverInterface;
 };
 
