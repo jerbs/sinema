@@ -89,9 +89,8 @@ static int getFourccFormat(enum PixelFormat pfm)
     {
     case PIX_FMT_YUV420P: return GUID_YUV12_PLANAR;
     case PIX_FMT_YUYV422: return GUID_YUY2_PACKED;
-    default: TRACE_THROW(std::string, << "Unsupported FFmpeg pixel format: " << pfm);
+    default:              return GUID_YUY2_PACKED;
     }
-    return 0;
 }
 
 static enum PixelFormat getFFmpegFormat(int fid)
