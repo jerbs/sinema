@@ -121,7 +121,7 @@ public:
     void selectEvents();
     void resize(unsigned int width, unsigned int height,
 		unsigned int sarNom, unsigned int sarDen,
-		int imageFormat);
+		int fourccFormat);
     std::unique_ptr<XFVideoImage> show(std::unique_ptr<XFVideoImage> xfVideoImage);
     void show();
     void handleConfigureEvent(boost::shared_ptr<WindowConfigureEvent> event);
@@ -148,7 +148,7 @@ private:
     int xVideo(int xWindow);
     int yVideo(int yWindow);
 
-    bool isImageFormatValid(int imageFormat);
+    bool isFourccFormatValid(int fourccFormat);
 
     bool grabXvPort(XvPortID xvPortId);
     void grabXvPort();
@@ -157,8 +157,8 @@ private:
 
     void dumpXvEncodings(XvPortID adaptorPort);
     void dumpXvAttributes(XvPortID adaptorPort);
-    void dumpXvImageFormas(XvPortID adaptorPort);
-    void fillImageFormatList();
+    void dumpXvImageFormat(XvPortID adaptorPort);
+    void fillFourccFormatList();
 
     std::unique_ptr<XFVideoImage> m_displayedImage;
     std::unique_ptr<XFVideoImage> m_displayedImageClipped;
@@ -166,9 +166,9 @@ private:
     Window m_window;
     
     XvPortID xvPortId;
-    int imageFormat;
-    int displayedImageFormat;
-    std::list<int> imageFormatList;
+    int fourccFormat;
+    int displayedFourccFormat;
+    std::list<int> fourccFormatList;
     GC gc;
 
     // video size:
@@ -212,7 +212,7 @@ class XFVideoImage
 
 public:
     XFVideoImage(boost::shared_ptr<XFVideo> xfVideo);
-    XFVideoImage(XFVideo* xfVideo, int width, int height, int imageFormat);
+    XFVideoImage(XFVideo* xfVideo, int width, int height, int fourccFormat);
     ~XFVideoImage();
 
     void createPatternImage();
@@ -229,7 +229,7 @@ public:
 
 private:
     XFVideoImage();  // No implementation.
-    void init(XFVideo* xfVideo, int width, int height, int imageFormat);
+    void init(XFVideo* xfVideo, int width, int height, int fourccFormat);
 
     XShmSegmentInfo yuvShmInfo;
     XvImage* yuvImage;

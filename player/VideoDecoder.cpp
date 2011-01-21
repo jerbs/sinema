@@ -45,7 +45,7 @@ VideoDecoder::VideoDecoder(event_processor_ptr_type evt_proc)
       avFrame(avcodec_alloc_frame()),
       avFrameIsFree(true),
       pts(0),
-      m_imageFormat(0),
+      m_fourccFormat(0),
       eos(false),
       swsContext(0),
       m_topFieldFirst(true),
@@ -78,8 +78,13 @@ void VideoDecoder::process(boost::shared_ptr<InitEvent> event)
     deinterlacer = event->deinterlacer;
 }
 
-static int getFormatId(enum PixelFormat pfm)
+static int getFourccFormat(enum PixelFormat pfm)
 {
+    // getFormatId must return a FOURCC format id supported by the video driver.
+    // The parameter pfm is the pixel format of the frames emitted by the FFmpeg Decoder.
+    // The goal is to determine a destination format the software scaler can convert
+    // to with minimal overhead.
+
     switch(pfm)
     {
     case PIX_FMT_YUV420P: return GUID_YUV12_PLANAR;
@@ -91,6 +96,11 @@ static int getFormatId(enum PixelFormat pfm)
 
 static enum PixelFormat getFFmpegFormat(int fid)
 {
+    // getFFmpegFormat converts the FOURCC format id returned by the getFormatId function
+    // back into the FFmpeg pixel format id for the same image format. The returned
+    // FFmpeg pixel format id is needed as distination format parameter to setup the 
+    // software scaler.
+
     switch(fid)
     {
     case GUID_YUV12_PLANAR: return PIX_FMT_YUV420P;
@@ -134,16 +144,16 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 			if (pn == 0 || pd == 0) {pn = pd = 1;}
 			if (m_useOptimumImageFormat)
 			{
-			    int formatId = getFormatId(avCodecContext->pix_fmt);
-			    setImageFormat(formatId);
+			    int fourccFormat = getFourccFormat(avCodecContext->pix_fmt);
+			    setFourccFormat(fourccFormat);
 			}
 			else
 			{
 			    // Set format needed to use the deinterlacer:
-			    setImageFormat(GUID_YUY2_PACKED);
+			    setFourccFormat(GUID_YUY2_PACKED);
 			}
 			videoOutput->queue_event(boost::make_shared<OpenVideoOutputReq>(w,h,pn,pd,
-											m_imageFormat));
+											m_fourccFormat));
 
 			state = Opening;
 
@@ -265,7 +275,7 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp>)
 	// Keep avFrame.
 	avFrameIsFree = true;
 	pts = 0;
-	m_imageFormat = 0;
+	m_fourccFormat = 0;
 
 	if (swsContext)
 	{
@@ -299,18 +309,18 @@ void VideoDecoder::process(std::unique_ptr<XFVideoImage> event)
 
 	unsigned int width = event->width();
 	unsigned int height = event->height();
-	int imageFormat = event->xvImage()->id;
+	int fourccFormat = event->xvImage()->id;
 
 	if (avCodecContext->width != int(width) ||
 	    avCodecContext->height != int(height) ||
-	    m_imageFormat != imageFormat)
+	    m_fourccFormat != fourccFormat)
 	{
 	    TRACE_DEBUG(<< "Frame buffer with wrong size/format."
 			<< " needed:"
 			<< avCodecContext->width << "*" << avCodecContext->height
-			<< std::hex << ", 0x" << m_imageFormat
+			<< std::hex << ", 0x" << m_fourccFormat
 			<< std::dec << " got: " << width << "*" << height
-			<< std::hex << ", 0x" << imageFormat );
+			<< std::hex << ", 0x" << fourccFormat );
 
 	    videoOutput->queue_event(std::move(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(event)))));
 
@@ -383,8 +393,8 @@ void VideoDecoder::process(boost::shared_ptr<EnableOptimalPixelFormat>)
 	if (avCodecContext)
 	{
 	    // Set image format emitted by the video decoder:
-	    int formatId = getFormatId(avCodecContext->pix_fmt);
-	    setImageFormat(formatId);
+	    int fourccFormat = getFourccFormat(avCodecContext->pix_fmt);
+	    setFourccFormat(fourccFormat);
 	}
     }
 }
@@ -399,7 +409,7 @@ void VideoDecoder::process(boost::shared_ptr<DisableOptimalPixelFormat>)
 	{
 	    // Set initial image format.
 	    // This is the format needed by the deinterlacer:
-	    setImageFormat(GUID_YUY2_PACKED);
+	    setFourccFormat(GUID_YUY2_PACKED);
 	}
     }
 }
@@ -513,11 +523,11 @@ void VideoDecoder::queue()
 	    return;
 	}
 
-	if (m_imageFormat != GUID_YUY2_PACKED)
+	if (m_fourccFormat != GUID_YUY2_PACKED)
 	{
 	    // The deinterlacer needs the packed YUY2 format.
 	    // This format is not the default.
-	    setImageFormat(GUID_YUY2_PACKED);
+	    setFourccFormat(GUID_YUY2_PACKED);
 
 	    return;
 	}
@@ -620,13 +630,13 @@ void VideoDecoder::queue()
     TRACE_DEBUG(<< "Queueing XFVideoImage");
 }
 
-void VideoDecoder::setImageFormat(int imageFormat)
+void VideoDecoder::setFourccFormat(int fourccFormat)
 {
-    if (m_imageFormat != imageFormat)
+    if (m_fourccFormat != fourccFormat)
     {
-	TRACE_DEBUG(<< std::hex << imageFormat);
+	TRACE_DEBUG(<< std::hex << fourccFormat);
 
-	m_imageFormat = imageFormat;
+	m_fourccFormat = fourccFormat;
 
 	getSwsContext();
 
@@ -649,7 +659,7 @@ void VideoDecoder::getSwsContext()
 	sws_freeContext(swsContext);
     }
 
-    enum PixelFormat dstPixFmt = getFFmpegFormat(m_imageFormat);
+    enum PixelFormat dstPixFmt = getFFmpegFormat(m_fourccFormat);
 
     int width = avCodecContext->width;
     int height = avCodecContext->height;
@@ -680,7 +690,7 @@ void VideoDecoder::requestNewFrame()
     int pd = par.den;
     if (pn == 0 || pd == 0) {pn = pd = 1;}
 
-    videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(w,h,pn,pd,m_imageFormat));
+    videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(w,h,pn,pd,m_fourccFormat));
 }
 
 // -------------------------------------------------------------------

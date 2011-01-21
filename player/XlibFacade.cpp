@@ -214,8 +214,8 @@ XFVideo::XFVideo(Display* display, Window window,
       m_display(display),
       m_window(window),
       xvPortId(INVALID_XV_PORT_ID),
-      imageFormat(0),
-      displayedImageFormat(0),
+      fourccFormat(0),
+      displayedFourccFormat(0),
       widthVid(width),
       heightVid(height),
       widthWin(width),
@@ -234,11 +234,11 @@ XFVideo::XFVideo(Display* display, Window window,
     grabXvPort();
 
     // Initialize image format:
-    imageFormat = GUID_YUV12_PLANAR;     // Best performance for non-interlaced video.
-    if (!isImageFormatValid(imageFormat))
+    fourccFormat = GUID_YUV12_PLANAR;     // Best performance for non-interlaced video.
+    if (!isFourccFormatValid(fourccFormat))
     {
-	imageFormat = GUID_YUY2_PACKED;  // Works with interlaced and non-interlaced video.
-	if (!isImageFormatValid(imageFormat))
+	fourccFormat = GUID_YUY2_PACKED;  // Works with interlaced and non-interlaced video.
+	if (!isFourccFormatValid(fourccFormat))
 	{
 	    TRACE_THROW(std::string, << "None of the supported video formats is implemented.");
 	}
@@ -294,7 +294,7 @@ void XFVideo::grabXvPort()
     }
 
     xvPortId = INVALID_XV_PORT_ID;
-    imageFormat = 0;
+    fourccFormat = 0;
     
     for (unsigned int i=0; i<num_ai; i++)
     {
@@ -313,9 +313,9 @@ void XFVideo::grabXvPort()
 		    {
 			dumpXvEncodings(adaptorPort);
 			dumpXvAttributes(adaptorPort);
-			dumpXvImageFormas(adaptorPort);
+			dumpXvImageFormat(adaptorPort);
 
-			fillImageFormatList();
+			fillFourccFormatList();
 
 			XvFreeAdaptorInfo(ai);
 
@@ -401,7 +401,7 @@ void XFVideo::dumpXvAttributes(XvPortID adaptorPort)
     }
 }
 
-void XFVideo::dumpXvImageFormas(XvPortID adaptorPort)
+void XFVideo::dumpXvImageFormat(XvPortID adaptorPort)
 {
     // Querry XvImageFormatValues
     int num_ifv;
@@ -416,16 +416,21 @@ void XFVideo::dumpXvImageFormas(XvPortID adaptorPort)
     }
 }
 
-void XFVideo::fillImageFormatList()
+void XFVideo::fillFourccFormatList()
 {
+    // This function is called each time a new XvPort is grabed.
+    // As a work-around the port is regrabed when the image format changes.
+    // The fourccFormatList (theoretically) may change each time this function is called.
+
     int num_ifv;
     XvImageFormatValues* ifv = XvListImageFormats(m_display, xvPortId, &num_ifv);
     if (ifv)
     {
 	for (int l=0; l<num_ifv; l++)
 	{
-	    TRACE_DEBUG(<< "adding image format id " << std::hex << ifv[l].id)
-		imageFormatList.push_back(ifv[l].id);
+	    int fourccFormat = ifv[l].id;
+	    TRACE_DEBUG(<< "adding fourcc format id " << std::hex << fourccFormat);
+	    fourccFormatList.push_back(fourccFormat);
 	}
 	XFree(ifv);
     }
@@ -437,11 +442,11 @@ void XFVideo::selectEvents()
     XSelectInput(m_display, m_window, StructureNotifyMask | ExposureMask | KeyPressMask);
 }
 
-bool XFVideo::isImageFormatValid(int imageFormat)
+bool XFVideo::isFourccFormatValid(int fourccFormat)
 {
-    for (std::list<int>::iterator it = imageFormatList.begin(); it != imageFormatList.end(); it++)
+    for (std::list<int>::iterator it = fourccFormatList.begin(); it != fourccFormatList.end(); it++)
     {
-	if (*it == imageFormat)
+	if (*it == fourccFormat)
 	    return true;
     }
     return false;
@@ -449,7 +454,7 @@ bool XFVideo::isImageFormatValid(int imageFormat)
 
 void XFVideo::resize(unsigned int width, unsigned int height,
 		     unsigned int parNum, unsigned int parDen,
-		     int imageFormat)
+		     int fourccFormat)
 {
     // This method is called when the video size changes.
     // It is not called when the widget is resized.
@@ -472,11 +477,11 @@ void XFVideo::resize(unsigned int width, unsigned int height,
     calculateDestinationArea(NotificationVideoSize::VideoSizeChanged);
 
     // Video format:
-    this->imageFormat = imageFormat;
+    this->fourccFormat = fourccFormat;
 
-    if (!isImageFormatValid(imageFormat))
+    if (!isFourccFormatValid(fourccFormat))
     {
-	TRACE_THROW(std::string, << "Unsupported format id: " << std::hex << imageFormat);
+	TRACE_THROW(std::string, << "Unsupported fourcc format: " << std::hex << fourccFormat);
     }
 }
 
@@ -565,9 +570,9 @@ void XFVideo::show()
 
 	TRACE_DEBUG(<< std::hex << id);
 
-	if (displayedImageFormat != id)
+	if (displayedFourccFormat != id)
 	{
-	    displayedImageFormat = id;
+	    displayedFourccFormat = id;
 	    regrabXvPort();
 	}
 
@@ -690,7 +695,7 @@ void XFVideo::clipSrc(int videoLeft, int videoRight, int videoTop, int videoBott
 	// Update widget:
 	calculateDestinationArea(NotificationVideoSize::ClippingChanged);
 	paintBorder();
-	show(std::move(m_displayedImage));
+	show(std::move(m_displayedImage));  // Looks a bit unclean, here m_displayedImage is updated with itself.
     }
 }
 
@@ -810,26 +815,26 @@ XFVideoImage::XFVideoImage(boost::shared_ptr<XFVideo> xfVideo)
     : pts(0)
 {
     TRACE_DEBUG(<< "tid = " << gettid());
-    init(xfVideo.get(), xfVideo->widthVid, xfVideo->heightVid, xfVideo->imageFormat);
+    init(xfVideo.get(), xfVideo->widthVid, xfVideo->heightVid, xfVideo->fourccFormat);
 }
 
-XFVideoImage::XFVideoImage(XFVideo* xfVideo, int width, int height, int imageFormat)
+XFVideoImage::XFVideoImage(XFVideo* xfVideo, int width, int height, int fourccFormat)
     : pts(0)
 {
     TRACE_DEBUG(<< "tid = " << gettid());
-    init(xfVideo, width, height, imageFormat);
+    init(xfVideo, width, height, fourccFormat);
 }
 
-void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int imageFormat)
+void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int fourccFormat)
 {
-    if (imageFormat == 0)
+    if (!xfVideo->isFourccFormatValid(fourccFormat))
     {
-	TRACE_THROW(std::string, << "No valid format id set.");
+	TRACE_THROW(std::string, << "No valid fourcc format id set.");
     }
 
     yuvImage = XvShmCreateImage(xfVideo->display(),
 				xfVideo->xvPortId,
-				imageFormat,
+				fourccFormat,
 				0, // char* data
 				width, height,
 				&yuvShmInfo);
@@ -837,7 +842,7 @@ void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int imageFormat
     TRACE_DEBUG(<< std::dec << "requested: " << width << "*" << height
 		<< " got: " << yuvImage->width << "*" << yuvImage->height);
     TRACE_DEBUG(<< "yuvImage = " << std::hex << uint64_t(yuvImage));
-    TRACE_DEBUG(<< "imageFormat  = " << std::hex << imageFormat);
+    TRACE_DEBUG(<< "fourccFormat  = " << std::hex << fourccFormat);
     TRACE_DEBUG(<< "yuvImage->id = " << std::hex << yuvImage->id);
     for (int i=0; i<yuvImage->num_planes; i++)
     {

@@ -49,6 +49,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <list>
+#include <vector>
 #include <memory>
 #include <string>
 #include <time.h>
@@ -266,18 +267,18 @@ struct OpenVideoOutputReq
 {
     OpenVideoOutputReq(int width, int height,
 		       int parNum, int parDen,
-		       int imageFormat)
+		       int fourccFormat)
 	: width(width),
 	  height(height),
 	  parNum(parNum),
 	  parDen(parDen),
-	  imageFormat(imageFormat)
+	  fourccFormat(fourccFormat)
     {}
     int width;
     int height;
     int parNum;  // pixel aspect ratio numerator
     int parDen;  // pixel aspect ratio denominator
-    int imageFormat;
+    int fourccFormat;
 };
 
 struct OpenVideoOutputResp{};
@@ -290,18 +291,18 @@ struct ResizeVideoOutputReq
 {
     ResizeVideoOutputReq(int width, int height,
 			 int parNum, int parDen,
-			 int imageFormat)
+			 int fourccFormat)
 	: width(width),
 	  height(height),
 	  parNum(parNum),
 	  parDen(parDen),
-	  imageFormat(imageFormat)
+	  fourccFormat(fourccFormat)
     {}
     int width;
     int height;
     int parNum;  // pixel aspect ratio numerator
     int parDen;  // pixel aspect ratio denominator
-    int imageFormat;
+    int fourccFormat;
 };
 
 // ===================================================================

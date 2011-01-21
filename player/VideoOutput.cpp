@@ -77,7 +77,7 @@ void VideoOutput::process(boost::shared_ptr<OpenVideoOutputReq> event)
     {
 	TRACE_DEBUG();
 
-	xfVideo->resize(event->width, event->height, event->parNum, event->parDen, event->imageFormat);
+	xfVideo->resize(event->width, event->height, event->parNum, event->parDen, event->fourccFormat);
 	for (int i=0; i<10; i++)
 	{
 	    createVideoImage();
@@ -119,9 +119,9 @@ void VideoOutput::process(boost::shared_ptr<CloseVideoOutputReq>)
 
 void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
 {
-    // VideoDecoder sends this event for every XFVideoImage received with wrong size.
+    // VideoDecoder sends this event for every XFVideoImage received with wrong size or image format.
     // This case occurs when:
-    // 1) Starting to play a video with a differnt resolution and the VideoDecoder 
+    // 1) Starting to play a video with a different resolution and the VideoDecoder 
     //    gets the XFVideoImage created in VideoOutput::showBlackFrame while closing
     //    the previous video.
     // 2) The video resolution changes within one video.
@@ -130,7 +130,7 @@ void VideoOutput::process(boost::shared_ptr<ResizeVideoOutputReq> event)
     {
 	TRACE_DEBUG();
 
-	xfVideo->resize(event->width, event->height, event->parNum, event->parDen, event->imageFormat);
+	xfVideo->resize(event->width, event->height, event->parNum, event->parDen, event->fourccFormat);
 	createVideoImage();
     }
 }
@@ -512,6 +512,10 @@ void VideoOutput::showBlackFrame()
     yuvImage->createBlackImage();
     // yuvImage->createPatternImage();
     // yuvImage->createDemoImage();
+
+    // Above a new XFVideoImage object was created. Now the XFVideoImage object returned by
+    // the XFVideo::show method is thrown away. This keeps the number of created XFVideoImage
+    // objects at a constant level.
     xfVideo->show(std::move(yuvImage));
 }
 

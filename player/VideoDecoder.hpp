@@ -53,7 +53,7 @@ class VideoDecoder : public event_receiver<VideoDecoder>
     AVFrame* avFrame;
     bool avFrameIsFree;
     double pts;
-    int m_imageFormat;
+    int m_fourccFormat;
     std::queue<std::unique_ptr<XFVideoImage> > frameQueue;
     std::queue<boost::shared_ptr<VideoPacketEvent> > packetQueue;
 
@@ -91,7 +91,7 @@ private:
     void decode();
     void queue();
 
-    void setImageFormat(int imageFormat);
+    void setFourccFormat(int fourccFormat);
     void getSwsContext();
     void requestNewFrame();
 };
