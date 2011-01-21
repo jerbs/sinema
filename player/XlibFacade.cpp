@@ -235,14 +235,6 @@ XFVideo::XFVideo(Display* display, Window window,
 
     // Initialize image format:
     fourccFormat = GUID_YUV12_PLANAR;     // Best performance for non-interlaced video.
-    if (!isFourccFormatValid(fourccFormat))
-    {
-	fourccFormat = GUID_YUY2_PACKED;  // Works with interlaced and non-interlaced video.
-	if (!isFourccFormatValid(fourccFormat))
-	{
-	    TRACE_THROW(std::string, << "None of the supported video formats is implemented.");
-	}
-    }
 
     // Create a graphics context
     gc = XCreateGC(display, window, 0, 0);
@@ -264,6 +256,7 @@ bool XFVideo::grabXvPort(XvPortID adaptorPort)
     case Success:
 	xvPortId = adaptorPort;
 	TRACE_DEBUG( << "xvPortId = " << xvPortId);
+	fillFourccFormatList();
 	return true;
     case XvAlreadyGrabbed:
 	TRACE_DEBUG( << "XvGrabPort failed: XvAlreadyGrabbed");
@@ -315,11 +308,15 @@ void XFVideo::grabXvPort()
 			dumpXvAttributes(adaptorPort);
 			dumpXvImageFormat(adaptorPort);
 
-			fillFourccFormatList();
-
-			XvFreeAdaptorInfo(ai);
-
-			return;
+			// With the current implementation the Xv port must
+			// support YV12 and YUY2. The VideoDecoder selects
+			// one of these 2 formats:
+			if (isFourccFormatValid(GUID_YUV12_PLANAR) &&
+			    isFourccFormatValid(GUID_YUY2_PACKED) )
+			{
+			    XvFreeAdaptorInfo(ai);
+			    return;
+			}
 		    }
 		}
 	    }
@@ -333,6 +330,8 @@ void XFVideo::grabXvPort()
 
 void XFVideo::ungrabXvPort()
 {
+    TRACE_DEBUG();
+    fourccFormatList.clear();
     XvUngrabPort(m_display, xvPortId, CurrentTime);
     xvPortId = INVALID_XV_PORT_ID;
 }
@@ -422,6 +421,8 @@ void XFVideo::fillFourccFormatList()
     // As a work-around the port is regrabed when the image format changes.
     // The fourccFormatList (theoretically) may change each time this function is called.
 
+    TRACE_DEBUG();
+    fourccFormatList.clear();
     int num_ifv;
     XvImageFormatValues* ifv = XvListImageFormats(m_display, xvPortId, &num_ifv);
     if (ifv)
@@ -444,7 +445,7 @@ void XFVideo::selectEvents()
 
 bool XFVideo::isFourccFormatValid(int fourccFormat)
 {
-    for (std::list<int>::iterator it = fourccFormatList.begin(); it != fourccFormatList.end(); it++)
+    for (std::vector<int>::iterator it = fourccFormatList.begin(); it != fourccFormatList.end(); it++)
     {
 	if (*it == fourccFormat)
 	    return true;

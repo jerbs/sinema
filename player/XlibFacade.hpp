@@ -30,7 +30,7 @@
 
 #include <boost/shared_ptr.hpp>
 #include <boost/function.hpp>
-#include <list>
+#include <vector>
 #include <memory>
 #include <string>
 
@@ -168,7 +168,7 @@ private:
     XvPortID xvPortId;
     int fourccFormat;
     int displayedFourccFormat;
-    std::list<int> fourccFormatList;
+    std::vector<int> fourccFormatList;
     GC gc;
 
     // video size:
