@@ -839,6 +839,11 @@ void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int fourccForma
 				width, height,
 				&yuvShmInfo);
 
+    if (!yuvImage)
+    {
+	TRACE_THROW(std::string, << "XvShmCreateImage failed.");
+    }
+
     TRACE_DEBUG(<< std::dec << "requested: " << width << "*" << height
 		<< " got: " << yuvImage->width << "*" << yuvImage->height);
     TRACE_DEBUG(<< "yuvImage = " << std::hex << uint64_t(yuvImage));
