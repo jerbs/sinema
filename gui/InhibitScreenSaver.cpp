@@ -95,10 +95,12 @@ class XScreenSaverInterface
 
     static XErrorHandler oldErrorHandler;
     static bool gotBadWindow;
+    static unsigned long serial;
 };
 
 XErrorHandler XScreenSaverInterface::oldErrorHandler = 0;
-bool XScreenSaverInterface::gotBadWindow;
+bool XScreenSaverInterface::gotBadWindow = false;
+unsigned long XScreenSaverInterface::serial = 0;
 
 // -------------------------------------------------------------------
 
@@ -308,7 +310,8 @@ void DBusScreenSaverInterface::simulateUserActivity()
 // -------------------------------------------------------------------
 
 XScreenSaverInterface::XScreenSaverInterface(Display* display)
-    : m_xdisplay(display)
+    : m_xdisplay(display),
+      m_ScreenSaverWindow(0)
 {
     oldErrorHandler = XSetErrorHandler (errorHandler);
     findScreenSaverWindow();
@@ -321,9 +324,11 @@ XScreenSaverInterface::~XScreenSaverInterface()
 
 int XScreenSaverInterface::errorHandler(Display *dpy, XErrorEvent *error)
 {
-    if (error->error_code == BadWindow)
+    if ((error->error_code == BadWindow) &&
+	(error->serial == serial))
     {
 	// Catch BadWindow error.
+	TRACE_ERROR();
 	gotBadWindow = true;
 	return 0;
     }
@@ -342,6 +347,8 @@ void XScreenSaverInterface::findScreenSaverWindow()
     Window *children = 0;
     unsigned int nchildren;
 
+    m_ScreenSaverWindow = 0;
+
     if (! XQueryTree (m_xdisplay, window, &root, &parent, &children, &nchildren))
 	return;
 
@@ -358,6 +365,7 @@ void XScreenSaverInterface::findScreenSaverWindow()
 	    XSync (m_xdisplay, False);
 
 	    gotBadWindow = False;
+	    serial = XNextRequest(m_xdisplay);
 
 	    Atom XA_SCREENSAVER_VERSION = XInternAtom (m_xdisplay, "_SCREENSAVER_VERSION",False);
 	    Atom actual_type;
@@ -381,6 +389,7 @@ void XScreenSaverInterface::findScreenSaverWindow()
 	    if (status == Success && actual_type != None)
 	    {
 		m_ScreenSaverWindow = children[i];
+		break;
 	    }
 	}
 
@@ -400,6 +409,8 @@ void XScreenSaverInterface::simulateUserActivity()
 
     Atom XA_SCREENSAVER = XInternAtom (m_xdisplay, "SCREENSAVER", False);
     Atom XA_DEACTIVATE = XInternAtom(m_xdisplay, "DEACTIVATE", False);
+
+    serial = XNextRequest(m_xdisplay);
 
     XEvent event;
     event.xany.type = ClientMessage;
