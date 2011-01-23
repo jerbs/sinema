@@ -32,6 +32,7 @@ sinema_LDFLAGS = $(PLAYER_LIBS) \
 		 -lboost_serialization \
 		 -L/usr/X11R6/lib -lX11 -lXext -lXv \
 		 -lasound \
+		 -rdynamic \
 		 $(GUI_LIBS)
 
 About.cpp: COPYING.inc README.inc version.inc

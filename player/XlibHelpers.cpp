@@ -19,9 +19,59 @@
 //    along with Sinema.  If not, see <http://www.gnu.org/licenses/>.
 //
 
-#include "XlibHelpers.hpp"
+#include "player/XlibHelpers.hpp"
+#include "platform/Logging.hpp"
+
+#include <execinfo.h> // for backtrace
 
 using namespace std;
+
+void dumpBacktrace()
+{
+    // Call linker with option -rdynamic to see the function names
+    // in the generated backtrace.
+    // Use addr2line to get file name and line number.
+
+    // See http://www.gnu.org/s/libc/manual/html_node/Backtraces.html
+
+    const int arraySize = 100;
+    void *array[arraySize];
+    size_t size;
+    char **strings;
+    size_t i;
+    
+    size = backtrace(array, arraySize);
+    strings = backtrace_symbols(array, size);
+    
+    for (i = 0; i < size; i++)
+	TRACE_DEBUG(<< strings[i]);
+    
+    free (strings);
+}
+
+int sinema_x_error(Display*, 
+		   XErrorEvent* error)
+{
+    TRACE_ERROR( << *error);
+    dumpBacktrace();    
+
+    return 0;
+    
+}
+int sinema_x_io_error(Display*)
+{
+    TRACE_ERROR();
+    return 0;
+}
+
+void attachOwnXErrorHandler()
+{
+    // Start debugger with:
+    //    ddd --args  /home/joachim/bin/sinema --sync *
+    // and set brekpoint on sinema_x_error.
+    XSetErrorHandler(sinema_x_error);
+    XSetIOErrorHandler(sinema_x_io_error);
+}
 
 std::ostream& operator<<(std::ostream& strm, const XVisualInfo& xvi)
 {
@@ -145,5 +195,23 @@ std::ostream& operator<<(std::ostream& strm, const XvImageFormatValues& ifv)
 	     << ((ifv.scanline_order & XvBottomToTop) ? "XvBottomToTop" : "" ) << endl;
     }
 
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const XErrorEvent& xee)
+{
+    const int len = 256;
+    char buffer[len];
+
+    XGetErrorText(xee.display, xee.error_code, buffer, len);
+
+    strm.setf(ios::showbase);
+    strm << "XErrorEvent(type=" << xee.type
+	 << ", resourceid=" << xee.resourceid
+	 << ", serial=" << xee.serial
+	 << ", error_code=" << (int)xee.error_code
+	 << ", request_code=" << (int)xee.request_code 
+	 << ", minor_code=" << (int)xee.minor_code
+	 << ", " << buffer << ")";
     return strm;
 }

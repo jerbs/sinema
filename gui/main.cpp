@@ -32,6 +32,7 @@
 #include "gui/PlayListWindow.hpp"
 #include "gui/SignalDispatcher.hpp"
 #include "gui/GtkmmMediaRecorder.hpp"
+#include "player/XlibHelpers.hpp"
 
 #include <iostream>
 #include <gtkmm/main.h>
@@ -42,6 +43,8 @@ int main(int argc, char *argv[])
     TRACE_DEBUG(<< "pid = " << getpid());
 
     Gtk::Main kit(argc, argv);
+
+    attachOwnXErrorHandler();
 
     if (argc < 1)
     {
