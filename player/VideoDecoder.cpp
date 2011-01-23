@@ -440,8 +440,7 @@ void VideoDecoder::decode()
 	video_pkt_pts = avPacket.pts;
 
 	int frameFinished;
-	int ret = avcodec_decode_video(avCodecContext, avFrame, &frameFinished,
-				       avPacket.data, avPacket.size);
+	int ret = avcodec_decode_video2(avCodecContext, avFrame, &frameFinished, &avPacket);
 
 	if (ret>=0)
 	{

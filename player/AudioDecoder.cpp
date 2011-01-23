@@ -264,12 +264,17 @@ void AudioDecoder::decode()
 
 	if (avPacket.size)
 	{
+	    AVPacket avpkt;
+	    av_init_packet(&avpkt);
+	    avpkt.data = avPacket.data+posCurrentPacket;
+	    avpkt.size = avPacket.size-posCurrentPacket;
+
 	    int16_t* samples = (int16_t*)audioFrame->data();
 	    int frameByteSize = audioFrame->numAllocatedBytes();
-	    int ret = avcodec_decode_audio2(avCodecContext,
+
+	    int ret = avcodec_decode_audio3(avCodecContext,
 					    samples, &frameByteSize,
-					    avPacket.data+posCurrentPacket,
-					    avPacket.size-posCurrentPacket);
+					    &avpkt);
 	    audioFrame->setFrameByteSize(frameByteSize);
 
 	    if (ret>=0)
