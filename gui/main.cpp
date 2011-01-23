@@ -104,6 +104,10 @@ int main(int argc, char *argv[])
     mediaPlayer.notificationDuration.connect( sigc::mem_fun(&mainWindow, &MainWindow::set_duration) );
     mediaPlayer.notificationCurrentTime.connect( sigc::mem_fun(&mainWindow, &MainWindow::set_time) );
     mediaPlayer.notificationFileName.connect( sigc::mem_fun(&mainWindow, &MainWindow::set_title) );
+    mediaPlayer.resizeMainWindow.connect( sigc::mem_fun(&mainWindow, &MainWindow::resizeMainWindow) );
+
+    // Signals: MainWindow -> GtkmmMediaPlayer
+    mainWindow.signal_window_state_event().connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::on_main_window_state_event));
 
     // ---------------------------------------------------------------
     // Signals: GtkmmMediaPlayer -> SignalDispatcher
@@ -129,6 +133,8 @@ int main(int argc, char *argv[])
     signalDispatcher.signal_skip_back.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::skipBack) );
     signalDispatcher.signal_playback_volume.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::setPlaybackVolume) );
     signalDispatcher.signal_playback_switch.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::setPlaybackSwitch) );
+    signalDispatcher.zoomMainWindow.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::zoom));
+    signalDispatcher.dontZoom.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::dontZoom));
 
     // ---------------------------------------------------------------
     // Signals: ControlWindow -> SignalDispatcher
@@ -141,10 +147,6 @@ int main(int argc, char *argv[])
     // Signals: MainWindow -> SignalDispatcher
     mainWindow.signal_button_press_event().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_button_press_event));
     mainWindow.signal_window_state_event().connect(sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_main_window_state_event));
-
-    // Signals: SignalDispatcher -> MainWindow
-    signalDispatcher.zoomMainWindow.connect(sigc::mem_fun(mainWindow, &MainWindow::zoom));
-    signalDispatcher.ignoreWindowResize.connect(sigc::mem_fun(mainWindow, &MainWindow::ignoreWindowResize));
 
     // ---------------------------------------------------------------
     // Signals: GtkmmMediaPlayer -> PlayerConfigWidget

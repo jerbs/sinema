@@ -424,6 +424,9 @@ struct NotificationVideoSize
     unsigned int heightAdj;
 };
 
+std::ostream& operator<<(std::ostream& strm, const NotificationVideoSize& reason);
+std::ostream& operator<<(std::ostream& strm, const NotificationVideoSize::Reason& reason);
+
 struct NotificationClipping
 {
     // Values are video pixels.

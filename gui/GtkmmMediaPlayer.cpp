@@ -58,7 +58,12 @@ Glib::Dispatcher GtkmmMediaPlayer::m_dispatcher;
 GtkmmMediaPlayer::GtkmmMediaPlayer(PlayList& playList)
     : MediaPlayer(playList),
       m_blankGdkCursor(gdk_cursor_new(GDK_BLANK_CURSOR)),
-      m_blankCursor(Gdk::Cursor(m_blankGdkCursor))
+      m_blankCursor(Gdk::Cursor(m_blankGdkCursor)),
+      m_fullscreen(false),
+      m_video_width(0),
+      m_video_height(0),
+      m_video_zoom(1),
+      m_zoom_enabled(true)
 {
     MediaPlayerThreadNotification::setCallback(&notifyGuiThread);
     m_dispatcher.connect(sigc::mem_fun(this, &MediaPlayer::processEventQueue));
@@ -116,7 +121,105 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationCurrentVolume> even
 
 void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationVideoSize> event)
 {
+    TRACE_DEBUG( << *event);
+
+    m_video_width = event->widthAdj;
+    m_video_height = event->heightAdj;
+
+    switch(event->reason)
+    {
+    case NotificationVideoSize::VideoSizeChanged:
+	zoom(1);
+	break;
+
+    case NotificationVideoSize::WindowSizeChanged:
+	// ignore this event.
+	break;
+
+    case NotificationVideoSize::ClippingChanged:
+	dontZoom();
+	break;
+    }
+
     notificationVideoSize(*event);
+}
+
+bool GtkmmMediaPlayer::on_main_window_state_event(GdkEventWindowState* event)
+{
+    // This method is called when fullscreen mode is entered or left. This
+    // may be triggered by the application itself or by the window manager.
+
+    m_fullscreen = event->new_window_state & GDK_WINDOW_STATE_FULLSCREEN;
+    TRACE_DEBUG("m_fullscreen = " << m_fullscreen);
+
+    return false;
+}
+
+void GtkmmMediaPlayer::on_size_allocate(Gtk::Allocation& allocation)
+{
+    Gtk::DrawingArea::on_size_allocate(allocation);
+
+    int width =allocation.get_width();
+    int height = allocation.get_height();
+
+    TRACE_DEBUG( << "(" << width << "," << height << ")");
+
+    if (m_zoom_enabled && !m_fullscreen)
+    {
+	// Here the user resized the window with the window manager.
+	// Calculate the new zoom factor.
+
+	const double xzoom = round(double(width)  / double(m_video_width) * 100) / 100;
+	// const double yzoom = round(double(height) / double(m_video_height)* 100) / 100;
+
+	TRACE_DEBUG( << "zoom: " << m_video_zoom * 100 << "% -> " << xzoom * 100 << "%");
+	m_video_zoom = xzoom;
+    }
+}
+
+void GtkmmMediaPlayer::dontZoom()
+{
+    TRACE_DEBUG();
+
+    m_zoom_enabled = false;
+    resizeWindow();
+
+    Glib::signal_idle().connect( sigc::mem_fun(*this, &GtkmmMediaPlayer::on_idle) );
+}
+
+void GtkmmMediaPlayer::zoom(double percent)
+{
+    // Change zoom factor and window size.
+
+    TRACE_DEBUG( << "zoom: " << m_video_zoom * 100 << "% -> " << percent * 100 << "%");
+    m_video_zoom = percent;
+    resizeWindow();
+}
+
+void GtkmmMediaPlayer::resizeWindow()
+{
+    int video_width_zoomed  = m_video_width  * m_video_zoom;
+    int video_height_zoomed = m_video_height * m_video_zoom;
+
+    TRACE_DEBUG( << "size request: (" << video_width_zoomed << "," << video_height_zoomed << ")");
+
+    set_size_request(video_width_zoomed, video_height_zoomed);
+    resizeMainWindow();
+
+    Glib::signal_idle().connect( sigc::mem_fun(*this, &GtkmmMediaPlayer::on_idle) );
+}
+
+bool GtkmmMediaPlayer::on_idle()
+{
+    TRACE_DEBUG();
+
+    // Resize is finished. Allow user to shrink window again:
+    set_size_request(-1,-1);
+
+    m_zoom_enabled = true;
+
+    // Remove idle callback:
+    return false;
 }
 
 void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationClipping> event)

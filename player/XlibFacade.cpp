@@ -494,7 +494,7 @@ void XFVideo::calculateDestinationArea(NotificationVideoSize::Reason reason)
     // pixel aspect ratio:
     double par = double(parNum)/double(parDen);
 
-    TRACE_DEBUG( << "par = " << par);
+    TRACE_DEBUG( << "reason = " << reason << ", par = " << par);
 
     // Keep aspect ratio:
     double ratio = par*double(widthSrc)/double(heightSrc);
@@ -579,6 +579,13 @@ void XFVideo::show()
 
         if (m_noClippingNeeded || m_useXvClipping)
 	{
+#if 0
+	    TRACE_DEBUG(<< m_display << ", " << xvPortId << ", " << m_window << ", " 
+			<< gc << ", " << *(m_displayedImage->xvImage()) << ", ("
+			<< leftSrc << ", " <<  topSrc << ", " <<  widthSrc << ", " <<  heightSrc << ")("
+			<< leftDest << ", " << topDest << ", " << widthDest << ", " << heightDest << ")");
+#endif
+
 	    // Display srcArea of yuvImage on destArea of Drawable window:
 	    XvShmPutImage(m_display, xvPortId, m_window, gc, m_displayedImage->xvImage(),
 			  leftSrc,  topSrc,  widthSrc,  heightSrc,     // srcArea  (x,y,w,h)
@@ -1079,3 +1086,36 @@ DeleteXFVideoImage::~DeleteXFVideoImage()
 }
 
 // -------------------------------------------------------------------
+
+std::ostream& operator<<(std::ostream& strm, const NotificationVideoSize& nvs)
+{
+    strm << std::dec << nvs.reason << ","
+	 << "vid(" << nvs.widthVid << "," << nvs.heightVid << ")"
+	 << "win(" << nvs.widthWin << "," << nvs.heightWin << ")"
+	 << "dst(" << nvs.widthDst << "," << nvs.heightDst << ")"
+	 << "src(" << nvs.widthSrc << "," << nvs.heightSrc << ")"
+	 << "adj(" << nvs.widthAdj << "," << nvs.heightAdj << ")";
+
+    return strm;
+}
+
+std::ostream& operator<<(std::ostream& strm, const NotificationVideoSize::Reason& reason)
+{
+    switch (reason)
+    {
+    case NotificationVideoSize::VideoSizeChanged:
+	strm << "VidSizeChanged";
+	break;
+    case NotificationVideoSize::WindowSizeChanged:
+	strm << "WinSizeChanged";
+	break;
+    case NotificationVideoSize::ClippingChanged:
+	strm << "ClippingModified";
+	break;
+    default:
+	strm << int(reason);
+	break;
+    }
+
+    return strm;
+}

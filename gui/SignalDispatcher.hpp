@@ -50,7 +50,7 @@ public:
     sigc::signal<void, bool> showPlayListWindow;
     sigc::signal<void> hideMainWindow;
     sigc::signal<void, double> zoomMainWindow;
-    sigc::signal<void> ignoreWindowResize;
+    sigc::signal<void> dontZoom;
 
     sigc::signal<void, double> signal_seek_absolute;
     sigc::signal<void, double> signal_seek_relative;

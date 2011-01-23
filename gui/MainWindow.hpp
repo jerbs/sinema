@@ -46,30 +46,19 @@ public:
     void set_duration(double seconds);
     void set_time(double seconds);
     void set_title(Glib::ustring title);
-    void zoom(double percent);
     void ignoreWindowResize();
+    void resizeMainWindow();
 
 private:
     virtual void on_hide_window();
-    bool on_main_window_state_event(GdkEventWindowState* event);
 
     //Child widgets:
     Gtk::VBox m_Box;
-    Gtk::Label m_Label;
-    Gtk::Menu* m_pMenuPopup;
-    GtkmmMediaPlayer& m_GtkmmMediaPlayer;
-    Gtk::Statusbar& m_StatusBar;
     Gtk::Label m_LabelStatusBarDuration;
     Gtk::Label m_LabelStatusBarTime;
     Gtk::Label m_LabelStatusBarSize;
     Gtk::Label m_LabelStatusBarZoom;
     Gtk::HScrollbar m_ScrollbarPosition;
-
-    NotificationVideoSize m_VideoSize;
-
-    double m_video_zoom;
-    bool m_fullscreen;
-    timespec_t m_ignore_window_size_change;
 };
 
 #endif

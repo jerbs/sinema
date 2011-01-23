@@ -678,7 +678,7 @@ void SignalDispatcher::on_view_normal_mode()
 {
     on_view_leave_fullscreen();
 
-    ignoreWindowResize();
+    dontZoom();
 
     m_visibleWindow.menuBar = true;
     m_visibleWindow.toolBar = true;
@@ -698,7 +698,7 @@ void SignalDispatcher::on_view_tv_mode()
 {
     on_view_leave_fullscreen();
 
-    ignoreWindowResize();
+    dontZoom();
 
     m_visibleWindow.menuBar = false;
     m_visibleWindow.toolBar = false;
@@ -963,7 +963,7 @@ void SignalDispatcher::on_view_menubar()
     Gtk::Widget* pMenubar = getMenuBarWidget();
     if(pMenubar)
     {
-	ignoreWindowResize();
+	dontZoom();
 
 	if (( m_visible->menuBar = m_refMenuBarVisible->get_active() ))
 	{
@@ -983,7 +983,7 @@ void SignalDispatcher::on_view_toolbar()
     Gtk::Widget* pToolbar = getToolBarWidget();
     if (pToolbar)
     {
-	ignoreWindowResize();
+	dontZoom();
 
 	if (( m_visible->toolBar = m_refToolBarVisible->get_active() ))
 	{
@@ -1000,7 +1000,7 @@ void SignalDispatcher::on_view_toolbar()
 
 void SignalDispatcher::on_view_statusbar()
 {
-    ignoreWindowResize();
+    dontZoom();
 
     if (( m_visible->statusBar = m_refStatusBarVisible->get_active() ))
     {

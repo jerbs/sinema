@@ -198,6 +198,19 @@ std::ostream& operator<<(std::ostream& strm, const XvImageFormatValues& ifv)
     return strm;
 }
 
+std::ostream& operator<<(std::ostream& strm, const XvImage& xi)
+{
+    strm.setf(ios::showbase);
+    strm << "XvImage(id=" << std::hex << xi.id << std::dec;
+    strm << ", width=" << xi.width;
+    strm << ", height=" << xi.height;
+    strm << ", data_size=" << xi.data_size;
+    strm << ", num_planes=" << xi.num_planes << ")";
+    // strm << " = " <<  << endl;
+
+    return strm;
+}
+
 std::ostream& operator<<(std::ostream& strm, const XErrorEvent& xee)
 {
     const int len = 256;

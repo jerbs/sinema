@@ -78,6 +78,7 @@ std::ostream& operator<<(std::ostream& strm, const XvAdaptorInfo& ai);
 std::ostream& operator<<(std::ostream& strm, const XvEncodingInfo& ei);
 std::ostream& operator<<(std::ostream& strm, const XvAttribute& att);
 std::ostream& operator<<(std::ostream& strm, const XvImageFormatValues& ifv);
+std::ostream& operator<<(std::ostream& strm, const XvImage& xi);
 std::ostream& operator<<(std::ostream& strm, const XErrorEvent& xee);
 
 const XvPortID INVALID_XV_PORT_ID = -1;
