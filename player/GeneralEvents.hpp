@@ -372,6 +372,8 @@ struct NotificationFileInfo
     int64_t file_size;
 };
 
+std::ostream& operator<<(std::ostream& strm, const NotificationFileInfo& nfi);
+
 struct NotificationCurrentTime
 {
     NotificationCurrentTime(double time)

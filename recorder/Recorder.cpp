@@ -387,9 +387,10 @@ void Recorder::closePvrReader()
 void Recorder::updateDuration()
 {
     TRACE_DEBUG();
-
+    return;
     if (m_avFormatContext)
     {
+	openPvrReader();
 	int ret = av_find_stream_info(m_avFormatContext);
 	if (ret < 0)
 	{
@@ -404,6 +405,7 @@ void Recorder::updateDuration()
 	nfi->fileName = m_tmpFile;
 	nfi->duration = double(m_avFormatContext->duration) * INV_AV_TIME_BASE;
 	nfi->file_size = m_avFormatContext->file_size;
+	TRACE_DEBUG(<< "NotificationFileInfo = " << *nfi);
 	mediaRecorder->queue_event(nfi);
     }
     else

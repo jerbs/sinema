@@ -410,3 +410,13 @@ std::ostream& operator<<(std::ostream& strm, OpenFileFail::Reason reason)
 
     return strm;
 }
+
+std::ostream& operator<<(std::ostream& strm, const NotificationFileInfo& nfi)
+{
+    strm << "("
+	 << nfi.fileName << " "
+	 << nfi.duration << "sec "
+	 << nfi.file_size << "byte)";
+
+    return strm;
+}
