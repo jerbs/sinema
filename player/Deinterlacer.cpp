@@ -102,17 +102,33 @@ void Deinterlacer::process(std::unique_ptr<XFVideoImage> event)
 {
     TRACE_DEBUG(<< m_interlacedImages.size() << ", " << m_emptyImages.size());
 
-    if (m_nextImageHasContent)
-	m_interlacedImages.push_back(std::move(event));
-    else
-	m_emptyImages.push(std::move(event));
-
-    m_nextImageHasContent = !m_nextImageHasContent;
-
-    if ( m_interlacedImages.size() >= 3 &&
-	 !m_emptyImages.empty() )
+    if (m_deinterlacer)
     {
-	deinterlace();
+	// Deinterlacer enabled:
+
+	if (m_nextImageHasContent)
+	    m_interlacedImages.push_back(std::move(event));
+	else
+	    m_emptyImages.push(std::move(event));
+
+	m_nextImageHasContent = !m_nextImageHasContent;
+
+	if ( m_interlacedImages.size() >= 3 &&
+	     !m_emptyImages.empty() )
+	{
+	    deinterlace();
+	}
+    }
+    else
+    {
+	// Deinterlacer disabled:
+
+	if (m_nextImageHasContent)
+	    videoOutput->queue_event(std::move(event));
+	else
+	    videoDecoder->queue_event(std::move(event));
+
+	m_nextImageHasContent = !m_nextImageHasContent;
     }
 }
 
@@ -197,11 +213,36 @@ void Deinterlacer::process(boost::shared_ptr<SelectDeinterlacer> event)
 {
     TRACE_DEBUG();
 
+    if (event->name.empty())
+    {
+	// Disable deinterlacer:
+	m_deinterlacer = 0;
+
+	// Forward all queued interlaced images to VideoOutput:
+	while(!m_interlacedImages.empty())
+	{
+	    std::unique_ptr<XFVideoImage> image(std::move(m_interlacedImages.front()));
+	    m_interlacedImages.pop_front();
+	    videoOutput->queue_event(std::move(image));
+	}
+
+	// Send all queued empty frames pack to VideoDecoder:
+	while(!m_emptyImages.empty())
+	{
+	    std::unique_ptr<XFVideoImage> image(std::move(m_emptyImages.front()));
+	    m_emptyImages.pop();
+	    videoDecoder->queue_event(std::move(image));
+	}
+
+	return;
+    }
+
     int i = 0;
     while (deinterlace_method_t* dim = get_deinterlace_method(i))
     {
 	if (event->name == dim->name)
 	{
+	    // Enable/Select deinterlacer:
 	    m_deinterlacer = dim;
 	    TRACE_DEBUG(<< "Setting " << dim->name);
 	    return;

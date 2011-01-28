@@ -50,6 +50,7 @@ public:
     void on_deinterlacer_list(const NotificationDeinterlacerList&);
 
 private:
+    void on_enableDeinterlacer_toggled();
     void on_deinterlacer_changed();
     void on_useOptimalPixelFormat_toggled();
     void on_useXvClipping_toggled();
@@ -57,8 +58,8 @@ private:
     void selectConfiguredDeinterlacer();
 
     Gtk::Frame m_FrameDeinterlacer;
-    Gtk::HBox m_HBoxDeinterlacer;
-    Gtk::Label m_LabelDeinterlacer; 
+    Gtk::VBox m_VBoxDeinterlacer;
+    Gtk::CheckButton m_EnableDeinterlacer;
     Gtk::ComboBox m_ComboBoxDeinterlacer;
 
     class ModelColumnsCombo : public Gtk::TreeModel::ColumnRecord

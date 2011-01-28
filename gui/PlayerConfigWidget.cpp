@@ -26,7 +26,7 @@
 
 PlayerConfigWidget::PlayerConfigWidget()
     : m_FrameDeinterlacer("Deinterlacer"),
-      m_LabelDeinterlacer("Deinterlacer"),
+      m_EnableDeinterlacer("Enable deinterlacer"),
       m_FramePixelFormat("Pixel Format"),
       m_UseOptimalPixelFormat("Use optimal pixel format"),
       m_UseXvClipping("Use Xv clipping")
@@ -35,11 +35,11 @@ PlayerConfigWidget::PlayerConfigWidget()
     set_border_width(4);
 
     pack_start(m_FrameDeinterlacer, Gtk::PACK_SHRINK);
-    m_FrameDeinterlacer.add(m_HBoxDeinterlacer);
-    m_HBoxDeinterlacer.set_spacing(10);
-    m_HBoxDeinterlacer.set_border_width(5);
-    m_HBoxDeinterlacer.pack_start(m_LabelDeinterlacer, Gtk::PACK_SHRINK);
-    m_HBoxDeinterlacer.pack_start(m_ComboBoxDeinterlacer, Gtk::PACK_EXPAND_WIDGET);
+    m_FrameDeinterlacer.add(m_VBoxDeinterlacer);
+    m_VBoxDeinterlacer.set_spacing(0);
+    m_VBoxDeinterlacer.set_border_width(5);
+    m_VBoxDeinterlacer.pack_start(m_EnableDeinterlacer, Gtk::PACK_SHRINK);
+    m_VBoxDeinterlacer.pack_start(m_ComboBoxDeinterlacer, Gtk::PACK_EXPAND_WIDGET);
     m_refTreeModelComboDeinterlacer = Gtk::ListStore::create(m_ColumnsCombo);
     m_ComboBoxDeinterlacer.set_model(m_refTreeModelComboDeinterlacer);
     m_ComboBoxDeinterlacer.pack_start(m_ColumnsCombo.m_col_name);
@@ -52,6 +52,7 @@ PlayerConfigWidget::PlayerConfigWidget()
     m_VBoxPixelFormat.pack_start(m_UseXvClipping, Gtk::PACK_SHRINK);
 
     // Signals:
+    m_EnableDeinterlacer.signal_toggled().connect(sigc::mem_fun(this, &PlayerConfigWidget::on_enableDeinterlacer_toggled) );
     m_ComboBoxDeinterlacer.signal_changed().connect(sigc::mem_fun(this, &PlayerConfigWidget::on_deinterlacer_changed) );
     m_UseOptimalPixelFormat.signal_toggled().connect(sigc::mem_fun(this, &PlayerConfigWidget::on_useOptimalPixelFormat_toggled) );
     m_UseXvClipping.signal_toggled().connect(sigc::mem_fun(this, &PlayerConfigWidget::on_useXvClipping_toggled) );
@@ -67,6 +68,7 @@ void PlayerConfigWidget::on_configuration_data_loaded(boost::shared_ptr<Configur
 
     m_ConfigurationData = event;
 
+    m_EnableDeinterlacer.set_active(m_ConfigurationData->configPlayer.enableDeinterlacer);
     m_UseOptimalPixelFormat.set_active(m_ConfigurationData->configPlayer.useOptimalPixelFormat);
     m_UseXvClipping.set_active(m_ConfigurationData->configPlayer.useXvClipping);
 
@@ -102,6 +104,37 @@ void PlayerConfigWidget::on_deinterlacer_list(const NotificationDeinterlacerList
     if (m_ConfigurationData)
     {
 	selectConfiguredDeinterlacer();
+    }
+}
+void PlayerConfigWidget::on_enableDeinterlacer_toggled()
+{
+    TRACE_DEBUG();
+
+    bool active = m_EnableDeinterlacer.get_active();
+
+    if (active)
+    {
+	Gtk::TreeModel::iterator iter = m_ComboBoxDeinterlacer.get_active();
+	if (iter)
+	{
+	    Gtk::TreeRow row = *iter;
+	    Glib::ustring n = row[m_ColumnsCombo.m_col_name];
+	    const std::string name = n;
+	    signalSelectDeinterlacer(name);
+	}
+    }
+    else
+    {
+	signalSelectDeinterlacer(std::string());
+    }
+
+    if (m_ConfigurationData)
+    {
+	if (m_ConfigurationData->configPlayer.enableDeinterlacer != active)
+	{
+	    m_ConfigurationData->configPlayer.enableDeinterlacer = active;
+	    signalConfigurationDataChanged(m_ConfigurationData);
+	}
     }
 }
 

@@ -68,6 +68,7 @@ BOOST_FUSION_ADAPT_STRUCT(ConfigurationGui,
 BOOST_FUSION_ADAPT_STRUCT(ConfigurationPlayer,
 			  (bool, useOptimalPixelFormat)
 			  (bool, useXvClipping)
+			  (bool, enableDeinterlacer)
 			  (std::string, deinterlacer));
 
 BOOST_FUSION_ADAPT_STRUCT(ConfigurationData,
@@ -116,6 +117,7 @@ std::ostream& operator<<(std::ostream& strm, const ConfigurationPlayer& cp)
 {
     strm << "useOptimalPixelFormat = " << cp.useOptimalPixelFormat << std::endl;
     strm << "useXvClipping = " << cp.useXvClipping << std::endl;
+    strm << "enableDeinterlacer = " << cp.enableDeinterlacer << std::endl;
     strm << "deinterlacer = " << cp.deinterlacer << std::endl;
     return strm;
 }
@@ -179,6 +181,7 @@ struct config_parser : qi::grammar<ForwardIterator, ConfigurationData(), ascii::
             >> '{'
             >> ( ( lit("useOptimalPixelFormat") >> '=' >> bool_ >> ';' ) ^
 		 ( lit("useXvClipping") >> '=' >> bool_ >> ';' ) ^
+		 ( lit("enableDeinterlacer") >> '=' >> bool_ >> ';' ) ^
 		 ( lit("deinterlacer") >> '=' >> quoted_string >> ';' ) )
             >> '}' >> ";";
 
@@ -236,6 +239,7 @@ struct config_generator : karma::grammar<OutputIterator, ConfigurationData()>
             << "{\n"
             << lit("    useOptimalPixelFormat") << " = " << bool_ << ";\n"
 	    << lit("    useXvClipping") << " = " << bool_ << ";\n"
+	    << lit("    enableDeinterlacer") << " = " << bool_ << ";\n"
 	    << lit("    deinterlacer") << " = " << quoted_string << ";\n"
             << "};\n";
 

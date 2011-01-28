@@ -53,6 +53,9 @@ struct ConfigurationFileWritten
 
 struct StationData
 {
+    StationData()
+	: fine(0)
+    {}
     std::string name;
     std::string standard;
     std::string channel;
@@ -68,7 +71,6 @@ struct ConfigurationGuiVisible
 	  toolBar(toolBar),
 	  statusBar(statusBar)
     {}
-
     bool menuBar;
     bool toolBar;
     bool statusBar;
@@ -94,8 +96,14 @@ struct ConfigurationGui
 
 struct ConfigurationPlayer
 {
+    ConfigurationPlayer()
+	: useOptimalPixelFormat(true),
+	  useXvClipping(true),
+	  enableDeinterlacer(true)
+    {}
     bool useOptimalPixelFormat;
     bool useXvClipping;
+    bool enableDeinterlacer;
     std::string deinterlacer;
 };
 
