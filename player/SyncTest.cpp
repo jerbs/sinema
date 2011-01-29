@@ -52,10 +52,11 @@ void SyncTest::process(boost::shared_ptr<StartTest> event)
 {
     m_conf = *event;
 
-    boost::shared_ptr<OpenAudioOutputReq> audiReq(new OpenAudioOutputReq());
-    audiReq->sample_rate = event->sample_rate;
-    audiReq->channels = event->channels;
-    audiReq->frame_size = event->sample_rate * event->channels * 2;
+    boost::shared_ptr<OpenAudioOutputReq>
+	audiReq(new OpenAudioOutputReq(event->sample_rate,
+				       event->channels,
+				       SAMPLE_FMT_S16,
+				       event->sample_rate * event->channels * 2));
     audioOutput->queue_event(audiReq);
 
     boost::shared_ptr<OpenVideoOutputReq> videoReq(new OpenVideoOutputReq(m_conf.width, m_conf.height,

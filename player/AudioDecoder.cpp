@@ -60,11 +60,11 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 		{
 		    avStream = avFormatContext->streams[audioStreamIndex];
 
-		    boost::shared_ptr<OpenAudioOutputReq> req(new OpenAudioOutputReq());
-		    req->sample_rate = avCodecContext->sample_rate;
-		    req->channels = avCodecContext->channels;
-		    req->sample_format = avCodecContext->sample_fmt;
-		    req->frame_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
+		    boost::shared_ptr<OpenAudioOutputReq>
+			req(new OpenAudioOutputReq(avCodecContext->sample_rate,
+						   avCodecContext->channels,
+						   avCodecContext->sample_fmt,
+						   AVCODEC_MAX_AUDIO_FRAME_SIZE));
 		    audioOutput->queue_event(req);
 
 		    state = Opening;

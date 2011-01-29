@@ -251,6 +251,15 @@ struct ConfirmVideoPacketEvent
 
 struct OpenAudioOutputReq
 {
+    OpenAudioOutputReq(unsigned int sample_rate,
+		       unsigned int channels,
+		       SampleFormat sample_format,
+		       unsigned int frame_size)
+	: sample_rate(sample_rate),
+	  channels(channels),
+	  sample_format(sample_format),
+	  frame_size(frame_size)
+    {}
     unsigned int sample_rate;
     unsigned int channels;
     SampleFormat sample_format;
