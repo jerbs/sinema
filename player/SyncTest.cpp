@@ -42,7 +42,8 @@ SyncTest::~SyncTest()
 
 void SyncTest::process(boost::shared_ptr<InitEvent> event)
 {
-    TRACE_DEBUG();
+    TRACE_DEBUG(<< "tid = " << gettid());
+
     audioOutput = event->audioOutput;
     videoOutput = event->videoOutput;
 }
@@ -74,8 +75,10 @@ void SyncTest::process(std::unique_ptr<XFVideoImage> event)
 	event->height() != m_conf.height ||
 	event->xvImage()->id != m_conf.imageFormat )
     {
-	// Delete frame with wrong size and or format by not queuing it
-	// and request a new frame with correct size and format.
+	// Delete frame with wrong size and or format in X11 thread:
+	videoOutput->queue_event(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(event))));
+
+	// Request a new frame with correct size and format.
 	videoOutput->queue_event(boost::make_shared<ResizeVideoOutputReq>(m_conf.width, m_conf.height,
 									  1, 1, m_conf.imageFormat));
 	return;

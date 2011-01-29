@@ -1015,7 +1015,7 @@ void XFVideoImage::createDemoImage()
 {
     int w = width();
     int h = height();
-    std::cout << "size = " << std::dec << w << ", " << h << ", 0x" << std::hex << yuvImage->id << std::endl;
+    std::cout << "size = " << std::dec << w << ", " << h << ", 0x" << std::hex << yuvImage->id << std::dec << std::endl;
 
     if (yuvImage->id == GUID_YUV12_PLANAR)
     {
