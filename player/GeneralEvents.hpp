@@ -33,6 +33,7 @@
 #define Demuxer SyncTest
 #define AudioDecoder SyncTest
 #define VideoDecoder SyncTest
+#define Deinterlacer SyncTest
 
 #define MediaPlayerThreadNotification NoTrigger
 
@@ -41,6 +42,7 @@
 #define DEMUXER_HPP
 #define AUDIO_DECODER_HPP
 #define VIDEO_DECODER_HPP
+#define DEINTERLACER_HPP
 
 #endif
 

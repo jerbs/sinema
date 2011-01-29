@@ -21,6 +21,7 @@
 
 #include "player/VideoOutput.hpp"
 #include "player/VideoDecoder.hpp"
+#include "player/Deinterlacer.hpp"
 #include "player/MediaPlayer.hpp"
 #include "player/Demuxer.hpp"
 #include "player/XlibFacade.hpp"
@@ -66,6 +67,7 @@ void VideoOutput::process(boost::shared_ptr<InitEvent> event)
 	mediaPlayer = event->mediaPlayer;
 	demuxer = event->demuxer;
 	videoDecoder = event->videoDecoder;
+	deinterlacer = event->deinterlacer;
 
 	state = INIT;
     }
@@ -527,4 +529,5 @@ void VideoOutput::sendNotificationVideoSize(boost::shared_ptr<NotificationVideoS
 void VideoOutput::sendNotificationClipping(boost::shared_ptr<NotificationClipping> event)
 {
     mediaPlayer->queue_event(event);
+    deinterlacer->queue_event(event);
 }

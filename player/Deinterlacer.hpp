@@ -46,6 +46,9 @@ class Deinterlacer : public event_receiver<Deinterlacer>
     bool m_nextImageHasContent;
     bool m_topField;
 
+    int m_clippingTop;
+    int m_clippingBottom;
+
 public:
     Deinterlacer(event_processor_ptr_type evt_proc);
     ~Deinterlacer();
@@ -66,6 +69,8 @@ private:
     void process(boost::shared_ptr<EndOfVideoStream> event);
 
     void process(boost::shared_ptr<SelectDeinterlacer> event);
+
+    void process(boost::shared_ptr<NotificationClipping> event);
 
     void deinterlace();
 

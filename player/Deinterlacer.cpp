@@ -38,7 +38,9 @@ Deinterlacer::Deinterlacer(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
       m_topFieldFirst(true),
       m_nextImageHasContent(true),
-      m_topField(true)
+      m_topField(true),
+      m_clippingTop(0),
+      m_clippingBottom(1080)
 {
     setup_copyfunctions(MM_ACCEL_X86_MMXEXT);
 
@@ -93,6 +95,8 @@ void Deinterlacer::process(boost::shared_ptr<CloseVideoOutputReq> event)
     m_topFieldFirst = true;
     m_nextImageHasContent = true;
     m_topField = true;
+    m_clippingTop = 0;
+    m_clippingBottom = 1080;
 
     // Forward CloseVideoOutputReq to VideoOutput:
     videoOutput->queue_event(event);
@@ -253,6 +257,14 @@ void Deinterlacer::process(boost::shared_ptr<SelectDeinterlacer> event)
     TRACE_ERROR(<< "Deinterlacer " << event->name << " not found.");
 }
 
+void Deinterlacer::process(boost::shared_ptr<NotificationClipping> event)
+{
+    TRACE_DEBUG();
+
+    m_clippingTop = event->top;
+    m_clippingBottom = event->bottom;
+}
+
 // -------------------------------------------------------------------
 
 static inline uint8_t* getLineAddr(XvImage* yuvImage, int line)
@@ -327,8 +339,10 @@ struct LineOffsets<2>   // bottom most line
 template<int n>
 static inline void copyLine(deinterlace_copy_scanline_t copy, int line, XvImage* yuvImage,
 			    XvImage* field0, XvImage* field1, XvImage* field2, XvImage* field3,
-			    bool bottomField)
+			    bool bottomField, int clippingTop, int clippingBottom)
 {
+    if (line<clippingTop) return;
+    if (line>clippingBottom) return;
     uint8_t* out = getLineAddr(yuvImage, line);
     uint8_t* tt0 = getLineAddr(field0, line + LineOffsets<n>::tt);
     uint8_t* m0  = getLineAddr(field0, line);
@@ -351,8 +365,10 @@ static inline void copyLine(deinterlace_copy_scanline_t copy, int line, XvImage*
 template<int n>
 static inline void intpLine(deinterlace_interp_scanline_t intp, int line, XvImage* yuvImage,
 			    XvImage* field0, XvImage* field1, XvImage* field2, XvImage* field3,
-			    bool bottomField)
+			    bool bottomField, int clippingTop, int clippingBottom)
 {
+    if (line<clippingTop) return;
+    if (line>clippingBottom) return;
     uint8_t* out = getLineAddr(yuvImage, line);
     uint8_t* t0  = getLineAddr(field0, line + LineOffsets<n>::t);
     uint8_t* b0  = getLineAddr(field0, line + LineOffsets<n>::b);
@@ -393,6 +409,8 @@ void Deinterlacer::deinterlace()
     deinterlace_copy_scanline_t   copy = m_deinterlacer->copy_scanline;
 
     XvImage *field0, *field1, *field2, *field3;
+    int& ctop = m_clippingTop;
+    int& cbot = m_clippingBottom;
 
     if (m_topField == m_topFieldFirst)
     {
@@ -419,58 +437,58 @@ void Deinterlacer::deinterlace()
     {
 	// Field 0 is a top field:
 	int line = 0;
-	copyLine<-2>(copy, line, yuvImage, field0, field1, field2, field3, false);
+	copyLine<-2>(copy, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
 	line++;
-	intpLine<-1>(intp, line, yuvImage, field0, field1, field2, field3, false);
+	intpLine<-1>(intp, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
 	line++;
 
 	while (line < h-3)
 	{
-	    copyLine<0>(copy, line, yuvImage, field0, field1, field2, field3, false);
+	    copyLine<0>(copy, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
 	    line++;
-	    intpLine<0>(intp, line, yuvImage, field0, field1, field2, field3, false);
+	    intpLine<0>(intp, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
 	    line++;
 	}
 
 	if (line == h-2)
 	{
-	    copyLine<1>(copy, line, yuvImage, field0, field1, field2, field3, false);
-	    intpLine<2>(intp, line, yuvImage, field0, field1, field2, field3, false);
+	    copyLine<1>(copy, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
+	    intpLine<2>(intp, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
 	}
 	else
 	{
-	    copyLine<0>(copy, line, yuvImage, field0, field1, field2, field3, false);
-	    intpLine<1>(intp, line, yuvImage, field0, field1, field2, field3, false);
-	    copyLine<2>(copy, line, yuvImage, field0, field1, field2, field3, false);
+	    copyLine<0>(copy, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
+	    intpLine<1>(intp, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
+	    copyLine<2>(copy, line, yuvImage, field0, field1, field2, field3, false, ctop, cbot);
 	}
     }
     else
     {
 	// Field 0 is a bottom field:
 	int line = 0;
-	intpLine<-2>(intp, line, yuvImage, field0, field1, field2, field3, true);
+	intpLine<-2>(intp, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
 	line++;
-	copyLine<-1>(copy, line, yuvImage, field0, field1, field2, field3, true);
+	copyLine<-1>(copy, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
 	line++;
 
 	while (line < h-3)
 	{
-	    intpLine<0>(intp, line, yuvImage, field0, field1, field2, field3, true);
+	    intpLine<0>(intp, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
 	    line++;
-	    copyLine<0>(copy, line, yuvImage, field0, field1, field2, field3, true);
+	    copyLine<0>(copy, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
 	    line++;
 	}
 
 	if (line == h-2)
 	{
-	    intpLine<1>(intp, line, yuvImage, field0, field1, field2, field3, true);
-	    copyLine<2>(copy, line, yuvImage, field0, field1, field2, field3, true);
+	    intpLine<1>(intp, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
+	    copyLine<2>(copy, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
 	}
 	else
 	{
-	    intpLine<0>(intp, line, yuvImage, field0, field1, field2, field3, true);
-	    copyLine<1>(copy, line, yuvImage, field0, field1, field2, field3, true);
-	    intpLine<2>(intp, line, yuvImage, field0, field1, field2, field3, true);
+	    intpLine<0>(intp, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
+	    copyLine<1>(copy, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
+	    intpLine<2>(intp, line, yuvImage, field0, field1, field2, field3, true, ctop, cbot);
 	}
     }
 

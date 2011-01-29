@@ -270,6 +270,7 @@ void SyncTestApp::sendInitEvents()
      initEvent->demuxer = test;
      initEvent->videoDecoder = test;
      initEvent->audioDecoder = test;
+     initEvent->deinterlacer = test;
      initEvent->videoOutput = videoOutput;
      initEvent->audioOutput = audioOutput;
 

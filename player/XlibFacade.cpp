@@ -471,6 +471,9 @@ void XFVideo::resize(unsigned int width, unsigned int height,
     heightSrc = height;
     m_noClippingNeeded = true;
 
+    sendNotificationClipping(boost::make_shared<NotificationClipping>
+			     (leftSrc, leftSrc+widthSrc, topSrc, topSrc+heightSrc));
+
     // Sample aspect ratio:
     this->parNum = parNum;
     this->parDen = parDen;

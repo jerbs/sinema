@@ -64,7 +64,7 @@ private:
     void process(boost::shared_ptr<AudioFrame> event);
     void process(  std::unique_ptr<XFVideoImage> event);
 
-    // Stubs for MediaPlayer, Demuxer, AudioDecoder and VideoDecoder:
+    // Stubs for MediaPlayer, Demuxer, AudioDecoder, VideoDecoder and Deinterlacer:
     void process(boost::shared_ptr<OpenAudioOutputResp>) {}
     void process(boost::shared_ptr<CloseAudioOutputResp>) {}
     void process(boost::shared_ptr<OpenVideoOutputResp>) {}
