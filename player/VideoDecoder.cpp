@@ -46,6 +46,8 @@ VideoDecoder::VideoDecoder(event_processor_ptr_type evt_proc)
       avFrameIsFree(true),
       pts(0),
       m_fourccFormat(0),
+      m_dstWidth(0),
+      m_dstHeight(0),
       eos(false),
       swsContext(0),
       m_topFieldFirst(true),
@@ -282,6 +284,9 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp>)
 	    swsContext = 0;
 	}
 
+	m_dstWidth = 0;
+	m_dstHeight = 0;
+
 	demuxer->queue_event(boost::make_shared<CloseVideoStreamResp>());
 
 	state = Closed;
@@ -306,19 +311,19 @@ void VideoDecoder::process(std::unique_ptr<XFVideoImage> event)
     {
 	TRACE_DEBUG();
 
-	unsigned int width = event->width();
-	unsigned int height = event->height();
 	int fourccFormat = event->xvImage()->id;
 
-	if (avCodecContext->width != int(width) ||
-	    avCodecContext->height != int(height) ||
+	// A bigger frame may have been provided.
+	if (avCodecContext->width != event->requestedWidth() ||
+	    avCodecContext->height != event->requestedHeight() ||
 	    m_fourccFormat != fourccFormat)
 	{
 	    TRACE_DEBUG(<< "Frame buffer with wrong size/format."
-			<< " needed:"
-			<< avCodecContext->width << "*" << avCodecContext->height
+			<< " needed:" << avCodecContext->width << "*" << avCodecContext->height
 			<< std::hex << ", 0x" << m_fourccFormat
-			<< std::dec << " got: " << width << "*" << height
+			<< std::dec <<
+			" requested: " << event->requestedWidth() << "*" << event->requestedHeight()
+			<< " got: " << event->width() << "*" << event->height()
 			<< std::hex << ", 0x" << fourccFormat );
 
 	    videoOutput->queue_event(std::move(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(event)))));
@@ -326,6 +331,13 @@ void VideoDecoder::process(std::unique_ptr<XFVideoImage> event)
 	    requestNewFrame();
 
 	    return;
+	}
+	else if (m_dstWidth != int(event->width()) ||
+		 m_dstHeight != int(event->height()))
+	{
+	    m_dstWidth = event->width();
+	    m_dstHeight = event->height();
+	    getSwsContext();
 	}
 
 	// Add XFVideoImage with correct size and format to frameQueue:
@@ -637,16 +649,6 @@ void VideoDecoder::setFourccFormat(int fourccFormat)
 	m_fourccFormat = fourccFormat;
 
 	getSwsContext();
-
-	// Throw away all queued frames:
-	while(!frameQueue.empty())
-	{
-	    std::unique_ptr<XFVideoImage> xfVideoImage(std::move(frameQueue.front()));
-	    frameQueue.pop();
-	    videoOutput->queue_event(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(xfVideoImage))));
-
-	    requestNewFrame();
-	}
     }
 }
 
@@ -657,19 +659,36 @@ void VideoDecoder::getSwsContext()
 	sws_freeContext(swsContext);
     }
 
+    // Throw away all queued frames:
+    while(!frameQueue.empty())
+    {
+	std::unique_ptr<XFVideoImage> xfVideoImage(std::move(frameQueue.front()));
+	frameQueue.pop();
+	videoOutput->queue_event(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(xfVideoImage))));
+
+	requestNewFrame();
+    }
+
+    if (!m_dstWidth ||
+	!m_dstHeight)
+    {
+	// Wait until destination size is known.
+	return;
+    }
+
     enum PixelFormat dstPixFmt = getFFmpegFormat(m_fourccFormat);
 
-    int width = avCodecContext->width;
-    int height = avCodecContext->height;
+    int srcWidth = avCodecContext->width;
+    int srcHeight = avCodecContext->height;
 
     int flags =
 	SWS_BICUBIC |
 	SWS_CPU_CAPS_MMX | SWS_CPU_CAPS_MMX2 | // SWS_CPU_CAPS_3DNOW |
 	SWS_PRINT_INFO;
 
-    swsContext = sws_getContext(width, height,            // Source Size
+    swsContext = sws_getContext(srcWidth, srcHeight,      // Source Size
 				avCodecContext->pix_fmt,  // Source Format
-				width, height,            // Destination Size
+				m_dstWidth, m_dstHeight,  // Destination Size
 				dstPixFmt,                // Destination Format
 				flags,                    // Flags
 				NULL, NULL, NULL);        // SwsFilter*

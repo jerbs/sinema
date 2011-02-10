@@ -221,6 +221,9 @@ public:
 
     unsigned int width() {return yuvImage->width;}
     unsigned int height() {return yuvImage->height;}
+    int requestedWidth() {return m_requestedWidth;}
+    int requestedHeight() {return m_requestedHeight;}
+    
     char* data() {return yuvImage->data;}
     XvImage* xvImage() {return yuvImage;}
 
@@ -236,6 +239,9 @@ private:
     void* shmAddr;
     double pts;
     Display* m_display;
+
+    int m_requestedWidth;
+    int m_requestedHeight;
 };
 
 #endif

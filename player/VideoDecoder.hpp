@@ -53,8 +53,12 @@ class VideoDecoder : public event_receiver<VideoDecoder>
     AVFrame* avFrame;
     bool avFrameIsFree;
     double pts;
+
     int m_fourccFormat;
+    int m_dstWidth;   // size of images in frameQueue
+    int m_dstHeight;
     std::queue<std::unique_ptr<XFVideoImage> > frameQueue;
+
     std::queue<boost::shared_ptr<VideoPacketEvent> > packetQueue;
 
     bool eos;

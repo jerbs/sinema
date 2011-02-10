@@ -843,6 +843,9 @@ void XFVideoImage::init(XFVideo* xfVideo, int width, int height, int fourccForma
 	TRACE_THROW(std::string, << "No valid fourcc format id set.");
     }
 
+    m_requestedWidth = width;
+    m_requestedHeight = height;
+
     yuvImage = XvShmCreateImage(xfVideo->display(),
 				xfVideo->xvPortId,
 				fourccFormat,
