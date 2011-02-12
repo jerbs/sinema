@@ -144,12 +144,14 @@ void VideoOutput::process(std::unique_ptr<XFVideoImage> event)
 	TRACE_DEBUG();
 
 	eos = false;
+	firstFrame = false;
 	frameQueue.push_back(std::move(event));
 
 	switch (state)
 	{
 	case OPEN:
 	    state = STILL;
+	    firstFrame = true;
 	    displayNextFrame();
 	    break;
 
@@ -200,8 +202,9 @@ void VideoOutput::process(boost::shared_ptr<AudioSyncInfo> event)
 	    audioSnapshotPTS = event->pts;
 	    audioSnapshotTime = event->abstime;
 
-	    TRACE_DEBUG(<< "audioSnapshotPTS =" << audioSnapshotPTS
-			<< ", audioSnapshotTime=" << audioSnapshotTime);
+	    TRACE_DEBUG(<< "audioSnapshotPTS=" << audioSnapshotPTS
+			<< ", audioSnapshotTime=" << audioSnapshotTime
+			<< ", state=" << state);
 
 	    if (state == STILL)
 	    {
@@ -276,9 +279,10 @@ void VideoOutput::process(boost::shared_ptr<EndOfVideoStream>)
     {
 	TRACE_DEBUG();
 	eos = true;
-	if (frameQueue.empty())
+
+	if (state == STILL)
 	{
-	    mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
+	    startFrameTimer();
 	}
     }
 }
@@ -378,6 +382,7 @@ void VideoOutput::process(boost::shared_ptr<CommandPlay>)
     {
 	TRACE_DEBUG();
 
+	state = STILL;
 	displayNextFrame();
     }
 }
@@ -400,52 +405,44 @@ void VideoOutput::createVideoImage()
 
 void VideoOutput::displayNextFrame()
 {
-    if (frameQueue.empty())
+    if (!frameQueue.empty())
     {
-	// No frame available to display.
-	state = STILL;
-	if (eos)
+	TRACE_DEBUG();
+
+	std::unique_ptr<XFVideoImage> image(std::move(frameQueue.front()));
+	frameQueue.pop_front();
+
+	displayedFramePTS = image->getPTS();
+
 	{
-	    mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
-	}
-	return;
-    }
-
-    TRACE_DEBUG();
-
-    std::unique_ptr<XFVideoImage> image(std::move(frameQueue.front()));
-    frameQueue.pop_front();
-
-    displayedFramePTS = image->getPTS();
-
-    {
-	// For debugging only:
-	timespec_t currentTime = frameTimer.get_current_time();
-	timespec_t audioDeltaTime = currentTime - audioSnapshotTime;
-	double currentAudioPTS = audioSnapshotPTS + getSeconds(audioDeltaTime);
+	    // For debugging only:
+	    timespec_t currentTime = frameTimer.get_current_time();
+	    timespec_t audioDeltaTime = currentTime - audioSnapshotTime;
+	    double currentAudioPTS = audioSnapshotPTS + getSeconds(audioDeltaTime);
 
 #ifdef SYNCTEST
-	std::cout << "displayedFramePTS=" << displayedFramePTS << std::endl;
+	    std::cout << "displayedFramePTS=" << displayedFramePTS << std::endl;
 #endif
 
-	TRACE_INFO(<< "VOUT: currentTime=" <<  currentTime
-		   << ", displayedFramePTS=" << displayedFramePTS
-		   << ", currentAudioPTS=" << currentAudioPTS
-		   << ", AVoffsetPTS=" << displayedFramePTS-currentAudioPTS
-		   << ", audioDeltaTime=" << audioDeltaTime);
-    }
+	    TRACE_INFO(<< "VOUT: currentTime=" <<  currentTime
+		       << ", displayedFramePTS=" << displayedFramePTS
+		       << ", currentAudioPTS=" << currentAudioPTS
+		       << ", AVoffsetPTS=" << displayedFramePTS-currentAudioPTS
+		       << ", audioDeltaTime=" << audioDeltaTime);
+	}
 
-    int currentTime = image->getPTS();
-    if (currentTime != lastNotifiedTime)
-    {
-	mediaPlayer->queue_event(boost::make_shared<NotificationCurrentTime>(currentTime));
-	lastNotifiedTime = currentTime;
-    }
+	int currentTime = image->getPTS();
+	if (currentTime != lastNotifiedTime)
+	{
+	    mediaPlayer->queue_event(boost::make_shared<NotificationCurrentTime>(currentTime));
+	    lastNotifiedTime = currentTime;
+	}
 
-    std::unique_ptr<XFVideoImage> previousImage = std::move(xfVideo->show(std::move(image)));
-    if (previousImage)
-    {
-	videoDecoder->queue_event(std::move(previousImage));
+	std::unique_ptr<XFVideoImage> previousImage = std::move(xfVideo->show(std::move(image)));
+	if (previousImage)
+	{
+	    videoDecoder->queue_event(std::move(previousImage));
+	}
     }
 
     startFrameTimer();
@@ -453,27 +450,51 @@ void VideoOutput::displayNextFrame()
 
 void VideoOutput::startFrameTimer()
 {
-    if (frameQueue.empty() || !audioSync)
+    if (frameQueue.empty())
     {
-	if ( !frameQueue.empty() &&
-	     videoStreamOnly )
+	// To calculate the timer the next frame and audio synchronization 
+	// information must be available.
+
+	state = STILL;
+
+	if (eos && firstFrame && (videoStreamOnly || !audioSync))
 	{
-	    // No audio stream available, simulate audioSync
+	    // Maybe it is a single photo without audio. Do not yet send an EndOfVideoStream 
+	    // event. This will display the photo until the user skips to another file.
+
+	    // Note: The AudioSyncInfo event may not have been received here.
+
+	    return;
+	}
+
+	if (eos)
+	{
+	    // Sending EndOfVideoStream will close the file when audio playback has finished.
+
+	    // Minor issue: If it is a video only stream, then the file is immediately closed.
+	    // I.e. the last frame is displayed for a very short time only.
+
+	    TRACE_DEBUG(<< "sending EndOfVideoStream");
+	    mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
+	}
+	return;
+    }
+
+    if (videoStreamOnly)
+    {
+	// No audio stream available
+
+	if (!audioSync)
+	{
 	    audioSync = true;
 	    audioSnapshotPTS = displayedFramePTS;
 	    audioSnapshotTime = frameTimer.get_current_time();
 	}
-	else
-	{
-	    // To calculate the timer the next frame and audio synchronization 
-	    // information must be available.
-	    state = STILL;
-	    if (eos)
-	    {
-		mediaPlayer->queue_event(boost::make_shared<EndOfVideoStream>());
-	    }
-	    return;
-	}
+    }
+    else if (!audioSync)
+    {
+	// Wait for AudioSyncInfo event or NoAudioStream event.
+	return;
     }
 
     TRACE_DEBUG();

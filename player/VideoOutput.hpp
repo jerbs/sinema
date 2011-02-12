@@ -85,6 +85,7 @@ private:
     int lastNotifiedTime;
 
     double displayedFramePTS;
+    bool firstFrame;
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<OpenVideoOutputReq> event);
