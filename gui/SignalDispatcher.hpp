@@ -192,6 +192,7 @@ private:
     NotificationVideoSize m_VideoSize;
 
     timespec_t m_timeTitlePlaybackStarted;
+    int m_setTimeCounter;
 
     ConfigurationGuiVisible m_visibleFullscreen;
     ConfigurationGuiVisible m_visibleWindow;

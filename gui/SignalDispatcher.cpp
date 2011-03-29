@@ -48,6 +48,7 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
       m_AdjustmentVolume(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
       m_quit(false),
       m_timeTitlePlaybackStarted(getTimespec(0)),
+      m_setTimeCounter(0),
       m_visibleFullscreen(false,false,false),
       m_visibleWindow(true,true,true),
       m_visible(&m_visibleWindow),
@@ -1042,12 +1043,16 @@ void SignalDispatcher::on_media_next()
 {
     signal_skip_forward();
     m_timeTitlePlaybackStarted = timer::get_current_time();
+    m_setTimeCounter = 0;
 }
 
 void SignalDispatcher::on_media_previous()
 {
-    if ((timer::get_current_time() - m_timeTitlePlaybackStarted) < getTimespec(1))
+    if ( timer::get_current_time() - m_timeTitlePlaybackStarted < getTimespec(1) ||
+	 m_setTimeCounter <= 2 )
     {
+	// Still in the first second or a photo.
+
 	signal_skip_back();
     }
     else
@@ -1055,6 +1060,7 @@ void SignalDispatcher::on_media_previous()
 	signal_seek_absolute(0);
     }
     m_timeTitlePlaybackStarted = timer::get_current_time();
+    m_setTimeCounter = 0;
 }
 
 void SignalDispatcher::on_media_forward()
@@ -1216,6 +1222,7 @@ void SignalDispatcher::on_set_title(Glib::ustring /* title */)
     // A new title is opened.
     // Store current time. This is needed for skip back.
     m_timeTitlePlaybackStarted = timer::get_current_time();
+    m_setTimeCounter = 0;
 }
 
 void SignalDispatcher::on_set_time(double seconds)
@@ -1227,6 +1234,8 @@ void SignalDispatcher::on_set_time(double seconds)
     // Playing, show pause, hide play buttons/menues:
     m_refActionPlay->set_visible(false);
     m_refActionPause->set_visible(true);
+
+    m_setTimeCounter++;
 }
 
 void SignalDispatcher::on_set_duration(double seconds)
