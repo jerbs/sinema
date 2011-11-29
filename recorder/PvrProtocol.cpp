@@ -77,7 +77,7 @@ void StorageProtocol::init()
     prot.url_read_pause = 0;
     prot.url_read_seek = 0;
 
-    av_register_protocol(&prot);
+    av_register_protocol2(&prot, sizeof(prot));
 
     show_protocols();
 }
@@ -187,7 +187,7 @@ void PvrProtocol::init(boost::shared_ptr<RecorderAdapter> recorderAdapter)
     prot.url_read_pause = 0;
     prot.url_read_seek = 0;
 
-    av_register_protocol(&prot);
+    av_register_protocol2(&prot, sizeof(prot));
 
     show_protocols();
 }
@@ -206,7 +206,7 @@ int PvrProtocol::pvrOpen(URLContext *h, const char *filename, int flags)
     boost::promise<boost::shared_ptr<StartRecordingResp> > promise;
     boost::unique_future<boost::shared_ptr<StartRecordingResp> > future = promise.get_future();
     boost::shared_ptr<StartRecordingReq> req(new StartRecordingReq(fileName));
-    boost::shared_ptr<StartRecordingSReq> sreq(new StartRecordingSReq(req, promise));
+    boost::shared_ptr<StartRecordingSReq> sreq(new StartRecordingSReq(req, std::move(promise)));
 
     instance->recorderAdapter->queue_event(sreq);
    
@@ -257,7 +257,7 @@ int PvrProtocol::pvrClose(URLContext *h)
     boost::promise<boost::shared_ptr<StopRecordingResp> > promise;
     boost::unique_future<boost::shared_ptr<StopRecordingResp> > future = promise.get_future();
     boost::shared_ptr<StopRecordingReq> req(new StopRecordingReq());
-    boost::shared_ptr<StopRecordingSReq> sreq(new StopRecordingSReq(req, promise));
+    boost::shared_ptr<StopRecordingSReq> sreq(new StopRecordingSReq(req, std::move(promise)));
 
     instance->recorderAdapter->queue_event(sreq);
 

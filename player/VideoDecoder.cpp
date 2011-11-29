@@ -126,7 +126,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 	    // Get a pointer to the codec context for the stream
 	    avCodecContext = avFormatContext->streams[videoStreamIndex]->codec;
 
-	    if (avCodecContext->codec_type == CODEC_TYPE_VIDEO)
+	    if (avCodecContext->codec_type == AVMEDIA_TYPE_VIDEO)
 	    {
 		avCodec = avcodec_find_decoder(avCodecContext->codec_id);
 		if (avCodec)

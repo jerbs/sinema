@@ -5,12 +5,13 @@ sinemad_SOURCES = Daemon.cpp Daemon.hpp \
 		  Server.cpp Server.hpp \
 		  SinemadInterface.hpp
 sinemad_CXXFLAGS= $(GUI_CFLAGS) -std=c++0x
+sinemad_LDFLAGS = $(BOOST_LDFLAGS)
 sinemad_LDADD   = ../receiver/libreceiver.la \
 		  ../recorder/librecorder.la \
 		  ../common/libcommon.la \
-		  ../platform/libplatform.la
-sinemad_LDFLAGS = $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
-		  -lboost_serialization
+		  ../platform/libplatform.la \
+		  $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
+		  -lboost_serialization -lboost_system
 
 About.cpp: COPYING.inc README.inc version.inc
 

@@ -50,7 +50,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 	// Get a pointer to the codec context for the stream
 	avCodecContext = avFormatContext->streams[audioStreamIndex]->codec;
 
-	if (avCodecContext->codec_type == CODEC_TYPE_AUDIO)
+	if (avCodecContext->codec_type == AVMEDIA_TYPE_AUDIO)
 	{
 	    avCodec = avcodec_find_decoder(avCodecContext->codec_id);
 	    if (avCodec)

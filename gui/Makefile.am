@@ -19,21 +19,20 @@ sinema_SOURCES = About.cpp About.hpp \
 		 PlayListWindow.cpp PlayListWindow.hpp \
 		 SignalDispatcher.cpp SignalDispatcher.hpp
 sinema_CXXFLAGS= $(GUI_CFLAGS) -std=c++0x
+sinema_LDFLAGS = -rdynamic -L/usr/X11R6/lib $(BOOST_LDFLAGS)
 sinema_LDADD   = ../receiver/libreceiver.la \
 		 ../player/libplayer.la \
 		 ../deinterlacer/libdeinterlacer.la \
 		 ../recorder/librecorder.la \
 		 ../dproxy/libdproxy.la \
 		 ../common/libcommon.la \
-		 ../platform/libplatform.la
-sinema_LDFLAGS = $(PLAYER_LIBS) \
+		 ../platform/libplatform.la \
+		 $(GUI_LIBS) $(PLAYER_LIBS) \
+		 $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
+		 -lboost_serialization -lboost_system \
+		 -lX11 -lXext -lXv \
 		 -lz -lm \
-		 $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
-		 -lboost_serialization \
-		 -L/usr/X11R6/lib -lX11 -lXext -lXv \
-		 -lasound \
-		 -rdynamic \
-		 $(GUI_LIBS)
+		 -lasound
 
 About.cpp: COPYING.inc README.inc version.inc
 

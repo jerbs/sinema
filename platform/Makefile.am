@@ -18,3 +18,4 @@ libplatform_la_SOURCES = concurrent_queue.hpp \
 			 temp_value.hpp \
 			 timer.hpp
 libplatform_la_CXXFLAGS = -std=c++0x
+libplatform_la_LDFLAGS = -lrt

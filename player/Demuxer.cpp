@@ -112,13 +112,13 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	// Find the first audio and video stream
 	for (unsigned int i=0; i < avFormatContext->nb_streams; i++)
 	{
-	    if (avFormatContext->streams[i]->codec->codec_type == CODEC_TYPE_AUDIO &&
+	    if (avFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
 		audioStreamIndex < 0)
 	    {
 		audioStreamIndex = i;
 	    }
 
-	    if (avFormatContext->streams[i]->codec->codec_type == CODEC_TYPE_VIDEO &&
+	    if (avFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
 		videoStreamIndex < 0)
 	    {
 		videoStreamIndex = i;
