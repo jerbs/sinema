@@ -10,8 +10,8 @@ sinemad_LDADD   = ../receiver/libreceiver.la \
 		  ../recorder/librecorder.la \
 		  ../common/libcommon.la \
 		  ../platform/libplatform.la \
-		  $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
-		  -lboost_serialization -lboost_system
+		  $(BOOST_SYSTEM_LIB) $(BOOST_SERIALIZATION_LIB) \
+		  $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB)
 
 About.cpp: COPYING.inc README.inc version.inc
 

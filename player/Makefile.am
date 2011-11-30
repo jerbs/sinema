@@ -30,12 +30,13 @@ synctest_SOURCES = AlsaFacade.cpp AlsaFacade.hpp \
 		   XlibHelpers.cpp XlibHelpers.hpp
 synctest_CPPFLAGS = -DSYNCTEST $(AM_CFLAGS) $(BOOST_CPPFLAGS)
 synctest_CXXFLAGS = -std=c++0x
-synctest_LDADD = ../platform/libplatform.la
-synctest_LDFLAGS = $(PLAYER_LIBS) \
-		   -lz -lm \
-		   $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) \
-		   -L/usr/X11R6/lib -lX11 -lXext -lXv \
-		   -lasound
+synctest_LDFLAGS = $(BOOST_LDFLAGS) -L/usr/X11R6/lib 
+synctest_LDADD = ../platform/libplatform.la \
+		 $(PLAYER_LIBS) \
+		 $(BOOST_THREAD_LIB) \
+		 -lX11 -lXext -lXv \
+		 -lz -lm \
+		 -lasound
 
 ## http://www.gnu.org/software/hello/manual/automake/Objects-created-both-with-libtool-and-without.html
 ## http://www.gnu.org/software/hello/manual/automake/Renamed-Objects.html

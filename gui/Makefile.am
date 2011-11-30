@@ -28,8 +28,8 @@ sinema_LDADD   = ../receiver/libreceiver.la \
 		 ../common/libcommon.la \
 		 ../platform/libplatform.la \
 		 $(GUI_LIBS) $(PLAYER_LIBS) \
+		 $(BOOST_SYSTEM_LIB) $(BOOST_SERIALIZATION_LIB) \
 		 $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
-		 -lboost_serialization -lboost_system \
 		 -lX11 -lXext -lXv \
 		 -lz -lm \
 		 -lasound
