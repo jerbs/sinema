@@ -41,11 +41,16 @@ StorageProtocol* StorageProtocol::instance = 0;
 
 static void show_protocols(void)
 {
-    URLProtocol *up = 0;
-    
-    TRACE_DEBUG(<< "FFmpeg protocols:");
-    while((up = av_protocol_next(up)))
-	TRACE_DEBUG(<< up->name);
+    void *opaque = 0;
+    const char* name;
+
+    TRACE_DEBUG(<< "FFmpeg output protocols:");
+    while(name = avio_enum_protocols(&opaque, 1))
+	TRACE_DEBUG(<< name);
+
+    TRACE_DEBUG(<< "FFmpeg input protocols:");
+    while(name = avio_enum_protocols(&opaque, 0))
+	TRACE_DEBUG(<< name);
 }
 
 // -------------------------------------------------------------------

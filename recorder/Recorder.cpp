@@ -362,14 +362,13 @@ void Recorder::openPvrReader()
 	closePvrReader();
     }
 
-    int ret = av_open_input_file(&m_avFormatContext,
-				 url.c_str(),
-				 0,   // don't force any format, AVInputFormat*,
-				 0,   // use default buffer size
-				 0);  // default AVFormatParameters*
+    int ret = avformat_open_input(&m_avFormatContext,
+				  url.c_str(),
+				  0,   // don't force any format, AVInputFormat*,
+				  0);  // AVDictionary**
     if (ret != 0)
     {
-	TRACE_ERROR(<< "av_open_input_file failed: " << ret);
+	TRACE_ERROR(<< "avformat_open_input failed: " << ret);
 	m_avFormatContext = 0;
 	return;
     }

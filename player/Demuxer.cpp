@@ -82,14 +82,14 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	int ret;
 
 	// Open a media file as input
-	ret = av_open_input_file(&avFormatContext,
-				 fileName.c_str(),
-				 0,   // don't force any format, AVInputFormat*,
-				 0,   // use default buffer size
-				 0);  // default AVFormatParameters*
+	ret = avformat_open_input(&avFormatContext,
+				  fileName.c_str(),
+				  0,   // don't force any format, AVInputFormat*,
+				  0);  // AVDictionary**
 	if (ret != 0)
 	{
-	    TRACE_ERROR(<< "av_open_input_file failed: " << ret);
+	    
+	    TRACE_ERROR(<< "avformat_open_input failed: " << ret);
 	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::OpenFileFailed));
 	    return;
 	}
@@ -107,7 +107,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	systemStreamStatus = SystemStreamOpening;
 
 	// Dump information about file onto standard error
-	dump_format(avFormatContext, 0, event->fileName.c_str(), 0);
+	av_dump_format(avFormatContext, 0, event->fileName.c_str(), 0);
 
 	// Find the first audio and video stream
 	for (unsigned int i=0; i < avFormatContext->nb_streams; i++)
@@ -416,7 +416,7 @@ void Demuxer::operator()()
 {
     // FFmpeg regulary calls interrupt_cb in blocking functions to test 
     // if asynchronous interruption is needed:
-    url_set_interrupt_cb(interrupt_cb);
+    avio_set_interrupt_cb(interrupt_cb);
 
     AVPacket avPacketStorage;
     AVPacket* avPacket = &avPacketStorage;
