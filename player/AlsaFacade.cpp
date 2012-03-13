@@ -672,6 +672,15 @@ snd_pcm_sframes_t AFPCMDigitalAudioInterface::getBufferFillLevel()
 {
     // Function returns the number of frames in the buffer.
 
+    snd_pcm_state_t state = snd_pcm_state(handle);
+    TRACE_DEBUG( << "state: " << snd_pcm_state_name(state));
+    if (state == SND_PCM_STATE_XRUN)
+    {
+	// Sometimes the state is SND_PCM_STATE_XRUN, but the
+	// buffer is not indicated as empty.
+	return 0;
+    }
+
     // Get number of free frames in the buffer:
     snd_pcm_sframes_t available = snd_pcm_avail(handle);
     if (available >= 0)
