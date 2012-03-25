@@ -186,13 +186,12 @@ NeedsXShm::NeedsXShm(Display* display)
 NeedsXv::NeedsXv(Display* display)
 {
     // Check to see if Xv extension is available:
-    XvVersionInfo xvi;
     switch(XvQueryExtension(display,
-			    &xvi.version,
-			    &xvi.revision,
-			    &xvi.request_base,
-			    &xvi.event_base,
-			    &xvi.error_base))
+			    &xvVersionInfo.version,
+			    &xvVersionInfo.revision,
+			    &xvVersionInfo.request_base,
+			    &xvVersionInfo.event_base,
+			    &xvVersionInfo.error_base))
     {
     case Success:
 	break;
@@ -209,7 +208,8 @@ XFVideo::XFVideo(Display* display, Window window,
 		 unsigned int width, unsigned int height,
 		 send_notification_video_size_fct_t fct,
 		 send_notification_clipping_fct_t fct2,
-		 send_notification_video_attribute_fct_t fct3)
+		 send_notification_video_attribute_fct_t fct3,
+		 boost::shared_ptr<AddWindowSystemEventFilterFunctor> addWindowSystemEventFilter)
     : NeedsXShm(display),
       NeedsXv(display),
       m_display(display),
@@ -231,7 +231,8 @@ XFVideo::XFVideo(Display* display, Window window,
       m_useXvClipping(true),
       sendNotificationVideoSize(fct),
       sendNotificationClipping(fct2),
-      sendNotificationVideoAttribute(fct3)
+      sendNotificationVideoAttribute(fct3),
+      addWindowSystemEventFilter(addWindowSystemEventFilter)
 {
     grabXvPort();
 
@@ -259,6 +260,7 @@ bool XFVideo::grabXvPort(XvPortID adaptorPort)
 	xvPortId = adaptorPort;
 	TRACE_DEBUG( << "xvPortId = " << xvPortId);
 	fillFourccFormatList();
+	selectXvPortNotify();
 	notifyXvPortAttributes();
 	return true;
     case XvAlreadyGrabbed:
@@ -536,6 +538,58 @@ void XFVideo::setXvPortAttributes(std::string const& name, int value)
     Bool only_if_exists = true;
     Atom attribute = XInternAtom(m_display, atom_name, only_if_exists);
     XvSetPortAttribute(m_display, xvPortId, attribute, value);
+}
+
+class XvWindowSystemEventFilterFunctor : public WindowSystemEventFilterFunctor
+{
+public:
+    XvWindowSystemEventFilterFunctor(XFVideo& xfVideo, XvVersionInfo const& xvVersionInfo)
+	: xfVideo(xfVideo),
+	  xvVersionInfo(xvVersionInfo)
+    {}
+
+    bool operator()(void* gui_event)
+    {
+	XEvent* xevent = (XEvent*)gui_event;
+	if (xevent->type == xvVersionInfo.event_base + XvPortNotify)
+	{
+	    XvPortNotifyEvent *ev = (XvPortNotifyEvent *) xevent;
+	    if (ev->display == xfVideo.m_display &&
+		ev->port_id == xfVideo.xvPortId)
+	    {
+		const char* name = XGetAtomName(ev->display, ev->attribute);
+		TRACE_DEBUG(<< "XvPortNotify: "<< name << " = " << ev->value);
+
+		xfVideo.sendNotificationVideoAttribute(boost::make_shared<NotificationVideoAttribute>(name,
+												      ev->value));
+	    }
+
+	    return true;
+	}
+
+	return false;
+    }
+
+private:
+    XFVideo& xfVideo;
+    XvVersionInfo const& xvVersionInfo;
+};
+
+void XFVideo::selectXvPortNotify()
+{
+    if (addWindowSystemEventFilter)
+    {
+	(*addWindowSystemEventFilter)(boost::make_shared<XvWindowSystemEventFilterFunctor>(*this, xvVersionInfo));
+    }
+
+    const Bool enable = true;
+    switch(XvSelectPortNotify(m_display, xvPortId, enable))
+    {
+    case Success:
+	break;
+    default:
+	TRACE_THROW(XFException, << "XvSelectPortNotify failed.");
+    }
 }
 
 void XFVideo::selectEvents()

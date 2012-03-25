@@ -20,11 +20,13 @@
 //
 
 #include "gui/VideoAttributeWidget.hpp"
+#include "platform/temp_value.hpp"
 #include <algorithm>
 
 VideoAttributeWidget::VideoAttributeWidget()
     : m_VideoAttributeFrame("Attribute"),
-      m_VideoAttributeTable(1,3)  // Using 0 rows results in a runtime warning.
+      m_VideoAttributeTable(1,3),  // Using 0 rows results in a runtime warning.
+      m_emitChangedSignalFlag(true)
 {
     set_spacing(4);
     set_border_width(4);
@@ -45,23 +47,33 @@ void VideoAttributeWidget::on_notification_video_attribute(const NotificationVid
     map_type::iterator it = m_Attributes.find(attr.name);
     if (it == m_Attributes.end())
     {
-	// Add new attribute:
-	AttributeUI* aui = new AttributeUI(attr);
-	m_Attributes.insert(std::pair<std::string, AttributeUI*>(attr.name, aui));
+	if (attr.valid_config)
+	{
+	    // Add new attribute:
+	    AttributeUI* aui = new AttributeUI(attr);
+	    m_Attributes.insert(std::pair<std::string, AttributeUI*>(attr.name, aui));
 
-	guint rows;
-	guint cols;
-	m_VideoAttributeTable.get_size(rows, cols);
-	m_VideoAttributeTable.resize(rows+1, cols);
+	    guint rows;
+	    guint cols;
+	    m_VideoAttributeTable.get_size(rows, cols);
+	    m_VideoAttributeTable.resize(rows+1, cols);
 
-	m_VideoAttributeTable.attach(aui->m_Label, 0, 1, rows, rows+1, Gtk::SHRINK, Gtk::SHRINK, 0, 0);
-	m_VideoAttributeTable.attach(aui->m_Scale, 1, 2, rows, rows+1, Gtk::FILL | Gtk::EXPAND, Gtk::FILL | Gtk::EXPAND, 0, 0);
-	m_VideoAttributeTable.attach(aui->m_Button, 2, 3, rows, rows+1, Gtk::SHRINK, Gtk::SHRINK, 0, 0);
+	    m_VideoAttributeTable.attach(aui->m_Label, 0, 1, rows, rows+1, Gtk::SHRINK, Gtk::SHRINK, 0, 0);
+	    m_VideoAttributeTable.attach(aui->m_Scale, 1, 2, rows, rows+1, Gtk::FILL | Gtk::EXPAND, Gtk::FILL | Gtk::EXPAND, 0, 0);
+	    m_VideoAttributeTable.attach(aui->m_Button, 2, 3, rows, rows+1, Gtk::SHRINK, Gtk::SHRINK, 0, 0);
 
-	aui->m_Scale.signal_value_changed().connect(sigc::bind(sigc::mem_fun(*this, &VideoAttributeWidget::on_value_changed),
-							       &(aui->m_Scale), attr.name));
-	// The button resets to the initial value:
-	aui->m_Button.signal_clicked().connect(sigc::bind(sigc::mem_fun(aui->m_Scale, &Gtk::HScale::set_value), attr.value));
+	    aui->m_Scale.signal_value_changed().connect(sigc::bind(sigc::mem_fun(*this, &VideoAttributeWidget::on_value_changed),
+								   &(aui->m_Scale), attr.name));
+	    // The button resets to the initial value:
+	    aui->m_Button.signal_clicked().connect(sigc::bind(sigc::mem_fun(aui->m_Scale, &Gtk::HScale::set_value), attr.value));
+	}
+    }
+    else
+    {
+	// Update previously configured AttributeUI:
+	AttributeUI* aui = it->second;
+	TemporaryDisable disable(m_emitChangedSignalFlag);
+	aui->m_Scale.set_value(attr.value);
     }
 
     show_all();
@@ -100,5 +112,8 @@ VideoAttributeWidget::AttributeUI::AttributeUI(const NotificationVideoAttribute&
 void VideoAttributeWidget::on_value_changed(Gtk::HScale* scale, std::string name)
 {
     int value = scale->get_value();
-    signalVideoAttributeChanged(name, value);
+    if (m_emitChangedSignalFlag)
+    {
+	signalVideoAttributeChanged(name, value);
+    }
 }

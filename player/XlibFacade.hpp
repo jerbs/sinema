@@ -35,6 +35,7 @@
 #include <string>
 
 #include "player/GeneralEvents.hpp"
+#include "player/XlibHelpers.hpp"
 
 struct XFException
 {
@@ -95,6 +96,9 @@ class NeedsXv
 public:
     NeedsXv(Display* display);
 
+protected:
+    XvVersionInfo xvVersionInfo;
+
 private:
     NeedsXv();
 };
@@ -107,6 +111,7 @@ class XFVideo : private NeedsXShm,
 		private NeedsXv
 {
     friend class XFVideoImage;
+    friend class XvWindowSystemEventFilterFunctor;
 
 public:
     typedef boost::function<void (boost::shared_ptr<NotificationVideoSize>)> send_notification_video_size_fct_t;
@@ -117,7 +122,8 @@ public:
 	    unsigned int width, unsigned int height,
 	    send_notification_video_size_fct_t fct,
 	    send_notification_clipping_fct_t fct2,
-	    send_notification_video_attribute_fct_t fct3);
+	    send_notification_video_attribute_fct_t fct3,
+	    boost::shared_ptr<AddWindowSystemEventFilterFunctor> addWindowSystemEventFilter);
     ~XFVideo();
 
     void selectEvents();
@@ -163,6 +169,7 @@ private:
     void dumpXvImageFormat(XvPortID adaptorPort);
     void fillFourccFormatList();
     void notifyXvPortAttributes();
+    void selectXvPortNotify();
 
     std::unique_ptr<XFVideoImage> m_displayedImage;
     std::unique_ptr<XFVideoImage> m_displayedImageClipped;
@@ -208,6 +215,8 @@ private:
     send_notification_video_size_fct_t sendNotificationVideoSize;
     send_notification_clipping_fct_t sendNotificationClipping;
     send_notification_video_attribute_fct_t sendNotificationVideoAttribute;
+
+    boost::shared_ptr<AddWindowSystemEventFilterFunctor> addWindowSystemEventFilter;
 };
 
 

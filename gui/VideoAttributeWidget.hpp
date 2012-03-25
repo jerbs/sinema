@@ -60,6 +60,8 @@ private:
 
     Gtk::Frame m_VideoAttributeFrame;
     Gtk::Table m_VideoAttributeTable;
+
+    bool m_emitChangedSignalFlag;
 };
 
 #endif

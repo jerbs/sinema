@@ -245,6 +245,39 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<CloseFileResp>)
     notificationFileClosed();
 }
 
+class GtkmmAddWindowSystemEventFilterFunctor: public AddWindowSystemEventFilterFunctor
+{
+public:
+    GtkmmAddWindowSystemEventFilterFunctor()
+    {}
+
+    void operator()(boost::shared_ptr<WindowSystemEventFilterFunctor> filter)
+    {
+	// Don't know how to implement this with the gtkmm interface.
+	// Using NULL as Gdk::Window point when calling the add_filter
+	// method is not possible (segmentation fault).
+	// With the Gdk::Window object used by the GtkmmMediaPlayer
+	// object no events are received.
+	gdk_window_add_filter (NULL, filter_cb, this);
+	m_filter = filter;
+    }
+
+private:
+    static GdkFilterReturn filter_cb(GdkXEvent* xevent,
+				     GdkEvent* event,
+				     gpointer data)
+    {
+	GtkmmAddWindowSystemEventFilterFunctor* obj = (GtkmmAddWindowSystemEventFilterFunctor*)data;
+	if ((*obj->m_filter)(xevent))
+	{
+	    return GDK_FILTER_REMOVE;
+	}
+	return GDK_FILTER_CONTINUE;
+    }
+
+    boost::shared_ptr<WindowSystemEventFilterFunctor> m_filter;
+};
+
 void GtkmmMediaPlayer::on_realize()
 {
     TRACE_DEBUG();
@@ -255,7 +288,8 @@ void GtkmmMediaPlayer::on_realize()
     Display* xdisplay = get_x_display(*this);
     XID      xid = get_x_window(*this);
 
-    videoOutput->queue_event(boost::make_shared<WindowRealizeEvent>(xdisplay, xid));
+    videoOutput->queue_event(boost::make_shared<WindowRealizeEvent>(xdisplay, xid,
+			     boost::make_shared<GtkmmAddWindowSystemEventFilterFunctor>()));
 
     open();
 

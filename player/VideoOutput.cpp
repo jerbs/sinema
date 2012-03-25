@@ -316,7 +316,8 @@ void VideoOutput::process(boost::shared_ptr<WindowRealizeEvent> event)
 	boost::function<void (boost::shared_ptr<NotificationVideoAttribute>)> fct3 = boost::bind(tmp3, this, _1);
 
 	xfVideo = boost::make_shared<XFVideo>(static_cast<Display*>(event->display),
-					      event->window, 720, 576, fct, fct2, fct3);
+					      event->window, 720, 576, fct, fct2, fct3,
+					      event->addWindowSystemEventFilter);
 
 	showBlackFrame();
     }
@@ -566,5 +567,13 @@ void VideoOutput::sendNotificationClipping(boost::shared_ptr<NotificationClippin
 }
 void VideoOutput::sendNotificationVideoAttribute(boost::shared_ptr<NotificationVideoAttribute> event)
 {
+    if (state == PAUSE)
+    {
+	// Get the current image displayed with the new video attributes.
+	// This is especially needed when changing Xv attributes from another 
+	// application, e.g. gxvattr.
+	xfVideo->handleExposeEvent();
+    }
+
     mediaPlayer->queue_event(event);
 }

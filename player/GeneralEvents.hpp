@@ -472,13 +472,25 @@ struct NotificationVideoAttribute
 			       bool settable)
 	: name(name),
 	  value(value),
+	  valid_config(true),
 	  min_value(min_value),
 	  max_value(max_value),
 	  settable(settable)
     {}
 
+    NotificationVideoAttribute(std::string name,
+			       int value)
+	: name(name),
+	  value(value),
+	  valid_config(false),
+	  min_value(0),
+	  max_value(0),
+	  settable(false)
+    {}
+
     std::string name;
     int value;
+    bool valid_config;
     int min_value;
     int max_value;
     bool settable;
@@ -498,16 +510,37 @@ struct ChangeVideoAttribute
 
 // ===================================================================
 
+struct WindowSystemEventFilterFunctor
+{
+    virtual ~WindowSystemEventFilterFunctor() {}
+    virtual bool operator()(void*) = 0;
+};
+
+struct AddWindowSystemEventFilterFunctor
+{
+    virtual ~AddWindowSystemEventFilterFunctor() {}
+    virtual void operator()(boost::shared_ptr<WindowSystemEventFilterFunctor>) = 0;
+};
+
 struct HideCursorEvent {};
 
 struct WindowRealizeEvent
 {
+    WindowRealizeEvent(void* display, unsigned long window,
+		       boost::shared_ptr<AddWindowSystemEventFilterFunctor> addWindowSystemEventFilter)
+	: display(display),
+	  window(window),
+	  addWindowSystemEventFilter(addWindowSystemEventFilter)
+    {}
+
     WindowRealizeEvent(void* display, unsigned long window)
 	: display(display),
 	  window(window)
     {}
+
     void* display;
     unsigned long window;
+    boost::shared_ptr<AddWindowSystemEventFilterFunctor> addWindowSystemEventFilter;
 };
 
 struct WindowConfigureEvent
