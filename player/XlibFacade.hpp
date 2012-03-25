@@ -111,11 +111,13 @@ class XFVideo : private NeedsXShm,
 public:
     typedef boost::function<void (boost::shared_ptr<NotificationVideoSize>)> send_notification_video_size_fct_t;
     typedef boost::function<void (boost::shared_ptr<NotificationClipping>)> send_notification_clipping_fct_t;
+    typedef boost::function<void (boost::shared_ptr<NotificationVideoAttribute>)> send_notification_video_attribute_fct_t;
 
     XFVideo(Display* display, Window window,
 	    unsigned int width, unsigned int height,
 	    send_notification_video_size_fct_t fct,
-	    send_notification_clipping_fct_t fct2);
+	    send_notification_clipping_fct_t fct2,
+	    send_notification_video_attribute_fct_t fct3);
     ~XFVideo();
 
     void selectEvents();
@@ -130,6 +132,7 @@ public:
     void clipSrc(int videoLeft, int videoRight, int videoTop, int videoBottom);
     void enableXvClipping();
     void disableXvClipping();
+    void setXvPortAttributes(std::string const& name, int value);
     Display* display() {return m_display;}
     Window window() {return m_window;}
 
@@ -159,6 +162,7 @@ private:
     void dumpXvAttributes(XvPortID adaptorPort);
     void dumpXvImageFormat(XvPortID adaptorPort);
     void fillFourccFormatList();
+    void notifyXvPortAttributes();
 
     std::unique_ptr<XFVideoImage> m_displayedImage;
     std::unique_ptr<XFVideoImage> m_displayedImageClipped;
@@ -203,6 +207,7 @@ private:
 
     send_notification_video_size_fct_t sendNotificationVideoSize;
     send_notification_clipping_fct_t sendNotificationClipping;
+    send_notification_video_attribute_fct_t sendNotificationVideoAttribute;
 };
 
 

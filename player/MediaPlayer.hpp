@@ -77,6 +77,8 @@ public:
 
     void selectDeinterlacer(const std::string& name);
 
+    void setVideoAttribute(const std::string& name, int value);
+
     void processEventQueue();
 
 protected:
@@ -135,6 +137,7 @@ private:
     virtual void process(boost::shared_ptr<NotificationVideoSize> event) = 0;
     virtual void process(boost::shared_ptr<NotificationClipping> event) = 0;
     virtual void process(boost::shared_ptr<NotificationDeinterlacerList> event) = 0;
+    virtual void process(boost::shared_ptr<NotificationVideoAttribute> event) = 0;
 
     virtual void process(boost::shared_ptr<OpenAudioStreamFailed>) {};
     virtual void process(boost::shared_ptr<OpenVideoStreamFailed>) {};

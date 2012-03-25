@@ -23,6 +23,7 @@
 #include "gui/ConfigWindow.hpp"
 #include "gui/ChannelConfigWidget.hpp"
 #include "gui/PlayerConfigWidget.hpp"
+#include "gui/VideoAttributeWidget.hpp"
 #include "gui/ControlWindow.hpp"
 #include "gui/GtkmmMediaPlayer.hpp"
 #include "gui/GtkmmMediaCommon.hpp"
@@ -67,6 +68,7 @@ int main(int argc, char *argv[])
     ConfigWindow configWindow;
     ChannelConfigWidget channelConfigWidget;
     PlayerConfigWidget playerConfigWidget;
+    VideoAttributeWidget videoAttributeWidget;
     PlayListWindow playListWindow(playList);
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
     GtkmmMediaRecorder mediaRecorder;
@@ -82,6 +84,7 @@ int main(int argc, char *argv[])
 
     configWindow.addWidget(channelConfigWidget, "Channels", "Channels");
     configWindow.addWidget(playerConfigWidget, "Player", "Player");
+    configWindow.addWidget(videoAttributeWidget, "Video", "Video");
 
     // Compiler needs help to find the correct overloaded method:
     void (GtkmmMediaPlayer::*GtkmmMediaPlayer_ClipSrc)(boost::shared_ptr<ClipVideoSrcEvent> event) = &GtkmmMediaPlayer::clip;
@@ -151,6 +154,13 @@ int main(int argc, char *argv[])
     // ---------------------------------------------------------------
     // Signals: GtkmmMediaPlayer -> PlayerConfigWidget
     mediaPlayer.notificationDeinterlacerList.connect( sigc::mem_fun(playerConfigWidget, &PlayerConfigWidget::on_deinterlacer_list) );
+
+    // ---------------------------------------------------------------
+    // Signals: GtkmmMediaPlayer -> VideoAttributeWidget
+    mediaPlayer.notificationVideoAttribute.connect( sigc::mem_fun(videoAttributeWidget, &VideoAttributeWidget::on_notification_video_attribute) );
+
+    // Signals: VideoAttributeWidget -> GtkmmMediaPlayer
+    videoAttributeWidget.signalVideoAttributeChanged.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::setVideoAttribute) );
 
     // ---------------------------------------------------------------
     // Signals: DaemonProxy -> ChannelConfigWidget

@@ -74,6 +74,7 @@ private:
     void process(boost::shared_ptr<EndOfVideoStream>) {}
     void process(boost::shared_ptr<NotificationVideoSize>) {}
     void process(boost::shared_ptr<NotificationClipping>) {}
+    void process(boost::shared_ptr<NotificationVideoAttribute>) {}
     void process(boost::shared_ptr<NotificationCurrentTime>) {}
     void process(boost::shared_ptr<NotificationCurrentVolume>) {}
     void process(boost::shared_ptr<SeekRelativeReq>) {}

@@ -107,6 +107,7 @@ private:
     void process(boost::shared_ptr<ClipVideoSrcEvent> event);
     void process(boost::shared_ptr<EnableXvClipping> event);
     void process(boost::shared_ptr<DisableXvClipping> event);
+    void process(boost::shared_ptr<ChangeVideoAttribute> event);
 
     void process(boost::shared_ptr<CommandPlay> event);
     void process(boost::shared_ptr<CommandPause> event);
@@ -119,6 +120,7 @@ private:
 
     void sendNotificationVideoSize(boost::shared_ptr<NotificationVideoSize> event);
     void sendNotificationClipping(boost::shared_ptr<NotificationClipping> event);
+    void sendNotificationVideoAttribute(boost::shared_ptr<NotificationVideoAttribute> event);
 };
 
 #endif

@@ -463,6 +463,39 @@ struct NotificationDeinterlacerList
     std::list<std::string> list;
 };
 
+struct NotificationVideoAttribute
+{
+    NotificationVideoAttribute(std::string name,
+			       int value,
+			       int min_value,
+			       int max_value,
+			       bool settable)
+	: name(name),
+	  value(value),
+	  min_value(min_value),
+	  max_value(max_value),
+	  settable(settable)
+    {}
+
+    std::string name;
+    int value;
+    int min_value;
+    int max_value;
+    bool settable;
+};
+
+struct ChangeVideoAttribute
+{
+    ChangeVideoAttribute(std::string name,
+			 int value)
+	: name(name),
+	  value(value)
+    {}
+
+    std::string name;
+    int value;
+};
+
 // ===================================================================
 
 struct HideCursorEvent {};

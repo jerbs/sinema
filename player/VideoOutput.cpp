@@ -311,8 +311,12 @@ void VideoOutput::process(boost::shared_ptr<WindowRealizeEvent> event)
 	fct2_t tmp2 = &VideoOutput::sendNotificationClipping;
 	boost::function<void (boost::shared_ptr<NotificationClipping>)> fct2 = boost::bind(tmp2, this, _1);
 
+	typedef void (VideoOutput::*fct3_t)(boost::shared_ptr<NotificationVideoAttribute>);
+	fct3_t tmp3 = &VideoOutput::sendNotificationVideoAttribute;
+	boost::function<void (boost::shared_ptr<NotificationVideoAttribute>)> fct3 = boost::bind(tmp3, this, _1);
+
 	xfVideo = boost::make_shared<XFVideo>(static_cast<Display*>(event->display),
-					      event->window, 720, 576, fct, fct2);
+					      event->window, 720, 576, fct, fct2, fct3);
 
 	showBlackFrame();
     }
@@ -373,6 +377,14 @@ void VideoOutput::process(boost::shared_ptr<DisableXvClipping>)
     if (xfVideo)
     {
 	xfVideo->disableXvClipping();
+    }
+}
+
+void VideoOutput::process(boost::shared_ptr<ChangeVideoAttribute> event)
+{
+    if (xfVideo)
+    {
+	xfVideo->setXvPortAttributes(event->name, event->value);
     }
 }
 
@@ -551,4 +563,8 @@ void VideoOutput::sendNotificationClipping(boost::shared_ptr<NotificationClippin
 {
     mediaPlayer->queue_event(event);
     deinterlacer->queue_event(event);
+}
+void VideoOutput::sendNotificationVideoAttribute(boost::shared_ptr<NotificationVideoAttribute> event)
+{
+    mediaPlayer->queue_event(event);
 }

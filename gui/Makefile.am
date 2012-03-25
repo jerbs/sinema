@@ -15,6 +15,7 @@ sinema_SOURCES = About.cpp About.hpp \
 		 main.cpp \
 		 MainWindow.cpp MainWindow.hpp \
 		 PlayerConfigWidget.cpp PlayerConfigWidget.hpp \
+		 VideoAttributeWidget.cpp VideoAttributeWidget.hpp \
 		 PlayListTreeModel.cpp PlayListTreeModel.hpp \
 		 PlayListWindow.cpp PlayListWindow.hpp \
 		 SignalDispatcher.cpp SignalDispatcher.hpp

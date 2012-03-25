@@ -312,6 +312,11 @@ void MediaPlayer::selectDeinterlacer(const std::string& name)
     deinterlacer->queue_event(boost::make_shared<SelectDeinterlacer>(name));
 }
 
+void MediaPlayer::setVideoAttribute(const std::string& name, int value)
+{
+    videoOutput->queue_event(boost::make_shared<ChangeVideoAttribute>(name, value));
+}
+
 void MediaPlayer::process(boost::shared_ptr<OpenFileResp>)
 {
     TRACE_DEBUG();

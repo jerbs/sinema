@@ -208,7 +208,8 @@ NeedsXv::NeedsXv(Display* display)
 XFVideo::XFVideo(Display* display, Window window,
 		 unsigned int width, unsigned int height,
 		 send_notification_video_size_fct_t fct,
-		 send_notification_clipping_fct_t fct2)
+		 send_notification_clipping_fct_t fct2,
+		 send_notification_video_attribute_fct_t fct3)
     : NeedsXShm(display),
       NeedsXv(display),
       m_display(display),
@@ -229,7 +230,8 @@ XFVideo::XFVideo(Display* display, Window window,
       m_noClippingNeeded(true),
       m_useXvClipping(true),
       sendNotificationVideoSize(fct),
-      sendNotificationClipping(fct2)
+      sendNotificationClipping(fct2),
+      sendNotificationVideoAttribute(fct3)
 {
     grabXvPort();
 
@@ -257,6 +259,7 @@ bool XFVideo::grabXvPort(XvPortID adaptorPort)
 	xvPortId = adaptorPort;
 	TRACE_DEBUG( << "xvPortId = " << xvPortId);
 	fillFourccFormatList();
+	notifyXvPortAttributes();
 	return true;
     case XvAlreadyGrabbed:
 	TRACE_DEBUG( << "XvGrabPort failed: XvAlreadyGrabbed");
@@ -395,6 +398,31 @@ void XFVideo::dumpXvAttributes(XvPortID adaptorPort)
 	for (int k=0; k<num_att; k++)
 	{
 	    TRACE_DEBUG( << "XvAttribute[" << k << "]\n" << att[k] );
+	    if (att[k].flags & XvGettable)
+	    {
+		char* atom_name = att[k].name;
+		Bool only_if_exists = true;
+		Atom attribute = XInternAtom(m_display, atom_name, only_if_exists);
+
+		switch(attribute)
+		{
+		case None:
+		    break;
+		default:
+		    int value;
+		    switch(XvGetPortAttribute(m_display, adaptorPort, attribute, &value))
+		    {
+		    case Success:
+			TRACE_DEBUG( << "XvGetPortAttribute: " << atom_name << " = " << value );
+		    case BadAlloc:
+		    case BadAtom:
+		    case BadValue:
+			break;
+		    default:
+			break;
+		    }
+		}
+	    }
 	}
 	XFree(att);
     }
@@ -435,6 +463,79 @@ void XFVideo::fillFourccFormatList()
 	}
 	XFree(ifv);
     }
+}
+
+void XFVideo::notifyXvPortAttributes()
+{
+    struct XvPortAttribute
+    {
+	std::string name;
+	int value;
+	int min_value;
+	int max_value;
+	bool settable;
+	bool gettable;
+    };
+
+    std::vector<XvPortAttribute> attributes;
+
+    int num_att;
+    XvAttribute* att = XvQueryPortAttributes(m_display, xvPortId, &num_att);
+    if (att)
+    {
+	for (int k=0; k<num_att; k++)
+	{
+	    if (att[k].flags & XvGettable)
+	    {
+		char* atom_name = att[k].name;
+		Bool only_if_exists = true;
+		Atom attribute = XInternAtom(m_display, atom_name, only_if_exists);
+
+		switch(attribute)
+		{
+		case None:
+		    break;
+		default:
+		    int value;
+		    switch(XvGetPortAttribute(m_display, xvPortId, attribute, &value))
+		    {
+		    case Success:
+			{
+			    XvPortAttribute xpa;
+			    xpa.name = att[k].name;
+			    xpa.value = value;
+			    xpa.min_value = att[k].min_value;
+			    xpa.max_value = att[k].max_value;
+			    xpa.settable = att[k].flags & XvSettable;
+			    xpa.gettable = att[k].flags & XvGettable;
+			    attributes.push_back(xpa);
+
+			    sendNotificationVideoAttribute(boost::make_shared<NotificationVideoAttribute>(att[k].name,
+													  value,
+													  att[k].min_value,
+													  att[k].max_value,
+													  att[k].flags & XvSettable));
+			}
+		    case BadAlloc:
+		    case BadAtom:
+		    case BadValue:
+			break;
+		    default:
+			break;
+		    }
+		}
+	    }
+	}
+	XFree(att);
+    }
+}
+
+void XFVideo::setXvPortAttributes(std::string const& name, int value)
+{
+    const char* atom_name = name.c_str();
+    Bool only_if_exists = true;
+    Atom attribute = XInternAtom(m_display, atom_name, only_if_exists);
+    XvSetPortAttribute(m_display, xvPortId, attribute, value);
 }
 
 void XFVideo::selectEvents()
