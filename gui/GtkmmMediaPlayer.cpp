@@ -66,7 +66,7 @@ GtkmmMediaPlayer::GtkmmMediaPlayer(PlayList& playList)
       m_zoom_enabled(true)
 {
     MediaPlayerThreadNotification::setCallback(&notifyGuiThread);
-    m_dispatcher.connect(sigc::mem_fun(this, &MediaPlayer::processEventQueue));
+    m_dispatcher.connect(sigc::mem_fun(this, &GtkmmMediaPlayer::processEventQueue));
 
     // Get X event signals for mouse motion, mouse button press and 
     // release events. For mouse button release events no event_handler 
@@ -96,10 +96,22 @@ GtkmmMediaPlayer::~GtkmmMediaPlayer()
 	gdk_cursor_unref(m_blankGdkCursor);
     }
 }
+std::atomic_flag GtkmmMediaPlayer::m_pendingProcessEventQueue = ATOMIC_FLAG_INIT;
 
 void GtkmmMediaPlayer::notifyGuiThread()
 {
-    m_dispatcher();
+    // This code may run in any thread, including the GUI thread.
+    if (! m_pendingProcessEventQueue.test_and_set())
+    {
+	m_dispatcher();
+    }
+}
+
+void GtkmmMediaPlayer::processEventQueue()
+{
+    // This code is always running in the GUI thread.
+    m_pendingProcessEventQueue.clear();
+    MediaPlayer::processEventQueue();
 }
 
 void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationFileInfo> event)

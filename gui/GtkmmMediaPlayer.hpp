@@ -28,6 +28,7 @@
 #include <glibmm/dispatcher.h>
 #include <gdkmm/cursor.h>
 #include <sigc++/signal.h>
+#include <atomic>
 
 class GtkmmMediaPlayer : public MediaPlayer,
 			 public Gtk::DrawingArea
@@ -50,6 +51,7 @@ public:
     virtual ~GtkmmMediaPlayer();
 
     static void notifyGuiThread();
+    void processEventQueue();
 
     void zoom(double percent);
     void dontZoom();
@@ -76,6 +78,8 @@ private:
 
     void resizeWindow();
     bool on_idle();
+
+    static std::atomic_flag m_pendingProcessEventQueue;
 
     template<class EVENT> void getQuadrant(EVENT* event, int&x, int&y);
     Gdk::Cursor m_cursor;
