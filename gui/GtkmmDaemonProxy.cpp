@@ -22,22 +22,13 @@
 #include "gui/GtkmmDaemonProxy.hpp"
 #include "receiver/TunerFacade.hpp"
 
-Glib::Dispatcher GtkmmDaemonProxy::m_dispatcher;
-
 GtkmmDaemonProxy::GtkmmDaemonProxy()
-    : DaemonProxy()
+    : GlibmmEventDispatcher<DaemonProxy>()
 {
-    DaemonProxyThreadNotification::setCallback(&notifyGuiThread);
-    m_dispatcher.connect(sigc::mem_fun(this, &DaemonProxy::processEventQueue));
 }
 
 GtkmmDaemonProxy::~GtkmmDaemonProxy()
 {
-}
-
-void GtkmmDaemonProxy::notifyGuiThread()
-{
-    m_dispatcher();
 }
 
 void GtkmmDaemonProxy::process(boost::shared_ptr<TunerNotifyChannelTuned> event)

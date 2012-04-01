@@ -31,32 +31,17 @@
 #include <boost/shared_ptr.hpp>
 #include <string>
 
-class MediaRecorderThreadNotification
-{
-public:
-    typedef void (*fct_t)();
-
-    MediaRecorderThreadNotification();
-    static void setCallback(fct_t fct);
-
-private:
-    static fct_t m_fct;
-};
-
 class MediaRecorder : public event_receiver<MediaRecorder,
-                                            concurrent_queue<receive_fct_t, MediaRecorderThreadNotification> >
+                                            concurrent_queue<receive_fct_t, with_callback_function> >
 {
     // The friend declaration allows to define the process methods private:
-    friend class event_processor<concurrent_queue<receive_fct_t, MediaRecorderThreadNotification> >;
-    friend class MediaRecorderThreadNotification;
+    friend class event_processor<concurrent_queue<receive_fct_t, with_callback_function> >;
 
 public:
     MediaRecorder();
     ~MediaRecorder();
 
     void init();
-
-    void processEventQueue();
 
 protected:
     // EventReceiver
@@ -69,7 +54,7 @@ private:
     boost::thread recorderAdapterThread;
 
     // EventProcessor:
-    boost::shared_ptr<event_processor< concurrent_queue<receive_fct_t, RecorderThreadNotification> > > recorderEventProcessor;
+    boost::shared_ptr<event_processor< concurrent_queue<receive_fct_t, with_callback_function> > > recorderEventProcessor;
     boost::shared_ptr<event_processor<> > recorderAdapterEventProcessor;
 
     void sendInitEvents();

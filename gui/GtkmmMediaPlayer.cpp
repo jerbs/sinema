@@ -23,6 +23,7 @@
 #include "platform/timer.hpp"
 #include "player/VideoOutput.hpp"
 
+#include <boost/bind.hpp>
 #include <gdk/gdkx.h>
 
 // -------------------------------------------------------------------
@@ -53,10 +54,8 @@ Window get_x_window(Gtk::Widget & widget)
 
 // -------------------------------------------------------------------
 
-Glib::Dispatcher GtkmmMediaPlayer::m_dispatcher;
-
 GtkmmMediaPlayer::GtkmmMediaPlayer(PlayList& playList)
-    : MediaPlayer(playList),
+    : GlibmmEventDispatcher<MediaPlayer>(playList),
       m_blankGdkCursor(gdk_cursor_new(GDK_BLANK_CURSOR)),
       m_blankCursor(Gdk::Cursor(m_blankGdkCursor)),
       m_fullscreen(false),
@@ -65,9 +64,6 @@ GtkmmMediaPlayer::GtkmmMediaPlayer(PlayList& playList)
       m_video_zoom(1),
       m_zoom_enabled(true)
 {
-    MediaPlayerThreadNotification::setCallback(&notifyGuiThread);
-    m_dispatcher.connect(sigc::mem_fun(this, &GtkmmMediaPlayer::processEventQueue));
-
     // Get X event signals for mouse motion, mouse button press and 
     // release events. For mouse button release events no event_handler 
     // is implemented, but without adding this event the mouse pointer 
@@ -95,23 +91,6 @@ GtkmmMediaPlayer::~GtkmmMediaPlayer()
     {
 	gdk_cursor_unref(m_blankGdkCursor);
     }
-}
-std::atomic_flag GtkmmMediaPlayer::m_pendingProcessEventQueue = ATOMIC_FLAG_INIT;
-
-void GtkmmMediaPlayer::notifyGuiThread()
-{
-    // This code may run in any thread, including the GUI thread.
-    if (! m_pendingProcessEventQueue.test_and_set())
-    {
-	m_dispatcher();
-    }
-}
-
-void GtkmmMediaPlayer::processEventQueue()
-{
-    // This code is always running in the GUI thread.
-    m_pendingProcessEventQueue.clear();
-    MediaPlayer::processEventQueue();
 }
 
 void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationFileInfo> event)

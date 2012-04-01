@@ -94,6 +94,15 @@ public:
 	func();
     }
 
+    // Process all queued events and return. GUI main loops are using this function:
+    void dequeue_and_process_until_empty()
+    {
+	while(!empty())
+	{
+	    dequeue_and_process();
+	}
+    }
+
     // Callbacks needed to implement a custom main loop:
     bool terminating() {return m_quit;}
     bool empty() {return m_events_queue.empty();}
@@ -166,6 +175,11 @@ public:
     void queue_event(boost::shared_ptr<Event> event)
     {
 	queue_event(event, this);
+    }
+
+    void attach(typename concurrent_queue::notification_function_type fct)
+    {
+	m_events_queue.attach(fct);
     }
 
 private:

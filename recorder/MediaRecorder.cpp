@@ -27,33 +27,13 @@
 
 #include <boost/make_shared.hpp>
 
-// ===================================================================
-
-MediaRecorderThreadNotification::MediaRecorderThreadNotification()
-{
-    // Here the GUI thread is notified to call MediaRecorder::processEventQueue();
-    if (m_fct)
-    {
-        m_fct();
-    }
-}
-
-void MediaRecorderThreadNotification::setCallback(fct_t fct)
-{
-    m_fct = fct;
-}
-
-MediaRecorderThreadNotification::fct_t MediaRecorderThreadNotification::m_fct;
-
-// ===================================================================
 
 MediaRecorder::MediaRecorder()
     : base_type(boost::make_shared<event_processor<
-                concurrent_queue<receive_fct_t,
-                MediaRecorderThreadNotification> > >())
+                concurrent_queue<receive_fct_t, with_callback_function> > >())
 {
     // Create event_processor instances:
-    recorderEventProcessor = boost::make_shared<event_processor< concurrent_queue<receive_fct_t, RecorderThreadNotification> > >();
+    recorderEventProcessor = boost::make_shared<event_processor< concurrent_queue<receive_fct_t, with_callback_function> > >();
     recorderAdapterEventProcessor = boost::make_shared<event_processor<> >();
 
     // Create event_receiver instances:
@@ -91,12 +71,4 @@ void MediaRecorder::sendInitEvents()
 
     recorder->queue_event(initEvent);
     recorderAdapter->queue_event(initEvent);
-}
-
-void MediaRecorder::processEventQueue()
-{
-    while(!get_event_processor()->empty())
-    {
-        get_event_processor()->dequeue_and_process();
-    }
 }

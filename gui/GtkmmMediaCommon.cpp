@@ -21,22 +21,14 @@
 
 #include "gui/GtkmmMediaCommon.hpp"
 
-Glib::Dispatcher GtkmmMediaCommon::m_dispatcher;
 
 GtkmmMediaCommon::GtkmmMediaCommon()
-    : MediaCommon()
+    : GlibmmEventDispatcher<MediaCommon>()
 {
-    MediaCommonThreadNotification::setCallback(&notifyGuiThread);
-    m_dispatcher.connect(sigc::mem_fun(this, &MediaCommon::processEventQueue));
 }
 
 GtkmmMediaCommon::~GtkmmMediaCommon()
 {
-}
-
-void GtkmmMediaCommon::notifyGuiThread()
-{
-    m_dispatcher();
 }
 
 void GtkmmMediaCommon::process(boost::shared_ptr<ConfigurationData> event)

@@ -15,14 +15,44 @@
 #ifndef CONCURRENT_QUEUE_HPP
 #define CONCURRENT_QUEUE_HPP
 
+#include <boost/function.hpp>
 #include <boost/thread/thread.hpp>
 #include <boost/thread/condition_variable.hpp>
 #include <queue>
 
+class without_callback_function
+{
+public:
+    typedef boost::function<void ()> notification_function_type;
+
+protected:
+    void notify() {}
+};
+
+class with_callback_function
+{
+public:
+    typedef boost::function<void ()> notification_function_type;
+
+    void attach(notification_function_type fct) {m_callback = fct;}
+
+protected:
+    void notify()
+    {
+	if (m_callback)
+	{
+	    m_callback();
+	}
+    }
+
+private:
+    notification_function_type m_callback;
+};
+
 class NoTrigger{};
 
-template<typename T, class Trigger = NoTrigger>
-class concurrent_queue
+template<typename T, class base_type = without_callback_function>
+class concurrent_queue : public base_type
 {
 private:
     std::queue<T> m_queue;
@@ -36,7 +66,7 @@ public:
 	m_queue.push(data);
 	lock.unlock();
         m_condition_variable.notify_one();
-	Trigger();
+	this->notify();
     }
 
     bool empty() const

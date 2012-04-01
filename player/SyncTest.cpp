@@ -230,17 +230,19 @@ SyncTestApp::SyncTestApp()
 {
     // Create event_processor instances:
     testEventProcessor = boost::make_shared<event_processor<> >();
-    outputEventProcessor = boost::make_shared<event_processor<> >();
+    audioOutputEventProcessor = boost::make_shared<event_processor<> >();
+    videoOutputEventProcessor = boost::make_shared<event_processor<concurrent_queue<receive_fct_t, with_callback_function> > >();
 
     // Create event_receiver instances:
     test = boost::make_shared<SyncTest>(testEventProcessor);
-    videoOutput = boost::make_shared<VideoOutput>(outputEventProcessor);
-    audioOutput = boost::make_shared<AudioOutput>(outputEventProcessor);
+    videoOutput = boost::make_shared<VideoOutput>(videoOutputEventProcessor);
+    audioOutput = boost::make_shared<AudioOutput>(audioOutputEventProcessor);
 
     // Start each event_processor in an own thread.
     // Demuxer has a custom main loop:
     testThread = boost::thread( testEventProcessor->get_callable() );
-    outputThread  = boost::thread( outputEventProcessor->get_callable() );
+    audioOutputThread  = boost::thread( audioOutputEventProcessor->get_callable() );
+    videoOutputThread  = boost::thread( videoOutputEventProcessor->get_callable() );
 }
 
 SyncTestApp::~SyncTestApp()

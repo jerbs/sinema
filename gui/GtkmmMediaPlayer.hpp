@@ -23,18 +23,15 @@
 #define GTKMM_MEDIA_PLAYER_HPP
 
 #include "player/MediaPlayer.hpp"  // indirectly include X11/Xlib.h
+#include "gui/GlibmmEventDispatcher.hpp"
 
 #include <gtkmm/drawingarea.h>
-#include <glibmm/dispatcher.h>
 #include <gdkmm/cursor.h>
 #include <sigc++/signal.h>
-#include <atomic>
 
-class GtkmmMediaPlayer : public MediaPlayer,
+class GtkmmMediaPlayer : public GlibmmEventDispatcher<MediaPlayer>,
 			 public Gtk::DrawingArea
 {
-    static Glib::Dispatcher m_dispatcher;
-
 public:
     sigc::signal<void, std::string> notificationFileName;
     sigc::signal<void, double> notificationDuration;
@@ -49,9 +46,6 @@ public:
 
     GtkmmMediaPlayer(PlayList& playList);
     virtual ~GtkmmMediaPlayer();
-
-    static void notifyGuiThread();
-    void processEventQueue();
 
     void zoom(double percent);
     void dontZoom();
@@ -78,8 +72,6 @@ private:
 
     void resizeWindow();
     bool on_idle();
-
-    static std::atomic_flag m_pendingProcessEventQueue;
 
     template<class EVENT> void getQuadrant(EVENT* event, int&x, int&y);
     Gdk::Cursor m_cursor;

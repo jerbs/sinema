@@ -25,30 +25,10 @@
 
 #include <boost/make_shared.hpp>
 
-// ===================================================================
-
-MediaCommonThreadNotification::MediaCommonThreadNotification()
-{
-    // Here the GUI thread is notified to call MediaCommon::processEventQueue();
-    if (m_fct)
-    {
-        m_fct();
-    }
-}
-
-void MediaCommonThreadNotification::setCallback(fct_t fct)
-{
-    m_fct = fct;
-}
-
-MediaCommonThreadNotification::fct_t MediaCommonThreadNotification::m_fct;
-
-// ===================================================================
 
 MediaCommon::MediaCommon()
     : base_type(boost::make_shared<event_processor<
-                concurrent_queue<receive_fct_t,
-                MediaCommonThreadNotification> > >())
+                concurrent_queue<receive_fct_t, with_callback_function> > >())
 {
     // Create event_processor instances:
     commonEventProcessor = boost::make_shared<event_processor<> >();
@@ -87,12 +67,4 @@ void MediaCommon::sendInitEvents()
     initEvent->configFile = configFile;
 
     configFile->queue_event(initEvent);
-}
-
-void MediaCommon::processEventQueue()
-{
-    while(!get_event_processor()->empty())
-    {
-        get_event_processor()->dequeue_and_process();
-    }
 }

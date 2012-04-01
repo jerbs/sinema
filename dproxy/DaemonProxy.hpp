@@ -54,24 +54,11 @@ struct RetryTimerExpired
     boost::shared_ptr<Receiver> receiver;
 };
 
-class DaemonProxyThreadNotification
-{
-public:
-    typedef void (*fct_t)();
-
-    DaemonProxyThreadNotification();
-    static void setCallback(fct_t fct);
-
-private:
-    static fct_t m_fct;
-};
-
 class DaemonProxy : public event_receiver<DaemonProxy,
-					  concurrent_queue<receive_fct_t, DaemonProxyThreadNotification> >,
+					  concurrent_queue<receive_fct_t, with_callback_function> >,
 			  public boost::enable_shared_from_this<DaemonProxy>
 {
-    friend class event_processor<concurrent_queue<receive_fct_t, DaemonProxyThreadNotification> >;
-    friend class DaemonProxyThreadNotification;
+    friend class event_processor<concurrent_queue<receive_fct_t, with_callback_function> >;
 
 public:
     typedef tcp_connection<DaemonProxy,
@@ -85,8 +72,6 @@ public:
 
     void setFrequency(const ChannelData& channelData);
     void startFrequencyScan(const std::string& standard);
-
-    void processEventQueue();
 
 private:
     // Events received from tcp_client and tcp_connection:

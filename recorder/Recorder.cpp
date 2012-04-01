@@ -46,27 +46,6 @@ extern "C"
 // #undef TRACE_DEBUG
 // #define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
-// ===================================================================
-
-RecorderThreadNotification::RecorderThreadNotification()
-{
-    // Here the Recorder thread is triggered to leave the select() call.
-    if (m_fct)
-    {
-        m_fct();
-    }
-}
-
-void RecorderThreadNotification::setCallback(fct_t fct)
-{
-    m_fct = fct;
-}
-
-RecorderThreadNotification::fct_t RecorderThreadNotification::m_fct;
-
-// ===================================================================
-
-Recorder* Recorder::instance = 0;
 
 Recorder::Recorder(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
@@ -92,9 +71,7 @@ Recorder::Recorder(event_processor_ptr_type evt_proc)
 	exit(1);
     }
 
-    // FIXME: This only works with a single Recorder instance.
-    instance = this;
-    RecorderThreadNotification::setCallback(notify);
+    get_event_processor()->attach(boost::bind(&Recorder::notify, this));
 }
 
 Recorder::~Recorder()
@@ -102,8 +79,6 @@ Recorder::~Recorder()
     if (m_piperfd != -1) close(m_piperfd);
     if (m_pipewfd != -1) close(m_pipewfd);
     if (m_avFormatContext != 0) closePvrReader();
-
-    RecorderThreadNotification::setCallback(0);
 }
 
 void Recorder::process(boost::shared_ptr<RecorderInitEvent> event)
@@ -419,7 +394,7 @@ void Recorder::notify()
     TRACE_DEBUG();
     const int bufferSize = 4;
     char buffer[bufferSize] = {0,0,0,0};
-    int num = write(instance->m_pipewfd, buffer, bufferSize);
+    int num = write(m_pipewfd, buffer, bufferSize);
     if (num == -1)
     {
 	if (errno == EAGAIN || errno == EWOULDBLOCK)

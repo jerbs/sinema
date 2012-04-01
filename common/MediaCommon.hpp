@@ -34,24 +34,11 @@ struct ConfigurationFileWritten;
 
 class ConfigFile;
 
-class MediaCommonThreadNotification
-{
-public:
-    typedef void (*fct_t)();
-
-    MediaCommonThreadNotification();
-    static void setCallback(fct_t fct);
-
-private:
-    static fct_t m_fct;
-};
-
 class MediaCommon : public event_receiver<MediaCommon,
-					  concurrent_queue<receive_fct_t, MediaCommonThreadNotification> >
+					  concurrent_queue<receive_fct_t, with_callback_function> >
 {
     // The friend declaration allows to define the process methods private:
-    friend class event_processor<concurrent_queue<receive_fct_t, MediaCommonThreadNotification> >;
-    friend class MediaCommonThreadNotification;
+    friend class event_processor<concurrent_queue<receive_fct_t, with_callback_function> >;
 
 public:
     MediaCommon();
@@ -60,8 +47,6 @@ public:
     void init();
 
     void saveConfigurationData(boost::shared_ptr<ConfigurationData> event);
-
-    void processEventQueue();
 
 protected:
     // EventReceiver

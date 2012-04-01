@@ -23,16 +23,14 @@
 #define GTKMM_DAEMON_PROXY_HPP
 
 #include "dproxy/DaemonProxy.hpp"
+#include "gui/GlibmmEventDispatcher.hpp"
 
-#include <glibmm/dispatcher.h>
 #include <sigc++/signal.h>
 
 struct ChannelData;
 
-class GtkmmDaemonProxy : public DaemonProxy
+class GtkmmDaemonProxy : public GlibmmEventDispatcher<DaemonProxy>
 {
-    static Glib::Dispatcher m_dispatcher;
-
 public:
     sigc::signal<void, const ChannelData&> notificationChannelTuned;
     sigc::signal<void, const ChannelData&> notificationSignalDetected;
@@ -41,8 +39,6 @@ public:
 
     GtkmmDaemonProxy();
     virtual ~GtkmmDaemonProxy();
-
-    static void notifyGuiThread();
 
 private:
     virtual void process(boost::shared_ptr<TunerNotifyChannelTuned> event);

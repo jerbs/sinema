@@ -31,18 +31,6 @@ class MediaRecorder;
 class Recorder;
 class RecorderAdapter;
 
-class RecorderThreadNotification
-{
-public:
-    typedef void (*fct_t)();
-
-    RecorderThreadNotification();
-    static void setCallback(fct_t fct);
-
-private:
-    static fct_t m_fct;
-};
-
 struct RecorderInitEvent
 {
     MediaRecorder* mediaRecorder;

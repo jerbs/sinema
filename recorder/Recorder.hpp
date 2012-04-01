@@ -32,12 +32,11 @@
 #include <unistd.h>
 
 class Recorder : public event_receiver<Recorder,
-				       concurrent_queue<receive_fct_t, RecorderThreadNotification> >
+				       concurrent_queue<receive_fct_t, with_callback_function> >
 {
-    friend class event_processor<concurrent_queue<receive_fct_t, RecorderThreadNotification> >;
-    friend class RecorderThreadNotification;
+    friend class event_processor<concurrent_queue<receive_fct_t, with_callback_function> >;
 
-    boost::shared_ptr<event_processor<concurrent_queue<receive_fct_t, RecorderThreadNotification> > > m_event_processor;
+    boost::shared_ptr<event_processor<concurrent_queue<receive_fct_t, with_callback_function> > > m_event_processor;
 
     enum state_t {
 	Closed,
@@ -62,8 +61,7 @@ private:
     void closePvrReader();
     void updateDuration();
 
-    static Recorder* instance;
-    static void notify();
+    void notify();
 
     MediaRecorder* mediaRecorder;
     boost::shared_ptr<RecorderAdapter> recorderAdapter;

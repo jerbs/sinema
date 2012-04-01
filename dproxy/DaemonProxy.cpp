@@ -23,28 +23,9 @@
 
 // ===================================================================
 
-DaemonProxyThreadNotification::DaemonProxyThreadNotification()
-{
-    // Here the GUI thread is notified to call MediaReceiver::processEventQueue();
-    if (m_fct)
-    {
-        m_fct();
-    }
-}
-
-void DaemonProxyThreadNotification::setCallback(fct_t fct)
-{
-    m_fct = fct;
-}
-
-DaemonProxyThreadNotification::fct_t DaemonProxyThreadNotification::m_fct;
-
-// ===================================================================
-
 DaemonProxy::DaemonProxy()
     : base_type(boost::make_shared<event_processor<
-                concurrent_queue<receive_fct_t,
-                DaemonProxyThreadNotification> > >()),
+                concurrent_queue<receive_fct_t, with_callback_function> > >()),
       serverAutoStartEnabled(true)
 {
     sysioEventProcessor = boost::make_shared<event_processor<> >();
@@ -83,17 +64,6 @@ void DaemonProxy::startFrequencyScan(const std::string& standard)
     if (proxy)
     {
 	proxy->queue_event(boost::make_shared<TunerStartScan>(standard));
-    }
-}
-
-// ===================================================================
-
-
-void DaemonProxy::processEventQueue()
-{
-    while(!get_event_processor()->empty())
-    {
-        get_event_processor()->dequeue_and_process();
     }
 }
 

@@ -105,12 +105,13 @@ private:
 
     // Boost threads:
     boost::thread testThread;
-    boost::thread outputThread;
+    boost::thread audioOutputThread;
+    boost::thread videoOutputThread;
 
     // EventProcessor:
     boost::shared_ptr<event_processor<> > testEventProcessor;
-    boost::shared_ptr<event_processor<> > outputEventProcessor;
-
+    boost::shared_ptr<event_processor<> > audioOutputEventProcessor;
+    boost::shared_ptr<event_processor<concurrent_queue<receive_fct_t, with_callback_function> > > videoOutputEventProcessor;
     void sendInitEvents();
 };
 

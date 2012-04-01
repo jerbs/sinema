@@ -35,8 +35,6 @@
 #define VideoDecoder SyncTest
 #define Deinterlacer SyncTest
 
-#define MediaPlayerThreadNotification NoTrigger
-
 // Don't include the original header files for these classes:
 #define MEDIA_PLAYER_HPP
 #define DEMUXER_HPP
@@ -630,24 +628,6 @@ struct SelectDeinterlacer
     {}
     std::string name;
 };
-
-// ===================================================================
-
-#ifndef SYNCTEST
-
-class MediaPlayerThreadNotification
-{
-public:
-    typedef void (*fct_t)();
-
-    MediaPlayerThreadNotification();
-    static void setCallback(fct_t fct);
-
-private:
-    static fct_t m_fct;
-};
-
-#endif
 
 // ===================================================================
 

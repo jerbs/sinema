@@ -38,9 +38,9 @@ class XFVideo;
 class XFVideoImage;
 
 class VideoOutput : public event_receiver<VideoOutput,
-					  concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >
+					  concurrent_queue<receive_fct_t, with_callback_function> >
 {
-    friend class event_processor<concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >;
+    friend class event_processor<concurrent_queue<receive_fct_t, with_callback_function> >;
 
 public:
     VideoOutput(event_processor_ptr_type evt_proc);

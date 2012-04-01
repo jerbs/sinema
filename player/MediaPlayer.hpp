@@ -39,11 +39,10 @@ class Deinterlacer;
 class PlayList;
 
 class MediaPlayer : public event_receiver<MediaPlayer,
-					  concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >
+					  concurrent_queue<receive_fct_t, with_callback_function> >
 {
     // The friend declaration allows to define the process methods private:
-    friend class event_processor<concurrent_queue<receive_fct_t, MediaPlayerThreadNotification> >;
-    friend class MediaPlayerThreadNotification;
+    friend class event_processor<concurrent_queue<receive_fct_t, with_callback_function> >;
 
 public:
     MediaPlayer(PlayList& playList);
@@ -78,8 +77,6 @@ public:
     void selectDeinterlacer(const std::string& name);
 
     void setVideoAttribute(const std::string& name, int value);
-
-    void processEventQueue();
 
 protected:
     // EventReceiver
