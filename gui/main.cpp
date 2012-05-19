@@ -31,6 +31,7 @@
 #include "gui/InhibitScreenSaver.hpp"
 #include "gui/MainWindow.hpp"
 #include "gui/PlayListWindow.hpp"
+#include "gui/RemoteControl.hpp"
 #include "gui/SignalDispatcher.hpp"
 #include "gui/GtkmmMediaRecorder.hpp"
 #include "player/XlibHelpers.hpp"
@@ -73,6 +74,7 @@ int main(int argc, char *argv[])
     MainWindow mainWindow(mediaPlayer, signalDispatcher);
     GtkmmMediaRecorder mediaRecorder;
     InhibitScreenSaver inhibitScreenSaver;
+    RemoteControl remoteControl;
     HelpDialog helpDialog;
     AboutDialog aboutDialog;
 
@@ -138,6 +140,22 @@ int main(int argc, char *argv[])
     signalDispatcher.signal_playback_switch.connect( sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::setPlaybackSwitch) );
     signalDispatcher.zoomMainWindow.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::zoom));
     signalDispatcher.dontZoom.connect(sigc::mem_fun(mediaPlayer, &GtkmmMediaPlayer::dontZoom));
+
+    // ---------------------------------------------------------------
+    // Signals: RemoteControl -> SignalDispatcher
+    remoteControl.signal_play.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_media_play) );
+    remoteControl.signal_pause.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_media_pause) );
+    remoteControl.signal_stop.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_media_stop) );
+    remoteControl.signal_record.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_media_record) );
+    remoteControl.signal_rewind.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_media_rewind) );
+    remoteControl.signal_forward.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_media_forward) );
+
+    remoteControl.signal_channelup.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_channel_next) );
+    remoteControl.signal_channeldown.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_channel_previous) );
+
+    remoteControl.signal_volumeup.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_volume_up) );
+    remoteControl.signal_volumedown.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_volume_down) );
+    remoteControl.signal_mute.connect( sigc::mem_fun(signalDispatcher, &SignalDispatcher::on_mute_toggled) );
 
     // ---------------------------------------------------------------
     // Signals: ControlWindow -> SignalDispatcher

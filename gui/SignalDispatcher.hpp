@@ -146,6 +146,8 @@ public:
     virtual void on_position_value_changed();
     virtual void on_volume_changed();
     virtual void on_volume_value_changed();
+    virtual void on_volume_up(int speed);
+    virtual void on_volume_down(int speed);
     virtual void on_mute_toggled();
 
 private:

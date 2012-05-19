@@ -462,12 +462,10 @@ bool SignalDispatcher::on_key_press_event(GdkEventKey* event)
 		on_media_pause();
 	    return true;
 	case GDK_Up:
-	    m_AdjustmentVolume.set_value(m_AdjustmentVolume.get_value() +
-					 m_AdjustmentVolume.get_step_increment() * factor);
+	    on_volume_up(factor);
 	    return true;
 	case GDK_Down:
-	    m_AdjustmentVolume.set_value(m_AdjustmentVolume.get_value() -
-					 m_AdjustmentVolume.get_step_increment() * factor);
+	    on_volume_down(factor);
 	    return true;
 	case 'm':
 	    m_refMute->set_active(!m_refMute->get_active());
@@ -1177,6 +1175,19 @@ void SignalDispatcher::on_volume_value_changed()
 	// Adjustment value changed.
 	signal_playback_volume(m_AdjustmentVolume.get_value());
     }
+}
+
+void SignalDispatcher::on_volume_up(int speed)
+{
+    m_AdjustmentVolume.set_value(m_AdjustmentVolume.get_value() +
+				 m_AdjustmentVolume.get_step_increment() * speed);
+ 
+}
+
+void SignalDispatcher::on_volume_down(int speed)
+{
+    m_AdjustmentVolume.set_value(m_AdjustmentVolume.get_value() -
+				 m_AdjustmentVolume.get_step_increment() * speed);
 }
 
 void SignalDispatcher::on_mute_toggled()

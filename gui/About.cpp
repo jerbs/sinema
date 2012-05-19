@@ -1,7 +1,7 @@
 //
 // About and Help dialog
 //
-// Copyright (C) Joachim Erbs, 2010
+// Copyright (C) Joachim Erbs, 2010-2012
 //
 //    This file is part of Sinema.
 //
@@ -37,7 +37,7 @@ AboutDialog::AboutDialog()
     set_program_name(applicationName);
     set_version(version);
     set_comments("A Media Player and TV Viewer");
-    set_copyright("Copyright (C) Joachim Erbs, 2009-2010");
+    set_copyright("Copyright (C) Joachim Erbs, 2009-2012");
     // set_website("");
     set_license(copying);
     std::list<Glib::ustring> authors;
