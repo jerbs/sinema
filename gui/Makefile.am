@@ -20,6 +20,7 @@ sinema_SOURCES = About.cpp About.hpp \
 		 PlayListTreeModel.cpp PlayListTreeModel.hpp \
 		 PlayListWindow.cpp PlayListWindow.hpp \
 		 RemoteControl.cpp RemoteControl.hpp \
+		 X11InputDevice.cpp X11InputDevice.hpp \
 		 SignalDispatcher.cpp SignalDispatcher.hpp
 sinema_CXXFLAGS= $(GUI_CFLAGS) -std=c++0x
 sinema_LDFLAGS = -rdynamic -L/usr/X11R6/lib $(BOOST_LDFLAGS)

@@ -22,6 +22,7 @@
 #include "gui/RemoteControl.hpp"
 #include "gui/KeyCodes.h"
 #include "platform/Logging.hpp"
+#include "gui/X11InputDevice.hpp"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
@@ -40,7 +41,13 @@ RemoteControl::RemoteControl()
 {
     get_input_device_list();
     guess_remote_control_device();
-    open_input_device();
+    if (open_input_device())
+    {
+	// Disable the remote control input device in X11.
+	// Otherwise some events (especially numbers and cursor keys) are received twice.
+	X11InputDevice x11InputDevice;
+	x11InputDevice.disable(ir_receiver->name);
+    }
 }
 
 RemoteControl::~RemoteControl()
@@ -133,10 +140,10 @@ void RemoteControl::guess_remote_control_device()
     }
 }
 
-void RemoteControl::open_input_device()
+bool RemoteControl::open_input_device()
 {
     if (! ir_receiver)
-	return;
+	return false;
 
     TRACE_DEBUG(<< "opening " << ir_receiver->device);
 
@@ -144,6 +151,7 @@ void RemoteControl::open_input_device()
     if (fd == -1)
     {
 	TRACE_ERROR("open failed: " << strerror(errno));
+	return false;
     }
 
     Glib::RefPtr<Glib::MainContext> mainContext = Glib::MainContext::get_default();
@@ -152,6 +160,8 @@ void RemoteControl::open_input_device()
     mainContext->add_poll(pollFD, priority);
     Glib::IOCondition condition = Glib::IO_IN | Glib::IO_ERR;
     Glib::signal_io().connect(sigc::mem_fun(*this, &RemoteControl::on_readable), fd, condition);
+
+    return true;
 }
 
 bool RemoteControl::on_readable(Glib::IOCondition)

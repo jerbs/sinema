@@ -82,7 +82,7 @@ private:
 
     void get_input_device_list();
     void guess_remote_control_device();
-    void open_input_device();
+    bool open_input_device();
 
     bool on_readable(Glib::IOCondition);
     void on_key_pressed(uint16_t code);
