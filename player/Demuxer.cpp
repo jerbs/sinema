@@ -1,7 +1,7 @@
 //
 // Demultiplexer
 //
-// Copyright (C) Joachim Erbs, 2009-2010
+// Copyright (C) Joachim Erbs, 2009-2012
 //
 //    This file is part of Sinema.
 //
@@ -33,8 +33,6 @@ extern "C"
 #include <libavutil/mathematics.h>
 }
 
-Demuxer* Demuxer::obj;
-
 Demuxer::Demuxer(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
       m_event_processor(evt_proc),
@@ -51,15 +49,15 @@ Demuxer::Demuxer(event_processor_ptr_type evt_proc)
       targetQueuedVideoPackets(10)
 {
     av_register_all();
-
-    // This only works for a single Demuxer class:
-    obj = this;
 }
 
 Demuxer::~Demuxer(){}
 
-int Demuxer::interrupt_cb()
+int Demuxer::interruptCallback(void* ptr)
 {
+    // FFmpeg regulary calls interrupt_cb in blocking functions to test 
+    // if asynchronous interruption is needed:
+    Demuxer* obj = (Demuxer*)ptr;
     return obj->m_event_processor->terminating();
 }
 
@@ -86,6 +84,11 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 
 	int ret;
 
+	// Allocate an AVFormatContext
+	avFormatContext = avformat_alloc_context();
+	avFormatContext->interrupt_callback.callback = interruptCallback;
+	avFormatContext->interrupt_callback.opaque = this;
+
 	// Open a media file as input
 	ret = avformat_open_input(&avFormatContext,
 				  fileName.c_str(),
@@ -100,11 +103,11 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	}
 
 	// Read packets of a media file to get stream information
-	ret = av_find_stream_info(avFormatContext);
+	ret = avformat_find_stream_info(avFormatContext, NULL);
 	if (ret < 0)
 	{
-	    TRACE_ERROR(<< "av_find_stream_info failed: " << ret);
-	    av_close_input_file(avFormatContext);
+	    TRACE_ERROR(<< "avformat_find_stream_info failed: " << ret);
+	    avformat_close_input(&avFormatContext);
 	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::FindStreamFailed));
 	    return;
 	}
@@ -221,7 +224,7 @@ void Demuxer::updateSystemStreamStatusOpening()
 	     videoStreamStatus == StreamClosed )
 	{
 	    // Opening audio and video stream failed.
-	    av_close_input_file(avFormatContext);
+	    avformat_close_input(&avFormatContext);
 	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::OpenStreamFailed));
 	    return;
 	}
@@ -246,7 +249,6 @@ void Demuxer::updateSystemStreamStatusOpening()
 	const double INV_AV_TIME_BASE = double(1)/AV_TIME_BASE;
 	nfi->fileName = fileName;
 	nfi->duration = double(avFormatContext->duration) * INV_AV_TIME_BASE;
-	nfi->file_size = avFormatContext->file_size;
 	mediaPlayer->queue_event(nfi);
 
 	mediaPlayer->queue_event(boost::make_shared<OpenFileResp>());
@@ -328,7 +330,7 @@ void Demuxer::updateSystemStreamStatusClosing()
 	{
 	    systemStreamStatus = SystemStreamClosed;
 
-	    av_close_input_file(avFormatContext);
+	    avformat_close_input(&avFormatContext);
 	    avFormatContext = 0;
 
 	    mediaPlayer->queue_event(boost::make_shared<CloseFileResp>());
@@ -419,10 +421,6 @@ void Demuxer::process(boost::shared_ptr<ConfirmVideoPacketEvent>)
 
 void Demuxer::operator()()
 {
-    // FFmpeg regulary calls interrupt_cb in blocking functions to test 
-    // if asynchronous interruption is needed:
-    avio_set_interrupt_cb(interrupt_cb);
-
     AVPacket avPacketStorage;
     AVPacket* avPacket = &avPacketStorage;
 

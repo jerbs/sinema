@@ -1,7 +1,7 @@
 //
 // Recorder
 //
-// Copyright (C) Joachim Erbs, 2010
+// Copyright (C) Joachim Erbs, 2012
 //
 //    This file is part of Sinema.
 //
@@ -52,6 +52,8 @@ public:
     void operator()();
 
 private:
+    static int interruptCallback(void* ptr);
+
     void process(boost::shared_ptr<RecorderInitEvent> event);
 
     void process(boost::shared_ptr<StartRecordingReq> event);

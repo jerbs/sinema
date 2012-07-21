@@ -1,7 +1,7 @@
 //
 // Recorder
 //
-// Copyright (C) Joachim Erbs, 2010
+// Copyright (C) Joachim Erbs, 2012
 //
 //    This file is part of Sinema.
 //
@@ -46,7 +46,6 @@ extern "C"
 // #undef TRACE_DEBUG
 // #define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
-
 Recorder::Recorder(event_processor_ptr_type evt_proc)
     : base_type(evt_proc),
       m_event_processor(evt_proc),
@@ -79,6 +78,14 @@ Recorder::~Recorder()
     if (m_piperfd != -1) close(m_piperfd);
     if (m_pipewfd != -1) close(m_pipewfd);
     if (m_avFormatContext != 0) closePvrReader();
+}
+
+int Recorder::interruptCallback(void* ptr)
+{
+    // FFmpeg regulary calls interrupt_cb in blocking functions to test 
+    // if asynchronous interruption is needed:
+    Recorder* obj = (Recorder*)ptr;
+    return obj->m_event_processor->terminating();
 }
 
 void Recorder::process(boost::shared_ptr<RecorderInitEvent> event)
@@ -337,6 +344,11 @@ void Recorder::openPvrReader()
 	closePvrReader();
     }
 
+    // Allocate an AVFormatContext
+    m_avFormatContext = avformat_alloc_context();
+    m_avFormatContext->interrupt_callback.callback = interruptCallback;
+    m_avFormatContext->interrupt_callback.opaque = this;
+
     int ret = avformat_open_input(&m_avFormatContext,
 				  url.c_str(),
 				  0,   // don't force any format, AVInputFormat*,
@@ -353,7 +365,7 @@ void Recorder::closePvrReader()
 {
     if (m_avFormatContext)
     {
-	av_close_input_file(m_avFormatContext);
+	avformat_close_input(&m_avFormatContext);
 	m_avFormatContext = 0;
     }
 }
@@ -365,11 +377,11 @@ void Recorder::updateDuration()
     if (m_avFormatContext)
     {
 	openPvrReader();
-	int ret = av_find_stream_info(m_avFormatContext);
+	int ret = avformat_find_stream_info(m_avFormatContext, NULL);
 	if (ret < 0)
 	{
-	    TRACE_ERROR(<< "av_find_stream_info failed: " << ret);
-	    av_close_input_file(m_avFormatContext);
+	    TRACE_ERROR(<< "avformat_find_stream_info failed: " << ret);
+	    avformat_close_input(&m_avFormatContext);
 	    m_avFormatContext = 0;
 	    return;
 	}
@@ -378,7 +390,6 @@ void Recorder::updateDuration()
 	const double INV_AV_TIME_BASE = double(1)/AV_TIME_BASE;
 	nfi->fileName = m_tmpFile;
 	nfi->duration = double(m_avFormatContext->duration) * INV_AV_TIME_BASE;
-	nfi->file_size = m_avFormatContext->file_size;
 	TRACE_DEBUG(<< "NotificationFileInfo = " << *nfi);
 	mediaRecorder->queue_event(nfi);
     }

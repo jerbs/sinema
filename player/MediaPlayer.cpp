@@ -1,7 +1,7 @@
 //
 // Media Player
 //
-// Copyright (C) Joachim Erbs, 2009-2010
+// Copyright (C) Joachim Erbs, 2009-2012
 //
 //    This file is part of Sinema.
 //
@@ -393,8 +393,7 @@ std::ostream& operator<<(std::ostream& strm, const NotificationFileInfo& nfi)
 {
     strm << "("
 	 << nfi.fileName << " "
-	 << nfi.duration << "sec "
-	 << nfi.file_size << "byte)";
+	 << nfi.duration << "sec)";
 
     return strm;
 }

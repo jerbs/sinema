@@ -1,7 +1,7 @@
 //
 // Media Player Events
 //
-// Copyright (C) Joachim Erbs, 2009-2010
+// Copyright (C) Joachim Erbs, 2009-2012
 //
 //    This file is part of Sinema.
 //
@@ -378,7 +378,6 @@ struct NotificationFileInfo
 {
     std::string fileName;
     double duration;
-    int64_t file_size;
 };
 
 std::ostream& operator<<(std::ostream& strm, const NotificationFileInfo& nfi);

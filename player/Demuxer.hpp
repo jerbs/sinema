@@ -1,7 +1,7 @@
 //
 // Demultiplexer
 //
-// Copyright (C) Joachim Erbs, 2009-2010
+// Copyright (C) Joachim Erbs, 2009-2012
 //
 //    This file is part of Sinema.
 //
@@ -58,8 +58,6 @@ class Demuxer : public event_receiver<Demuxer>
     StreamStatus audioStreamStatus;
     StreamStatus videoStreamStatus;
 
-    static Demuxer* obj;
-
     int queuedAudioPackets;
     int queuedVideoPackets;
     int targetQueuedAudioPackets;
@@ -79,7 +77,7 @@ private:
     boost::shared_ptr<AudioDecoder> audioDecoder;
     boost::shared_ptr<VideoDecoder> videoDecoder;
 
-    static int interrupt_cb();
+    static int interruptCallback(void*);
 
     void process(boost::shared_ptr<InitEvent> event);
     void process(boost::shared_ptr<StopEvent> event);

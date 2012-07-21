@@ -1,7 +1,7 @@
 //
 // Video Decoder
 //
-// Copyright (C) Joachim Erbs, 2009-2010
+// Copyright (C) Joachim Erbs, 2009-2012
 //
 //    This file is part of Sinema.
 //
@@ -131,7 +131,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 		avCodec = avcodec_find_decoder(avCodecContext->codec_id);
 		if (avCodec)
 		{
-		    int ret = avcodec_open(avCodecContext, avCodec);
+		    int ret = avcodec_open2(avCodecContext, avCodec, 0);
 		    if (ret == 0)
 		    {
 			avStream = avFormatContext->streams[videoStreamIndex];
