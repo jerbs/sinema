@@ -28,6 +28,11 @@
 #include <stdlib.h>
 #include <sys/types.h>
 
+extern "C"
+{
+#include <libavutil/mathematics.h>
+}
+
 Demuxer* Demuxer::obj;
 
 Demuxer::Demuxer(event_processor_ptr_type evt_proc)
