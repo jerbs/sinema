@@ -33,12 +33,18 @@ class XFWindow;
 
 struct StartTest
 {
+    int frames_per_second;
     int sample_rate;
     int channels;
 
     unsigned int width;
     unsigned int height;
     int imageFormat;
+
+    enum {
+	Tonleiter,
+	Tick
+    } mode;
 };
 
 class SyncTest : public event_receiver<SyncTest>
@@ -80,8 +86,10 @@ private:
     void process(boost::shared_ptr<SeekRelativeReq>) {}
 
     void generate();
-    void generateAudioFrame(boost::shared_ptr<AudioFrame> audioFrame);
-    void generateVideoFrame(XFVideoImage* videoFrame);
+    void generateAudioFrameTonleiter(boost::shared_ptr<AudioFrame> audioFrame);
+    void generateVideoFrameTonleiter(XFVideoImage* videoFrame);
+    void generateAudioFrameTick(boost::shared_ptr<AudioFrame> audioFrame);
+    void generateVideoFrameTick(XFVideoImage* videoFrame);
 };
 
 class SyncTestApp

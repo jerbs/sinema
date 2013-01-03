@@ -100,8 +100,17 @@ void SyncTest::generate()
 	std::unique_ptr<XFVideoImage> videoFrame(std::move(videoFrameQueue.front()));
 	videoFrameQueue.pop();
 
-	generateAudioFrame(audioFrame);
-	generateVideoFrame(videoFrame.get());
+	switch (m_conf.mode)
+	{
+	case StartTest::Tonleiter:
+	    generateAudioFrameTonleiter(audioFrame);
+	    generateVideoFrameTonleiter(videoFrame.get());
+	    break;
+	case StartTest::Tick:
+	    generateAudioFrameTick(audioFrame);
+	    generateVideoFrameTick(videoFrame.get());
+	    break;
+	}
 
 	audioFrame->setPTS(m_pts);
 	videoFrame->setPTS(m_pts);
@@ -109,13 +118,121 @@ void SyncTest::generate()
 	audioOutput->queue_event(audioFrame);
 	videoOutput->queue_event(std::move(videoFrame));
 
-	m_pts += 1;
+	m_pts += 1.0/float(m_conf.frames_per_second);
     }
 }
 
-void SyncTest::generateAudioFrame(boost::shared_ptr<AudioFrame> audioFrame)
+void SyncTest::generateAudioFrameTick(boost::shared_ptr<AudioFrame> audioFrame)
 {
-    int byteSize = m_conf.sample_rate * m_conf.channels * 2;
+    int samples_per_frame = m_conf.sample_rate / m_conf.frames_per_second;
+    int byteSize = samples_per_frame * m_conf.channels * 2;
+
+    audioFrame->reset();
+    audioFrame->setFrameByteSize(byteSize);
+
+    if (audioFrame->numAllocatedBytes() < byteSize)
+    {
+	std::cout << "Error: Audio frames are too small." << std::endl;
+	exit(1);
+    }
+
+    struct frame_t
+    {
+	int16_t leftSample;
+	int16_t rightSample;
+    };
+
+    frame_t* frame = (frame_t*)audioFrame->data();
+
+    int phase = int(float(m_pts) * float(m_conf.frames_per_second)) % m_conf.frames_per_second;
+
+    if (phase == m_conf.frames_per_second / 2)
+    {
+	double f = 440;
+	for (int t=0; t<samples_per_frame; t++)
+	{
+	    double s = 10000*sin(f*2*M_PI*(double)t/(double)m_conf.sample_rate);
+	    frame[t].leftSample = s;
+	    frame[t].rightSample = s;
+	}
+    }
+    else
+    {
+	for (int t=0; t<samples_per_frame; t++)
+	{
+	    frame[t].leftSample = 0;
+	    frame[t].rightSample = 0;
+	}
+    }
+}
+
+void SyncTest::generateVideoFrameTick(XFVideoImage* videoFrame)
+{
+    int phase = int(float(m_pts) * float(m_conf.frames_per_second)) % m_conf.frames_per_second;
+
+    int color1 = 0;
+    int color2 = 255;
+    if (phase == m_conf.frames_per_second / 2)
+    {
+	color1 = 255;
+	color2 = 0;
+    }
+
+    XvImage* yuvImage = videoFrame->xvImage();
+
+    int w = videoFrame->width();
+    int h = videoFrame->height();
+
+        if (yuvImage->id == GUID_YUV12_PLANAR)
+    {
+        char* Y = videoFrame->data() + yuvImage->offsets[0];
+        char* V = videoFrame->data() + yuvImage->offsets[1];
+        char* U = videoFrame->data() + yuvImage->offsets[2];
+
+	for (int y=0; y<h; y++)
+	{
+	    for (int x=0; x<w; x++)
+            {
+                Y[x + y*yuvImage->pitches[0]] = color1;
+            }
+	}
+
+        for (int x=0; x<w/2; x++)
+            for (int y=0; y<h/2; y++)
+            {
+                U[x + y*yuvImage->pitches[2]] = 128;
+                V[x + y*yuvImage->pitches[1]] = 128;
+            }
+    }
+    else if (yuvImage->id == GUID_YUY2_PACKED)
+    {
+        char* Packed = videoFrame->data() + yuvImage->offsets[0];
+
+	for (int y=0; y<h; y++)
+	{
+	    for (int x=0; x<w; x++)
+            {
+                Packed[2*x + y*yuvImage->pitches[0]] = 128;  // Y
+            }
+	}
+
+        for (int x=0; x<w/2; x++)
+            for (int y=0; y<h; y++)
+            {
+                Packed[4*x+1 + y*yuvImage->pitches[0]] = 128; // U
+                Packed[4*x+3 + y*yuvImage->pitches[0]] = 128;   // V
+            }
+    }
+    else
+    {
+        TRACE_THROW(std::string, << "unsupported format 0x" << std::hex << yuvImage->id);
+    }
+}
+
+void SyncTest::generateAudioFrameTonleiter(boost::shared_ptr<AudioFrame> audioFrame)
+{
+    int samples_per_frame = m_conf.sample_rate / m_conf.frames_per_second;
+    int byteSize = samples_per_frame * m_conf.channels * 2;
 
     audioFrame->reset();
     audioFrame->setFrameByteSize(byteSize);
@@ -147,7 +264,7 @@ void SyncTest::generateAudioFrame(boost::shared_ptr<AudioFrame> audioFrame)
     frame_t* frame = (frame_t*)audioFrame->data();
     double f = cDur[int(m_pts) % 8];
 
-    for (int t=0; t<m_conf.sample_rate; t++)
+    for (int t=0; t<samples_per_frame; t++)
     {
 	
 	double s = 10000*sin(f*2*M_PI*(double)t/(double)m_conf.sample_rate);
@@ -156,7 +273,7 @@ void SyncTest::generateAudioFrame(boost::shared_ptr<AudioFrame> audioFrame)
     }
 }
 
-void SyncTest::generateVideoFrame(XFVideoImage* videoFrame)
+void SyncTest::generateVideoFrameTonleiter(XFVideoImage* videoFrame)
 {
     //unsigned int& width = m_conf.width;
     //unsigned int& height = m_conf.height;
@@ -254,11 +371,15 @@ void SyncTestApp::operator()()
     sendInitEvents();
 
     boost::shared_ptr<StartTest> startTest(new StartTest());
+    startTest->frames_per_second = 25;
+    //startTest->frames_per_second = 2;
     startTest->sample_rate = 48000;
     startTest->channels = 2;
     startTest->width  = m_width;
     startTest->height = m_heigth;
     startTest->imageFormat = m_imageFormat;
+    startTest->mode = StartTest::Tick;
+    //startTest->mode = StartTest::Tonleiter;
 
     test->queue_event(startTest);
 
