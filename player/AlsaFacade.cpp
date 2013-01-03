@@ -25,12 +25,16 @@
 #include <iostream>
 #include <stdio.h>
 
-static char const * deviceName = "plug:default";
-//static char const * deviceName = "plughw:Intel";
-//static char const * deviceName = "plug:SLAVE=hw";
-//static char const * deviceName = "plughw:0,0";
+// static char const * deviceName = "default";           // ALSA
+static char const * deviceName = "plug:default";         // Pulse Audio ALSA plugin
+// static char const * deviceName = "plughw:Intel";
+// static char const * deviceName = "plug:SLAVE=hw";
+// static char const * deviceName = "plughw:0,0";
 
 // ./amixer -D default scontents
+
+// #undef TRACE_DEBUG
+// #define TRACE_DEBUG(s) std::cout << "D: " << __PRETTY_FUNCTION__ << " " s << std::endl;
 
 // ===================================================================
 // CopyLog copies the ALSA log into application log file:
@@ -590,7 +594,7 @@ bool AFPCMDigitalAudioInterface::directWrite(boost::shared_ptr<AudioFrame> frame
     commitres = snd_pcm_mmap_commit(handle, offset, frames);
     if (commitres < 0 || (snd_pcm_uframes_t)commitres != frames)
     {
-	TRACE_ERROR(<< "snd_pcm_mmap_commit failed");
+	TRACE_ERROR(<< "snd_pcm_mmap_commit failed: " << commitres << "(" << snd_strerror(commitres) << ")");
 	if ((err = xrun_recovery(commitres >= 0 ? -EPIPE : commitres)) < 0)
 	{
 	    TRACE_ERROR( << "snd_pcm_mmap_commit recovery failed: " << snd_strerror(err));
