@@ -13,6 +13,8 @@
 
 #include "platform/tcp_connection.hpp"
 
+#include <boost/asio/io_service.hpp>
+
 template<class Receiver>
 class tcp_server
     : public boost::enable_shared_from_this<tcp_server<Receiver> >
@@ -40,7 +42,7 @@ class tcp_server
 	//server->queue_event(initEvent);
 
 	boost::shared_ptr<tcp_connection_type> 
-	    new_connection(new tcp_connection_type(m_acceptor.io_service(),
+	    new_connection(new tcp_connection_type(m_acceptor.get_io_service(),
 						   receiver));
 
 	m_acceptor.async_accept(new_connection->socket(),
