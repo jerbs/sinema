@@ -279,23 +279,11 @@ void AudioDecoder::decode()
 
 	    if (ret>=0)
 	    {
-		double packetPTS;
-
 		// ret contains number of bytes used from avPacket.
 		// Maybe avcodec_decode_audio2 has to be called again.
 
-		if (avPacket.pts != (int64_t)AV_NOPTS_VALUE)
-		{
-		    packetPTS = avPacket.pts;
-		}
-		else if (avPacket.dts != (int64_t)AV_NOPTS_VALUE)
-		{
-		    packetPTS = avPacket.dts;
-		}
-		else
-		{
-		    packetPTS = 0;
-		}
+		double packetPTS = avPacket.pts;
+		// packetPTS = avPacket.dts;
 
 		packetPTS *= av_q2d(avStream->time_base);
 

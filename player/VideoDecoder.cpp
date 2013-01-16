@@ -456,34 +456,24 @@ void VideoDecoder::decode()
 
 	if (ret>=0)
 	{
-	    if (avPacket.dts == (int64_t)AV_NOPTS_VALUE &&
-		avFrame->opaque &&
-		*(int64_t*)avFrame->opaque != (int64_t)AV_NOPTS_VALUE)
-	    {
-		pts = *(uint64_t *)avFrame->opaque;
-	    }
-	    else if (avPacket.dts != (int64_t)AV_NOPTS_VALUE)
-	    {
-		pts = avPacket.dts;
-	    }
-	    else
-	    {
-		pts = 0;
-	    }
-	    pts *= av_q2d(avStream->time_base);
-
-	    static int64_t lastDts = 0;
-
-	    TRACE_INFO( << "VDEC: pts=" << std::fixed << std::setprecision(2) << pts 
-			<< ", pts=" << avFrame->pts
-			<< ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
-			<< ", time_base=" << avStream->time_base
-			<< ", frameFinished=" << frameFinished );
-
-	    lastDts = avPacket.dts;
-	    
 	    if (frameFinished)
 	    {
+		// pts = av_frame_get_best_effort_timestamp(avFrame);
+	        pts = avFrame->pkt_pts;
+		pts *= av_q2d(avStream->time_base);
+
+		{
+		    static int64_t lastDts = 0;
+
+		    TRACE_INFO( << "VDEC: pts=" << std::fixed << std::setprecision(2) << pts
+				<< ", pts=" << avFrame->pts
+				<< ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
+				<< ", time_base=" << avStream->time_base
+				<< ", frameFinished=" << frameFinished );
+
+		    lastDts = avPacket.dts;
+		}
+
 		avFrameIsFree = false;
 		queue();
 		if (!avFrameIsFree)
