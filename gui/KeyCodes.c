@@ -21,6 +21,7 @@
 
 #include <KeyCodes.h>
 #include <linux/input.h>
+#include <stddef.h>
 
 #pragma GCC diagnostic ignored "-Woverride-init"
 
