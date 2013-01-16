@@ -10,6 +10,7 @@ libplayer_la_SOURCES = AlsaFacade.cpp AlsaFacade.hpp \
 		       Deinterlacer.cpp Deinterlacer.hpp \
 		       Demuxer.cpp Demuxer.hpp \
 		       GeneralEvents.hpp \
+		       JpegWriter.cpp JpegWriter.hpp \
 		       MediaPlayer.cpp MediaPlayer.hpp \
 		       PlayList.cpp PlayList.hpp \
 		       VideoDecoder.cpp VideoDecoder.hpp \

@@ -23,6 +23,7 @@
 #include "player/AudioOutput.hpp"
 #include "player/AudioFrame.hpp"
 #include "player/Demuxer.hpp"
+#include "player/JpegWriter.hpp"
 
 #include <boost/make_shared.hpp>
 #include <iomanip>
@@ -316,6 +317,15 @@ void AudioDecoder::decode()
 		    frameQueue.pop();
 		    numFramesCurrentPacket = 0;
 		    audioFrame->setPTS(framePTS);
+
+#ifdef STORE_DECODER_OUTPUT_ENABLED
+		    // This is for debugging AV-sync issues:
+		    JpegWriter::write("audio", framePTS, audioFrame.get(),
+				      avCodecContext->sample_rate,
+				      avCodecContext->channels,
+				      avCodecContext->sample_fmt);
+#endif
+
 		    TRACE_DEBUG(<< "Queueing AudioFrame");
 		    audioOutput->queue_event(audioFrame);
 		}

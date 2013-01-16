@@ -36,7 +36,7 @@ sinema_LDADD   = ../receiver/libreceiver.la \
 		 $(BOOST_SYSTEM_LIB) $(BOOST_SERIALIZATION_LIB) \
 		 $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
 		 -lX11 -lXext -lXv \
-		 -lz -lm \
+		 -lz -lm -ljpeg \
 		 -lasound
 
 About.cpp: COPYING.inc README.inc version.inc

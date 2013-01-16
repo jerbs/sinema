@@ -26,6 +26,7 @@
 #include "player/Deinterlacer.hpp"
 #include "player/XlibFacade.hpp"
 #include "player/XlibHelpers.hpp"
+#include "player/JpegWriter.hpp"
 
 #include <boost/make_shared.hpp>
 #include <iomanip>
@@ -594,6 +595,11 @@ void VideoDecoder::queue()
 	      avPicture.linesize);           // dstStride: Array with strides of each plane
 
     xfVideoImage->setPTS(pts);
+
+#ifdef STORE_DECODER_OUTPUT_ENABLED
+    // This is for debugging AV-sync issues:
+    JpegWriter::write("video", pts, avFrame);
+#endif
 
     if (avFrame->interlaced_frame && yuvImage->id == GUID_YUY2_PACKED)
     {

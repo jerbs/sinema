@@ -81,6 +81,8 @@ public:
 	return (offset == frameByteSize) ? true : false;
     }
 
+    char* getBufferAddr() {return buf;}
+
 
 private:
     AudioFrame();
