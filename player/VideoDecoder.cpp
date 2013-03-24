@@ -163,7 +163,7 @@ void VideoDecoder::process(boost::shared_ptr<OpenVideoStreamReq> event)
 		    }
 		    else
 		    {
-			TRACE_ERROR(<< "avcodec_open failed: ret = " << ret);
+			TRACE_ERROR(<< "avcodec_open failed: " << AvErrorCode(ret));
 		    }
 		}
 		else
@@ -509,7 +509,7 @@ void VideoDecoder::decode()
 	}
 	else
 	{
-	    TRACE_ERROR(<< "avcodec_decode_video failed");
+	    TRACE_ERROR(<< "avcodec_decode_video failed: " << AvErrorCode(ret));
 	}
     }
 

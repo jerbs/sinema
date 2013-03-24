@@ -74,7 +74,7 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 		}
 		else
 		{
-		    TRACE_ERROR(<< "avcodec_open failed: ret = " << ret);
+		    TRACE_ERROR(<< "avcodec_open failed: " << AvErrorCode(ret));
 		}
 	    }
 	    else

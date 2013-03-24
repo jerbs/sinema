@@ -94,10 +94,9 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 				  fileName.c_str(),
 				  0,   // don't force any format, AVInputFormat*,
 				  0);  // AVDictionary**
-	if (ret != 0)
+	if (ret < 0)
 	{
-	    
-	    TRACE_ERROR(<< "avformat_open_input failed: " << ret);
+	    TRACE_ERROR(<< "avformat_open_input failed: " << AvErrorCode(ret));
 	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::OpenFileFailed));
 	    return;
 	}
@@ -106,7 +105,7 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	ret = avformat_find_stream_info(avFormatContext, NULL);
 	if (ret < 0)
 	{
-	    TRACE_ERROR(<< "avformat_find_stream_info failed: " << ret);
+	    TRACE_ERROR(<< "avformat_find_stream_info failed: " << AvErrorCode(ret));
 	    avformat_close_input(&avFormatContext);
 	    mediaPlayer->queue_event(boost::make_shared<OpenFileFail>(OpenFileFail::FindStreamFailed));
 	    return;
@@ -389,7 +388,7 @@ void Demuxer::process(boost::shared_ptr<SeekAbsoluteReq> event)
 	}
 	else
 	{
-	    TRACE_ERROR(<< "av_seek_frame failed: ret=" << ret);
+	    TRACE_ERROR(<< "av_seek_frame failed: " << AvErrorCode(ret));
 	}
     }
 }
@@ -458,7 +457,7 @@ void Demuxer::operator()()
 	    }
 	    else
 	    {
-		TRACE_ERROR(<< "av_read_frame failed: " << ret);
+		TRACE_ERROR(<< "av_read_frame failed: " << AvErrorCode(ret));
 
 		systemStreamFailed = true;
 

@@ -103,4 +103,24 @@ private:
     void updateSystemStreamStatusClosing();
 };
 
+struct AvErrorCode
+{
+    AvErrorCode(int error_code)
+	: error_code(error_code)
+    {}
+    int error_code;
+};
+
+inline std::ostream& operator<<(std::ostream& os, const AvErrorCode& error)
+{
+    char buf[256];
+    if (av_strerror(error.error_code, buf, sizeof(buf)) < 0)
+    {
+	buf[0] = 0;
+    }
+
+    os << buf << "(" << error.error_code << ")";
+    return os;
+}
+
 #endif
