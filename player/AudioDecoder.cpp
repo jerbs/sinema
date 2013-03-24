@@ -284,7 +284,7 @@ void AudioDecoder::decode()
 		// Maybe avcodec_decode_audio2 has to be called again.
 
 		double packetPTS = avPacket.pts;
-		// packetPTS = avPacket.dts;
+		// double packetPTS = avPacket.dts;    // No korrekt AV-Sync with this timestamp.
 
 		packetPTS *= av_q2d(avStream->time_base);
 

@@ -460,27 +460,50 @@ void VideoDecoder::decode()
 	    if (frameFinished)
 	    {
 		// pts = av_frame_get_best_effort_timestamp(avFrame);
-	        pts = avFrame->pkt_pts;
-		pts *= av_q2d(avStream->time_base);
+		// pts = avPacket.dts;    // No korrekt AV-Sync with this timestamp.
 
+		uint64_t int_pts = avFrame->pkt_pts;
+		bool guessed = false;
+
+		if (int_pts != AV_NOPTS_VALUE)
+		{
+		    // Decoder provided a valid PTS:
+		    pts = int_pts;
+		    pts *= av_q2d(avStream->time_base);
+		    avFrameIsFree = false;
+		}
+		else if (int_pts == AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE)
+		{
+		    // No PTS from decoder, use previous PTS plus offset:
+		    pts += av_q2d(avStream->time_base);
+		    guessed = true;
+		    avFrameIsFree = false;
+		}
+		else 
+		{
+		    // No previous PTS, discard frame:
+		    avFrameIsFree = true;
+		}
+
+		if (!avFrameIsFree)
 		{
 		    static int64_t lastDts = 0;
 
-		    TRACE_INFO( << "VDEC: pts=" << std::fixed << std::setprecision(2) << pts
+		    TRACE_INFO( << "VDEC: pts=" << std::fixed << std::setprecision(2)
+				<< pts << (guessed ? "*" : "")
 				<< ", pts=" << avFrame->pts
 				<< ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
 				<< ", time_base=" << avStream->time_base
 				<< ", frameFinished=" << frameFinished );
 
 		    lastDts = avPacket.dts;
-		}
 
-		avFrameIsFree = false;
-		queue();
-		if (!avFrameIsFree)
-		{
-		    // Call queue() again when a frame is available.
-		    return;
+		    queue();
+		    if (!avFrameIsFree)
+		    {
+			// Call queue() again when a frame is available.
+			return;
+		    }
 		}
 	    }
 	}
