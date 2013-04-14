@@ -46,7 +46,15 @@ class AudioDecoder : public event_receiver<AudioDecoder>
 
     int audioStreamIndex;
 
-    int posCurrentPacket; // Offset in avPacket in packetQueue.front()
+    AVPacket avPacket;
+    bool avPacketIsFree;
+
+    AVFrame* avFrame;
+    bool avFrameIsFree;
+    double pts;
+    int avFrameBytesTransmitted;
+
+    // int posCurrentPacket; // Offset in avPacket in packetQueue.front()
     int numFramesCurrentPacket; // Number of samples added to frameQueue.front()
 
     std::queue<boost::shared_ptr<AudioFrame> > frameQueue;
@@ -55,20 +63,8 @@ class AudioDecoder : public event_receiver<AudioDecoder>
     bool eos;
 
 public:
-    AudioDecoder(event_processor_ptr_type evt_proc)
-	: base_type(evt_proc),
-	  state(Closed),
-	  avFormatContext(0),
-	  avCodecContext(0),
-	  avCodec(0),
-	  avStream(0),
-	  audioStreamIndex(-1),
-	  posCurrentPacket(0),
-	  numFramesCurrentPacket(0),
-	  eos(false)
-    {}
-    ~AudioDecoder()
-    {}
+    AudioDecoder(event_processor_ptr_type evt_proc);
+    ~AudioDecoder();
 
 private:
     boost::shared_ptr<Demuxer> demuxer;
@@ -86,6 +82,7 @@ private:
     void process(boost::shared_ptr<EndOfAudioStream> event);
 
     void decode();
+    void queue();
 };
 
 #endif

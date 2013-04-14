@@ -28,6 +28,32 @@
 #include <boost/make_shared.hpp>
 #include <iomanip>
 #include <sys/types.h>
+#include <algorithm>
+
+AudioDecoder::AudioDecoder(event_processor_ptr_type evt_proc)
+    : base_type(evt_proc),
+      state(Closed),
+      avFormatContext(0),
+      avCodecContext(0),
+      avCodec(0),
+      avStream(0),
+      audioStreamIndex(-1),
+      avPacketIsFree(true),
+      avFrame(avcodec_alloc_frame()),
+      avFrameIsFree(true),
+      pts(0),
+      avFrameBytesTransmitted(0),
+      eos(false)
+{
+}
+
+AudioDecoder::~AudioDecoder()
+{
+    if (avFrame)
+    {
+	av_free(avFrame);
+    }
+}
 
 void AudioDecoder::process(boost::shared_ptr<InitEvent> event)
 {
@@ -151,14 +177,13 @@ void AudioDecoder::process(boost::shared_ptr<CloseAudioStreamReq>)
 	{
 	    packetQueue.pop();
 	}
-	posCurrentPacket = 0;
 
 	// Throw away all queued frames:
 	while (!frameQueue.empty())
 	{
 	    frameQueue.pop();
 	}
-	numFramesCurrentPacket = 0;
+	avFrameIsFree = true;
 
 	audioOutput->queue_event(boost::make_shared<CloseAudioOutputReq>());
 
@@ -203,6 +228,7 @@ void AudioDecoder::process(boost::shared_ptr<AudioFrame> event)
 	TRACE_DEBUG();
 
 	frameQueue.push(event);
+	queue();
 	decode();
     }
 }
@@ -224,8 +250,7 @@ void AudioDecoder::process(boost::shared_ptr<FlushReq> event)
 	    demuxer->queue_event(confirm);
 	}
 
-	posCurrentPacket = 0;
-	numFramesCurrentPacket = 0;
+	avFrameIsFree = true;
 
 	// Forward event to AudioOutput:
 	audioOutput->queue_event(event);
@@ -252,103 +277,105 @@ extern std::ostream& operator<<(std::ostream& strm, AVRational r);
 
 void AudioDecoder::decode()
 {
-    TRACE_DEBUG(<< "packetQueue: "  << (packetQueue.empty() ? "empty" : "has data")
-		<< ", frameQueue: " << (frameQueue.empty()  ? "empty" : "has data"));
-
-    while ( !packetQueue.empty() &&
-	    !frameQueue.empty() )
+    while (1)
     {
-        boost::shared_ptr<AudioPacketEvent> audioPacketEvent(packetQueue.front());
-	boost::shared_ptr<AudioFrame> audioFrame(frameQueue.front());
-
-        AVPacket& avPacket = audioPacketEvent->avPacket;
-
-	if (avPacket.size)
+	if (!avFrameIsFree)
 	{
-	    AVPacket avpkt;
-	    av_init_packet(&avpkt);
-	    avpkt.data = avPacket.data+posCurrentPacket;
-	    avpkt.size = avPacket.size-posCurrentPacket;
-
-	    int16_t* samples = (int16_t*)audioFrame->data();
-	    int frameByteSize = audioFrame->numAllocatedBytes();
-
-	    int ret = avcodec_decode_audio3(avCodecContext,
-					    samples, &frameByteSize,
-					    &avpkt);
-	    audioFrame->setFrameByteSize(frameByteSize);
-
-	    if (ret>=0)
-	    {
-		// ret contains number of bytes used from avPacket.
-		// Maybe avcodec_decode_audio2 has to be called again.
-
-		double packetPTS = avPacket.pts;
-		// double packetPTS = avPacket.dts;    // No korrekt AV-Sync with this timestamp.
-
-		packetPTS *= av_q2d(avStream->time_base);
-
-		double sampleRate = double(avCodecContext->sample_rate);
-		double framePTS = packetPTS + numFramesCurrentPacket / sampleRate;
-
-		int numChannels = avCodecContext->channels;
-		posCurrentPacket += ret;
-		numFramesCurrentPacket += frameByteSize / (2*numChannels);
-
-		TRACE_INFO( << "ADEC: framePTS=" << framePTS
-			    << ", packetPTS=" << packetPTS
-			    << ", pts=" << avPacket.pts
-			    << ", dts=" << avPacket.dts
-			    << ", time_base=" << avStream->time_base
-			    << ", finished=" << (posCurrentPacket == avPacket.size) );
-
-		if (posCurrentPacket == avPacket.size)
-		{
-		    // Decoded the complete AVPacket
-		    packetQueue.pop();
-		    posCurrentPacket = 0;
-		    TRACE_DEBUG(<< "Queueing ConfirmAudioPacketEvent");
-		    demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
-		}
-
-		if (frameByteSize > 0)
-		{
-		    // Decoded samples are available
-		    frameQueue.pop();
-		    numFramesCurrentPacket = 0;
-		    audioFrame->setPTS(framePTS);
-
-#ifdef STORE_DECODER_OUTPUT_ENABLED
-		    // This is for debugging AV-sync issues:
-		    JpegWriter::write("audio", framePTS, audioFrame.get(),
-				      avCodecContext->sample_rate,
-				      avCodecContext->channels,
-				      avCodecContext->sample_fmt);
-#endif
-
-		    TRACE_DEBUG(<< "Queueing AudioFrame");
-		    audioOutput->queue_event(audioFrame);
-		}
-	    }
-	    else
-	    {
-		// Skip packet
-		packetQueue.pop();
-		TRACE_DEBUG(<< "Queueing ConfirmAudioPacketEvent");
-		demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
-		
-		TRACE_DEBUG(<< "W avcodec_decode_audio2 failed: " << ret);
-	    }
+	    TRACE_DEBUG(<< "frame not yet queued");
+	    // Wait until current frame is transmitted to AudioOutput.
+	    return;
 	}
-        else
-        {
-	    // Skip packet
+
+	if (packetQueue.empty())
+	{
+	    // Nothing to decode.
+	    break;
+	}
+
+	if (avPacketIsFree)
+	{
+	    boost::shared_ptr<AudioPacketEvent> audioPacketEvent(packetQueue.front());
+	    avPacket = audioPacketEvent->avPacket;
+	    avPacketIsFree = false;
+	}
+
+	if (avPacket.size == 0)
+	{
+	    // Decoded complete packet.
 	    packetQueue.pop();
+	    avPacketIsFree = true;
 	    TRACE_DEBUG(<< "Queueing ConfirmAudioPacketEvent");
 	    demuxer->queue_event(boost::make_shared<ConfirmAudioPacketEvent>());
+	    continue;
+	}
 
-            TRACE_DEBUG(<< "W empty packet");
-        }
+	int frameFinished;
+	int ret = avcodec_decode_audio4(avCodecContext, avFrame, &frameFinished, &avPacket);
+
+	if (ret>=0)
+	{
+	    // ret contains the number of bytes consumed in packet.
+	    avPacket.size -= ret;
+	    avPacket.data += ret;
+
+	    if (frameFinished)
+	    {
+		// pts = av_frame_get_best_effort_timestamp(avFrame);
+		// pts = avPacket.dts;    // No korrekt AV-Sync with this timestamp.
+
+		uint64_t int_pts = avFrame->pkt_pts;
+		bool guessed = false;
+
+		if (int_pts != AV_NOPTS_VALUE)
+		{
+		    // Decoder provided a valid PTS:
+		    pts = int_pts;
+		    pts *= av_q2d(avStream->time_base);
+		    avFrameIsFree = false;
+		}
+		else if (int_pts == AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE)
+		{
+		    // No PTS from decoder, use previous PTS plus offset:
+		    pts += av_q2d(avStream->time_base);
+		    guessed = true;
+		    avFrameIsFree = false;
+		}
+		else
+		{
+		    // No previous PTS, discard frame:
+		    avFrameIsFree = true;
+		}
+
+		avFrameBytesTransmitted = 0;
+
+		if (!avFrameIsFree)
+		{
+		    static int64_t lastDts = 0;
+
+		    TRACE_INFO( << "ADEC: pts=" << std::fixed << std::setprecision(2)
+				<< pts << (guessed ? "*" : "")
+				<< ", pts=" << avFrame->pts
+				<< ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
+				<< ", time_base=" << avStream->time_base
+				<< ", frameFinished=" << frameFinished );
+
+		    lastDts = avPacket.dts;
+
+		    queue();
+		    if (!avFrameIsFree)
+		    {
+			// Call queue() again when a frame is available.
+			return;
+		    }
+		}
+	    }
+	}
+	else
+	{
+	    // Decode failed, consume complete packet.
+	    avPacket.size = 0;
+	    TRACE_ERROR(<< "avcodec_decode_video failed: " << AvErrorCode(ret));
+	}
     }
 
     if (eos && packetQueue.empty())
@@ -357,5 +384,62 @@ void AudioDecoder::decode()
 	TRACE_DEBUG(<< "forwarding EndOfAudioStream");
 	audioOutput->queue_event(boost::make_shared<EndOfAudioStream>());
 	eos = false;
+    }
+}
+
+void AudioDecoder::queue()
+{
+    while(1)
+    {
+	if (avFrameIsFree)
+	{
+	    // Nothing to queue
+	    TRACE_DEBUG(<< "nothing to queue");
+	    return;
+	}
+
+	if (frameQueue.empty())
+	{
+	    TRACE_DEBUG(<< "no frames available");
+	    return;
+	}
+
+	boost::shared_ptr<AudioFrame> audioFrame(frameQueue.front());
+	frameQueue.pop();
+
+	int size = std::min(audioFrame->numAllocatedBytes(),
+			    avFrame->linesize[0] - avFrameBytesTransmitted);
+
+	if (size != avFrame->linesize[0])
+	{
+	    TRACE_ERROR(<< "send partial frame with wrong PTS");
+	}
+
+	memcpy(audioFrame->data(),
+	       avFrame->data[0],
+	       size);
+
+	double audioFramePTS = pts + avFrameBytesTransmitted / (2 * avCodecContext->channels * avCodecContext->sample_rate);
+	audioFrame->setFrameByteSize(size);
+	audioFrame->setPTS(audioFramePTS);
+
+	avFrameBytesTransmitted += size;
+
+#ifdef STORE_DECODER_OUTPUT_ENABLED
+	// This is for debugging AV-sync issues:
+	JpegWriter::write("audio", framePTS, audioFrame.get(),
+			  avCodecContext->sample_rate,
+			  avCodecContext->channels,
+			  avCodecContext->sample_fmt);
+#endif
+
+	TRACE_DEBUG(<< "Queueing AudioFrame with " << audioFrame->getFrameByteSize() << " bytes");
+	audioOutput->queue_event(audioFrame);
+
+	if (avFrameBytesTransmitted == avFrame->linesize[0])
+	{
+	    avFrameIsFree = true;
+	    return;
+	}
     }
 }

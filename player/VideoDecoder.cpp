@@ -249,6 +249,7 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq>)
 	    frameQueue.pop();
 	    videoOutput->queue_event(std::move(std::unique_ptr<DeleteXFVideoImage>(new DeleteXFVideoImage(std::move(xfVideoImage)))));
 	}
+	avFrameIsFree = true;
 
 	// Do the same as the Deinterlacer when receiving CloseVideoOutputReq:
 	m_topFieldFirst = true;
@@ -372,7 +373,6 @@ void VideoDecoder::process(boost::shared_ptr<FlushReq> event)
 
 	avPacketIsFree = true;
 	avFrameIsFree = true;
-	pts = 0;
 
 	// Forward event via Deinterlacer to VideoOutput:
 	deinterlacer->queue_event(event);
@@ -528,6 +528,8 @@ void VideoDecoder::decode()
 	}
 	else
 	{
+	    // Decode failed, consume complete packet.
+	    avPacket.size = 0;
 	    TRACE_ERROR(<< "avcodec_decode_video failed: " << AvErrorCode(ret));
 	}
     }
@@ -555,7 +557,7 @@ void VideoDecoder::queue()
 
     if (frameQueue.empty())
     {
-	TRACE_DEBUG(<< "frameQueue.empty() returned true");
+	TRACE_DEBUG(<< "no frames available");
 	return;
     }
 
@@ -662,6 +664,7 @@ void VideoDecoder::queue()
 	}
 
 	// The deinterlacer needs two frames.
+	TRACE_DEBUG(<< "Queueing XFVideoImage");
 	deinterlacer->queue_event(std::move(xfVideoImage));
 
 	std::unique_ptr<XFVideoImage> xfVideoImage2(std::move(frameQueue.front()));
@@ -671,11 +674,11 @@ void VideoDecoder::queue()
     }
     else
     {
+	TRACE_DEBUG(<< "Queueing XFVideoImage");
 	videoOutput->queue_event(std::move(xfVideoImage));
     }
 
     avFrameIsFree = true;
-    TRACE_DEBUG(<< "Queueing XFVideoImage");
 }
 
 void VideoDecoder::setFourccFormat(int fourccFormat)
