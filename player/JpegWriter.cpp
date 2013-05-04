@@ -168,7 +168,7 @@ private:
 };
 
 void JpegWriter::write(const char* base_name, double pts, AudioFrame* audioFrame,
-		       unsigned int sample_rate, unsigned int channels, SampleFormat sample_format)
+		       unsigned int sample_rate, unsigned int channels, AVSampleFormat sample_format)
 {
     char fileName[1024];
     snprintf(fileName, sizeof(fileName), "/tmp/%s_%.3f.jpg", base_name, pts);
@@ -190,14 +190,14 @@ void JpegWriter::write(const char* base_name, double pts, AudioFrame* audioFrame
 
     switch (sample_format)
     {
-	//case SAMPLE_FMT_NONE:
-	//    case SAMPLE_FMT_U8:
-    case SAMPLE_FMT_S16:
+	//    case AV_SAMPLE_FMT_NONE:
+	//    case AV_SAMPLE_FMT_U8:
+    case AV_SAMPLE_FMT_S16:
 	bytesPerSample = 2;
-	// case SAMPLE_FMT_S32:
+	//    case AV_SAMPLE_FMT_S32:
 	
-	//    case SAMPLE_FMT_FLT:
-	//    case SAMPLE_FMT_DBL:
+	//    case AV_SAMPLE_FMT_FLT:
+	//    case AV_SAMPLE_FMT_DBL:
 	break;
     default:
 	TRACE_ERROR(<< "Unsupported sample_format = " << sample_format);

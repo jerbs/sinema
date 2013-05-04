@@ -481,7 +481,7 @@ void VideoDecoder::decode()
 		// pts = av_frame_get_best_effort_timestamp(avFrame);
 		// pts = avPacket.dts;    // No korrekt AV-Sync with this timestamp.
 
-		uint64_t int_pts = avFrame->pkt_pts;
+		int64_t int_pts = avFrame->pkt_pts;
 		bool guessed = false;
 
 		if (int_pts != AV_NOPTS_VALUE)

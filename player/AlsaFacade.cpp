@@ -137,17 +137,20 @@ void CopyLog::operator()()
 
 // ===================================================================
 
-snd_pcm_format_t convert(SampleFormat sf)
+snd_pcm_format_t convert(AVSampleFormat sf)
 {
     switch(sf)
     {
-    case SAMPLE_FMT_NONE: return SND_PCM_FORMAT_UNKNOWN;
-    case SAMPLE_FMT_U8:   return SND_PCM_FORMAT_U8;
-    case SAMPLE_FMT_S16:  return SND_PCM_FORMAT_S16;
-    case SAMPLE_FMT_S32:  return SND_PCM_FORMAT_S32;
-    case SAMPLE_FMT_FLT:  return SND_PCM_FORMAT_FLOAT;
-    case SAMPLE_FMT_DBL:  return SND_PCM_FORMAT_FLOAT64;
-    default: break;
+    case AV_SAMPLE_FMT_NONE: return SND_PCM_FORMAT_UNKNOWN;
+    case AV_SAMPLE_FMT_U8:   return SND_PCM_FORMAT_U8;
+    case AV_SAMPLE_FMT_S16:  return SND_PCM_FORMAT_S16;
+    case AV_SAMPLE_FMT_S32:  return SND_PCM_FORMAT_S32;
+    case AV_SAMPLE_FMT_FLT:  return SND_PCM_FORMAT_FLOAT;
+    case AV_SAMPLE_FMT_DBL:  return SND_PCM_FORMAT_FLOAT64;
+
+    default:
+	TRACE_ERROR(<< "Unknown format " << sf);
+	break;
     }
     return SND_PCM_FORMAT_UNKNOWN;
 }

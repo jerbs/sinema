@@ -7,4 +7,5 @@ librecorder_la_SOURCES = GeneralEvents.hpp \
 			 PvrProtocol.cpp PvrProtocol.hpp \
 			 RecorderAdapter.cpp RecorderAdapter.hpp \
 			 Recorder.cpp Recorder.hpp
+librecorder_la_CPPFLAGS = $(FFMPEG_CFLAGS)
 librecorder_la_CXXFLAGS = -std=c++0x

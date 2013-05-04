@@ -59,9 +59,9 @@ dnl ------------
 dnl
 dnl Check for libraries. Libraries may be needed for further checks.
 
-PKG_CHECK_MODULES([PLAYER], [libavformat libavcodec libavutil libswscale])
-AC_SUBST(PLAYER_CFLAGS)
-AC_SUBST(PLAYER_LIBS)
+PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale])
+AC_SUBST(FFMPEG_CFLAGS)
+AC_SUBST(FFMPEG_LIBS)
 
 PKG_CHECK_MODULES([GUI], [gtkmm-2.4 >= 2.8.0])
 AC_SUBST(GUI_CFLAGS)

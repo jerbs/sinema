@@ -36,6 +36,7 @@
 //#undef TRACE_DEBUG
 //#define TRACE_DEBUG(s) std::cout << __PRETTY_FUNCTION__ << " " s << std::endl;
 
+
 PvrProtocol* PvrProtocol::instance = 0;
 StorageProtocol* StorageProtocol::instance = 0;
 
@@ -45,11 +46,11 @@ static void show_protocols(void)
     const char* name;
 
     TRACE_DEBUG(<< "FFmpeg output protocols:");
-    while(name = avio_enum_protocols(&opaque, 1))
+    while((name = avio_enum_protocols(&opaque, 1)))
 	TRACE_DEBUG(<< name);
 
     TRACE_DEBUG(<< "FFmpeg input protocols:");
-    while(name = avio_enum_protocols(&opaque, 0))
+    while((name = avio_enum_protocols(&opaque, 0)))
 	TRACE_DEBUG(<< name);
 }
 
@@ -82,7 +83,7 @@ void StorageProtocol::init()
     prot.url_read_pause = 0;
     prot.url_read_seek = 0;
 
-    av_register_protocol2(&prot, sizeof(prot));
+    ffurl_register_protocol(&prot, sizeof(prot));
 
     show_protocols();
 }
@@ -192,7 +193,7 @@ void PvrProtocol::init(boost::shared_ptr<RecorderAdapter> recorderAdapter)
     prot.url_read_pause = 0;
     prot.url_read_seek = 0;
 
-    av_register_protocol2(&prot, sizeof(prot));
+    ffurl_register_protocol(&prot, sizeof(prot));
 
     show_protocols();
 }

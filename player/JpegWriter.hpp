@@ -30,7 +30,7 @@ class JpegWriter
 public:
     static void write(const char* base_name, double pts, AVFrame* avFrame);
     static void write(const char* base_name, double pts, AudioFrame* audioFrame,
-		      unsigned int sample_rate, unsigned int channels, SampleFormat sample_format);
+		      unsigned int sample_rate, unsigned int channels, AVSampleFormat sample_format);
 };
 
 #endif

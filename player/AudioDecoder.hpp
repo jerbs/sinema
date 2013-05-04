@@ -55,6 +55,7 @@ class AudioDecoder : public event_receiver<AudioDecoder>
     int avFrameBytesTransmitted;
 
     // int posCurrentPacket; // Offset in avPacket in packetQueue.front()
+
     int numFramesCurrentPacket; // Number of samples added to frameQueue.front()
 
     std::queue<boost::shared_ptr<AudioFrame> > frameQueue;

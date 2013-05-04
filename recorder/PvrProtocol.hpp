@@ -33,6 +33,9 @@ extern "C"
 {
 #include <libavutil/avstring.h>
 #include <libavformat/avformat.h>
+
+// Using the unbuffered private I/O API:
+#include "ffmpeg/libavformat/url.h"
 }
 
 class PvrStorage;

@@ -1,0 +1,24 @@
+Installing Sinema with own FFmpeg version
+=========================================
+
+The FFmpeg API isn't very stable. From time to time functions are deprecated
+and finally removed. To be more flexible in these cases the Makefile in the
+build directory supports to build a specific and probably (i.e. currently)
+patched FFmpeg version together with sinema. By default everything is installed
+into a directory called 'root' within the top level source code directory of
+sinema. Both FFmpeg and sinema are built and installed by simply executing:
+
+$ cd build
+$ make install
+
+The sinema executable and the FFmpeg libraries are installed into the
+directory ..../sinema/root/bin and .../sinema/root/lib.
+
+Installing into another directory is possible by explicitly setting PREFIX.
+You also may want to execute the install steps with root permissions:
+
+$ cd build
+$ make PREFIX=/usr/local ffmpeg_make
+$ sudo make PREFIX=/usr/local ffmpeg_install
+$ make PREFIX=/usr/local sinema_make
+$ sudo make PREFIX=/usr/local sinema_install

@@ -82,6 +82,15 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 	    avCodec = avcodec_find_decoder(avCodecContext->codec_id);
 	    if (avCodec)
 	    {
+		if (avCodec->sample_fmts)
+		{
+		    AVSampleFormat fmt;
+		    int i = 0;
+		    while ((fmt = *(avCodec->sample_fmts + (i++))) != -1)
+		    {
+			TRACE_DEBUG(<< "supported sample format: " << fmt);
+		    }
+		}
 		int ret = avcodec_open2(avCodecContext, avCodec, 0);
 		if (ret == 0)
 		{
@@ -323,7 +332,7 @@ void AudioDecoder::decode()
 		// pts = av_frame_get_best_effort_timestamp(avFrame);
 		// pts = avPacket.dts;    // No korrekt AV-Sync with this timestamp.
 
-		uint64_t int_pts = avFrame->pkt_pts;
+		int64_t int_pts = avFrame->pkt_pts;
 		bool guessed = false;
 
 		if (int_pts != AV_NOPTS_VALUE)

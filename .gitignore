@@ -40,6 +40,7 @@ gui/COPYING.inc
 gui/README.inc
 gui/version.inc
 daemon/sinemad
+root
 stamp-h1
 typescript
 version

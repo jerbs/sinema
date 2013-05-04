@@ -55,7 +55,7 @@ void SyncTest::process(boost::shared_ptr<StartTest> event)
     boost::shared_ptr<OpenAudioOutputReq>
 	audiReq(new OpenAudioOutputReq(event->sample_rate,
 				       event->channels,
-				       SAMPLE_FMT_S16,
+				       AV_SAMPLE_FMT_S16,
 				       event->sample_rate * event->channels * 2));
     audioOutput->queue_event(audiReq);
 
