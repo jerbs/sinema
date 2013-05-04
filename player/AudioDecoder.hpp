@@ -52,7 +52,10 @@ class AudioDecoder : public event_receiver<AudioDecoder>
     AVFrame* avFrame;
     bool avFrameIsFree;
     double pts;
-    int avFrameBytesTransmitted;
+    int avFrameBytesTransmittedPerLine;
+
+    AVSampleFormat outputAvSampleFormat;
+    int sampleSize;
 
     // int posCurrentPacket; // Offset in avPacket in packetQueue.front()
 

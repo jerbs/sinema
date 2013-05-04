@@ -42,7 +42,9 @@ AudioDecoder::AudioDecoder(event_processor_ptr_type evt_proc)
       avFrame(avcodec_alloc_frame()),
       avFrameIsFree(true),
       pts(0),
-      avFrameBytesTransmitted(0),
+      avFrameBytesTransmittedPerLine(0),
+      outputAvSampleFormat(AV_SAMPLE_FMT_NONE),
+      sampleSize(0),
       eos(false)
 {
 }
@@ -96,16 +98,40 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 		{
 		    avStream = avFormatContext->streams[audioStreamIndex];
 
-		    boost::shared_ptr<OpenAudioOutputReq>
-			req(new OpenAudioOutputReq(avCodecContext->sample_rate,
-						   avCodecContext->channels,
-						   avCodecContext->sample_fmt,
-						   AVCODEC_MAX_AUDIO_FRAME_SIZE));
-		    audioOutput->queue_event(req);
+		    bool supported = true;
 
-		    state = Opening;
+		    switch (avCodecContext->sample_fmt)
+		    {
+		    case AV_SAMPLE_FMT_U8:  outputAvSampleFormat = AV_SAMPLE_FMT_U8; sampleSize = 1; break;
+		    case AV_SAMPLE_FMT_S16: outputAvSampleFormat = AV_SAMPLE_FMT_S16; sampleSize = 2; break;
+		    case AV_SAMPLE_FMT_S32: outputAvSampleFormat = AV_SAMPLE_FMT_S32; sampleSize = 4; break;
+		    case AV_SAMPLE_FMT_FLT: outputAvSampleFormat = AV_SAMPLE_FMT_FLT; sampleSize = 4; break;
+		    case AV_SAMPLE_FMT_DBL: outputAvSampleFormat = AV_SAMPLE_FMT_DBL; sampleSize = 8; break;
+		    case AV_SAMPLE_FMT_U8P:  outputAvSampleFormat = AV_SAMPLE_FMT_U8; sampleSize = 1; break;
+		    case AV_SAMPLE_FMT_S16P: outputAvSampleFormat = AV_SAMPLE_FMT_S16; sampleSize = 2; break;
+		    case AV_SAMPLE_FMT_S32P: outputAvSampleFormat = AV_SAMPLE_FMT_S32; sampleSize = 4; break;
+		    case AV_SAMPLE_FMT_FLTP: outputAvSampleFormat = AV_SAMPLE_FMT_FLT; sampleSize = 4; break;
+		    case AV_SAMPLE_FMT_DBLP: outputAvSampleFormat = AV_SAMPLE_FMT_DBL; sampleSize = 8; break;
+		    default:
+			supported = false;
+		    }
 
-		    return;
+		    if (supported)
+		    {
+			boost::shared_ptr<OpenAudioOutputReq>
+			    req(new OpenAudioOutputReq(avCodecContext->sample_rate,
+						       avCodecContext->channels,
+						       outputAvSampleFormat,
+						       AVCODEC_MAX_AUDIO_FRAME_SIZE));
+			audioOutput->queue_event(req);
+
+			state = Opening;
+
+			return;
+		    }
+
+		    TRACE_ERROR(<< "unsupported sample format: " << avCodecContext->sample_fmt);
+
 		}
 		else
 		{
@@ -163,6 +189,8 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioOutputFail>)
 	avCodec = 0;
 	avStream = 0;
 	audioStreamIndex = -1;
+	outputAvSampleFormat = AV_SAMPLE_FMT_NONE;
+	sampleSize = 0;
 
 	demuxer->queue_event(boost::make_shared<OpenAudioStreamFail>(audioStreamIndex));
 
@@ -211,6 +239,8 @@ void AudioDecoder::process(boost::shared_ptr<CloseAudioOutputResp>)
 	avCodec = 0;
 	avStream = 0;
 	audioStreamIndex = -1;
+	outputAvSampleFormat = AV_SAMPLE_FMT_NONE;
+	sampleSize = 0;
 
 	demuxer->queue_event(boost::make_shared<CloseAudioStreamResp>());
 
@@ -355,7 +385,7 @@ void AudioDecoder::decode()
 		    avFrameIsFree = true;
 		}
 
-		avFrameBytesTransmitted = 0;
+		avFrameBytesTransmittedPerLine = 0;
 
 		if (!avFrameIsFree)
 		{
@@ -396,6 +426,25 @@ void AudioDecoder::decode()
     }
 }
 
+static void interleave(void* dst, void* src, int bytes_to_copy, int sample_size, int dest_offset)
+{
+    // bytes_to_copy must be a multiple of dest_offset and
+    // dest_offset must be a multiple of sample_size.
+
+    uint8_t* d = (uint8_t*)dst;
+    uint8_t* s = (uint8_t*)src;
+
+    while(bytes_to_copy > 0)
+    {
+	for(int i=0; i<sample_size; i++)
+	{
+	    *(d+i) = *(s++);
+	    bytes_to_copy--;
+	}
+	d += dest_offset;
+    }
+}
+
 void AudioDecoder::queue()
 {
     while(1)
@@ -416,23 +465,54 @@ void AudioDecoder::queue()
 	boost::shared_ptr<AudioFrame> audioFrame(frameQueue.front());
 	frameQueue.pop();
 
-	int size = std::min(audioFrame->numAllocatedBytes(),
-			    avFrame->linesize[0] - avFrameBytesTransmitted);
-
-	if (size != avFrame->linesize[0])
+	if (avCodecContext->sample_fmt != outputAvSampleFormat)
 	{
-	    TRACE_ERROR(<< "send partial frame with wrong PTS");
+	    // Convert planar format into interleaved format:
+	    // For planar audio, each channel plane must be the same size.
+
+	    int size;
+
+	    if (audioFrame->numAllocatedBytes() > avCodecContext->channels * (avFrame->linesize[0] - avFrameBytesTransmittedPerLine))
+	    {
+		size = avFrame->linesize[0] - avFrameBytesTransmittedPerLine;
+	    }
+	    else
+	    {
+		size = audioFrame->numAllocatedBytes() / avCodecContext->channels;
+	    }
+
+	    for (int i=0; i<avCodecContext->channels; i++)
+	    {
+		interleave(audioFrame->data() + i * sampleSize,
+			   avFrame->data[0],
+			   size,
+			   sampleSize,
+			   sampleSize * avCodecContext->channels);
+	    }
+
+	    double audioFramePTS = pts + avFrameBytesTransmittedPerLine / (sampleSize * avCodecContext->sample_rate);
+	    audioFrame->setFrameByteSize(avCodecContext->channels * size);
+	    audioFrame->setPTS(audioFramePTS);
+
+	    avFrameBytesTransmittedPerLine += size;
 	}
+	else
+	{
+	    // For interleaved format only plane 0 is set.
 
-	memcpy(audioFrame->data(),
-	       avFrame->data[0],
-	       size);
+	    int size = std::min(audioFrame->numAllocatedBytes(),
+				avFrame->linesize[0] - avFrameBytesTransmittedPerLine);
 
-	double audioFramePTS = pts + avFrameBytesTransmitted / (2 * avCodecContext->channels * avCodecContext->sample_rate);
-	audioFrame->setFrameByteSize(size);
-	audioFrame->setPTS(audioFramePTS);
+	    memcpy(audioFrame->data(),
+		   avFrame->data[0] + avFrameBytesTransmittedPerLine,
+		   size);
 
-	avFrameBytesTransmitted += size;
+	    double audioFramePTS = pts + avFrameBytesTransmittedPerLine / (sampleSize * avCodecContext->channels * avCodecContext->sample_rate);
+	    audioFrame->setFrameByteSize(size);
+	    audioFrame->setPTS(audioFramePTS);
+
+	    avFrameBytesTransmittedPerLine += size;
+	}
 
 #ifdef STORE_DECODER_OUTPUT_ENABLED
 	// This is for debugging AV-sync issues:
@@ -445,7 +525,7 @@ void AudioDecoder::queue()
 	TRACE_DEBUG(<< "Queueing AudioFrame with " << audioFrame->getFrameByteSize() << " bytes");
 	audioOutput->queue_event(audioFrame);
 
-	if (avFrameBytesTransmitted == avFrame->linesize[0])
+	if (avFrameBytesTransmittedPerLine == avFrame->linesize[0])
 	{
 	    avFrameIsFree = true;
 	    return;
