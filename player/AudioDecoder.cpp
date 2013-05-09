@@ -359,48 +359,34 @@ void AudioDecoder::decode()
 
 	    if (frameFinished)
 	    {
-		// pts = av_frame_get_best_effort_timestamp(avFrame);
-		// pts = avPacket.dts;    // No korrekt AV-Sync with this timestamp.
-
+#if 1
+		int64_t int_pts = av_frame_get_best_effort_timestamp(avFrame);
+#else
 		int64_t int_pts = avFrame->pkt_pts;
-		bool guessed = false;
+#endif
 
 		if (int_pts != AV_NOPTS_VALUE)
 		{
-		    // Decoder provided a valid PTS:
 		    pts = int_pts;
 		    pts *= av_q2d(avStream->time_base);
 		    avFrameIsFree = false;
-		}
-		else if (int_pts == AV_NOPTS_VALUE && pts != AV_NOPTS_VALUE)
-		{
-		    // No PTS from decoder, use previous PTS plus offset:
-		    pts += av_q2d(avStream->time_base);
-		    guessed = true;
-		    avFrameIsFree = false;
-		}
-		else
-		{
-		    // No previous PTS, discard frame:
-		    avFrameIsFree = true;
-		}
+		    avFrameBytesTransmittedPerLine = 0;
 
-		avFrameBytesTransmittedPerLine = 0;
+		    {
+			static double lastPts = 0;
 
-		if (!avFrameIsFree)
-		{
-		    static int64_t lastDts = 0;
+			TRACE_INFO( << "ADEC: pts=" << std::fixed << std::setprecision(3) << pts
+				    << "(" << pts - lastPts << ")"
+				    << ", pts=" << avFrame->pts
+				    << ", dts=" << avPacket.dts
+				    << ", time_base=" << avStream->time_base
+				    << ", frameFinished=" << frameFinished );
 
-		    TRACE_INFO( << "ADEC: pts=" << std::fixed << std::setprecision(2)
-				<< pts << (guessed ? "*" : "")
-				<< ", pts=" << avFrame->pts
-				<< ", dts=" << avPacket.dts << "(" << avPacket.dts-lastDts << ")"
-				<< ", time_base=" << avStream->time_base
-				<< ", frameFinished=" << frameFinished );
-
-		    lastDts = avPacket.dts;
+			lastPts = pts;
+		    }
 
 		    queue();
+
 		    if (!avFrameIsFree)
 		    {
 			// Call queue() again when a frame is available.
