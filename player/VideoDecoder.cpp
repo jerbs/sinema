@@ -42,7 +42,7 @@ VideoDecoder::VideoDecoder(event_processor_ptr_type evt_proc)
       avCodec(0),
       avStream(0),
       videoStreamIndex(-1),
-      video_pkt_pts(AV_NOPTS_VALUE),
+      avPacketIsFree(true),
       avFrame(avcodec_alloc_frame()),
       avFrameIsFree(true),
       pts(0),
@@ -240,6 +240,8 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoStreamReq>)
 	    packetQueue.pop();
 	}
 
+	avPacketIsFree = true;
+
 	// Throw away all queued frames:
 	while (!frameQueue.empty())
 	{
@@ -272,8 +274,7 @@ void VideoDecoder::process(boost::shared_ptr<CloseVideoOutputResp>)
 	avStream = 0;
 	videoStreamIndex = -1;
 
-	video_pkt_pts = AV_NOPTS_VALUE;
-
+	avPacketIsFree = true;
 	// Keep avFrame.
 	avFrameIsFree = true;
 	pts = 0;
@@ -369,8 +370,8 @@ void VideoDecoder::process(boost::shared_ptr<FlushReq> event)
 	    demuxer->queue_event(confirm);
 	}
 
+	avPacketIsFree = true;
 	avFrameIsFree = true;
-	video_pkt_pts = AV_NOPTS_VALUE;
 	pts = 0;
 
 	// Forward event via Deinterlacer to VideoOutput:
@@ -434,29 +435,47 @@ std::ostream& operator<<(std::ostream& strm, AVRational r)
 
 void VideoDecoder::decode()
 {
-    if (!avFrameIsFree)
+    while (1)
     {
-	TRACE_DEBUG(<< "frame not yet queued");
-	// Wait until current frame is transmitted to VideoOutput.
-	return;
-    }
+	if (!avFrameIsFree)
+	{
+	    TRACE_DEBUG(<< "frame not yet queued");
+	    // Wait until current frame is transmitted to VideoOutput.
+	    return;
+	}
 
-    while (!packetQueue.empty())
-    {
-	boost::shared_ptr<VideoPacketEvent> videoPacketEvent(packetQueue.front());
-	packetQueue.pop();
+	if (packetQueue.empty())
+	{
+	    // Nothing to decode.
+	    break;
+	}
 
-	TRACE_DEBUG(<< "Queueing ConfirmVideoPacketEvent");
-	demuxer->queue_event(boost::make_shared<ConfirmVideoPacketEvent>());
+	if (avPacketIsFree)
+	{
+	    boost::shared_ptr<VideoPacketEvent> videoPacketEvent(packetQueue.front());
+	    avPacket = videoPacketEvent->avPacket;
+	    avPacketIsFree = false;
+	}
 
-	AVPacket& avPacket = videoPacketEvent->avPacket;
-	video_pkt_pts = avPacket.pts;
+	if (avPacket.size == 0)
+	{
+	    // Decoded complete packet.
+	    packetQueue.pop();
+	    avPacketIsFree = true;
+	    TRACE_DEBUG(<< "Queueing ConfirmVideoPacketEvent");
+	    demuxer->queue_event(boost::make_shared<ConfirmVideoPacketEvent>());
+	    continue;
+	}
 
 	int frameFinished;
 	int ret = avcodec_decode_video2(avCodecContext, avFrame, &frameFinished, &avPacket);
 
 	if (ret>=0)
 	{
+	    // ret contains the number of bytes consumed in packet.
+	    avPacket.size -= ret;
+	    avPacket.data += ret;
+
 	    if (frameFinished)
 	    {
 		// pts = av_frame_get_best_effort_timestamp(avFrame);

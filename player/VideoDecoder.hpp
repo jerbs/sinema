@@ -48,7 +48,8 @@ class VideoDecoder : public event_receiver<VideoDecoder>
 
     int videoStreamIndex;
 
-    uint64_t video_pkt_pts;
+    AVPacket avPacket;  // data is owned by VideoPacketEvent in packetQueue
+    bool avPacketIsFree;
 
     AVFrame* avFrame;
     bool avFrameIsFree;
