@@ -505,49 +505,63 @@ void AudioDecoder::queue()
 	boost::shared_ptr<AudioFrame> audioFrame(frameQueue.front());
 	frameQueue.pop();
 
+	TRACE_DEBUG(<< "CodecSampleFormat = " << avCodecContext->sample_fmt
+		    << ", OutputSampleFormat = " << outputAvSampleFormat
+		    << ", numChannels = " << avCodecContext->channels
+		    << ", sampleSize = " << sampleSize
+		    << ", avFrameBytesTransmittedPerLine = " << avFrameBytesTransmittedPerLine
+		    << ", sampleRate = " << avCodecContext->sample_rate
+		    << ", nb_samples = " << avFrame->nb_samples
+		    << ", lineSize = " << avFrame->linesize[0] << "," << avFrame->linesize[1]
+		    << ", data = " << (void*)(avFrame->data[0]) << "," << (void*)(avFrame->data[1]));
+
+	// Note: In general avFrame->linesize[i] is not equal to avFrame->nb_samples * sampleSize.
+	//       avFrame->nb_samples always contains the number of samples per channel.
+
 	if (avCodecContext->sample_fmt != outputAvSampleFormat)
 	{
 	    // Convert planar format into interleaved format:
 	    // For planar audio, each channel plane must be the same size.
 
-	    int size;
+	    int bytesToCopyPerLine = (avFrame->nb_samples * sampleSize) - avFrameBytesTransmittedPerLine;
 
-	    if (audioFrame->numAllocatedBytes() > avCodecContext->channels * (avFrame->linesize[0] - avFrameBytesTransmittedPerLine))
+	    if (bytesToCopyPerLine * avCodecContext->channels > audioFrame->numAllocatedBytes())
 	    {
-		size = avFrame->linesize[0] - avFrameBytesTransmittedPerLine;
-	    }
-	    else
-	    {
-		size = audioFrame->numAllocatedBytes() / avCodecContext->channels;
+		// Not possible to copy complete frame.
+		bytesToCopyPerLine = audioFrame->numAllocatedBytes() / avCodecContext->channels;
 	    }
 
 	    for (int i=0; i<avCodecContext->channels; i++)
 	    {
-		interleave(audioFrame->data() + i * sampleSize,
-			   avFrame->data[0],
-			   size,
+		interleave(((uint8_t*)audioFrame->data()) + i * sampleSize,
+			   avFrame->data[i] + avFrameBytesTransmittedPerLine,
+			   bytesToCopyPerLine,
 			   sampleSize,
 			   avCodecContext->channels);
 	    }
 
 	    double audioFramePTS = pts + avFrameBytesTransmittedPerLine / (sampleSize * avCodecContext->sample_rate);
-	    audioFrame->setFrameByteSize(avCodecContext->channels * size);
+	    audioFrame->setFrameByteSize(bytesToCopyPerLine * avCodecContext->channels);
 	    audioFrame->setPTS(audioFramePTS);
 
-	    avFrameBytesTransmittedPerLine += size;
+	    avFrameBytesTransmittedPerLine += bytesToCopyPerLine;
+
+	    TRACE_DEBUG(<< "PTS = " << audioFramePTS
+			<< ", bytesToCopyPerLine = " << bytesToCopyPerLine
+			<< ", bufferSize = " << audioFrame->getFrameByteSize());
 	}
 	else
 	{
 	    // For interleaved format only plane 0 is set.
 
 	    int size = std::min(audioFrame->numAllocatedBytes(),
-				avFrame->linesize[0] - avFrameBytesTransmittedPerLine);
+				(avFrame->nb_samples * sampleSize) - avFrameBytesTransmittedPerLine);
 
 	    memcpy(audioFrame->data(),
 		   avFrame->data[0] + avFrameBytesTransmittedPerLine,
 		   size);
 
-	    double audioFramePTS = pts + avFrameBytesTransmittedPerLine / (sampleSize * avCodecContext->channels * avCodecContext->sample_rate);
+	    double audioFramePTS = pts + avFrameBytesTransmittedPerLine / (sampleSize * avCodecContext->sample_rate);
 	    audioFrame->setFrameByteSize(size);
 	    audioFrame->setPTS(audioFramePTS);
 
@@ -565,7 +579,7 @@ void AudioDecoder::queue()
 	TRACE_DEBUG(<< "Queueing AudioFrame with " << audioFrame->getFrameByteSize() << " bytes");
 	audioOutput->queue_event(audioFrame);
 
-	if (avFrameBytesTransmittedPerLine == avFrame->linesize[0])
+	if (avFrameBytesTransmittedPerLine == avFrame->nb_samples * sampleSize)
 	{
 	    avFrameIsFree = true;
 	    return;
