@@ -105,13 +105,13 @@ void AudioDecoder::process(boost::shared_ptr<OpenAudioStreamReq> event)
 		    case AV_SAMPLE_FMT_U8:  outputAvSampleFormat = AV_SAMPLE_FMT_U8; sampleSize = 1; break;
 		    case AV_SAMPLE_FMT_S16: outputAvSampleFormat = AV_SAMPLE_FMT_S16; sampleSize = 2; break;
 		    case AV_SAMPLE_FMT_S32: outputAvSampleFormat = AV_SAMPLE_FMT_S32; sampleSize = 4; break;
-		    case AV_SAMPLE_FMT_FLT: outputAvSampleFormat = AV_SAMPLE_FMT_FLT; sampleSize = 4; break;
-		    case AV_SAMPLE_FMT_DBL: outputAvSampleFormat = AV_SAMPLE_FMT_DBL; sampleSize = 8; break;
+		    case AV_SAMPLE_FMT_FLT: outputAvSampleFormat = AV_SAMPLE_FMT_FLT; sampleSize = sizeof(float); break;
+		    case AV_SAMPLE_FMT_DBL: outputAvSampleFormat = AV_SAMPLE_FMT_DBL; sampleSize = sizeof(double); break;
 		    case AV_SAMPLE_FMT_U8P:  outputAvSampleFormat = AV_SAMPLE_FMT_U8; sampleSize = 1; break;
 		    case AV_SAMPLE_FMT_S16P: outputAvSampleFormat = AV_SAMPLE_FMT_S16; sampleSize = 2; break;
 		    case AV_SAMPLE_FMT_S32P: outputAvSampleFormat = AV_SAMPLE_FMT_S32; sampleSize = 4; break;
-		    case AV_SAMPLE_FMT_FLTP: outputAvSampleFormat = AV_SAMPLE_FMT_FLT; sampleSize = 4; break;
-		    case AV_SAMPLE_FMT_DBLP: outputAvSampleFormat = AV_SAMPLE_FMT_DBL; sampleSize = 8; break;
+		    case AV_SAMPLE_FMT_FLTP: outputAvSampleFormat = AV_SAMPLE_FMT_FLT; sampleSize = sizeof(float); break;
+		    case AV_SAMPLE_FMT_DBLP: outputAvSampleFormat = AV_SAMPLE_FMT_DBL; sampleSize = sizeof(double); break;
 		    default:
 			supported = false;
 		    }
@@ -426,22 +426,62 @@ void AudioDecoder::decode()
     }
 }
 
-static void interleave(void* dst, void* src, int bytes_to_copy, int sample_size, int dest_offset)
+template<typename T>
+inline void interleave(T* d, T* s, int bytesToCopy, int numChannels)
+{
+    while(bytesToCopy > 0)
+    {
+	*d = *(s++);
+	bytesToCopy -= sizeof(T);
+	d += numChannels;
+    }
+}
+
+inline void interleave(void* dst, void* src, int bytesToCopy, int sampleSize, int numChannels)
 {
     // bytes_to_copy must be a multiple of dest_offset and
     // dest_offset must be a multiple of sample_size.
 
-    uint8_t* d = (uint8_t*)dst;
-    uint8_t* s = (uint8_t*)src;
-
-    while(bytes_to_copy > 0)
+    if (sampleSize == sizeof(double))
     {
-	for(int i=0; i<sample_size; i++)
+	typedef double* T;
+	interleave(T(dst), T(src), bytesToCopy, numChannels);
+    }
+    else if (sampleSize == sizeof(float))
+    {
+	typedef float* T;
+	interleave(T(dst), T(src), bytesToCopy, numChannels);
+    }
+    else if (sampleSize == 4)
+    {
+	typedef uint32_t* T;
+	interleave(T(dst), T(src), bytesToCopy, numChannels);
+    }
+    else if (sampleSize == 2)
+    {
+	typedef uint16_t* T;
+	interleave(T(dst), T(src), bytesToCopy, numChannels);
+    }
+    else if (sampleSize == 1)
+    {
+	typedef uint8_t* T;
+	interleave(T(dst), T(src), bytesToCopy, numChannels);
+
+    }
+    else
+    {
+	uint8_t* d = (uint8_t*)dst;
+	uint8_t* s = (uint8_t*)src;
+	int destOffset = numChannels * sampleSize;
+	while(bytesToCopy > 0)
 	{
-	    *(d+i) = *(s++);
-	    bytes_to_copy--;
+	    for(int i=0; i<sampleSize; i++)
+	    {
+		*(d+i) = *(s++);
+	    }
+	    bytesToCopy -= sampleSize;
+	    d += destOffset;
 	}
-	d += dest_offset;
     }
 }
 
@@ -487,7 +527,7 @@ void AudioDecoder::queue()
 			   avFrame->data[0],
 			   size,
 			   sampleSize,
-			   sampleSize * avCodecContext->channels);
+			   avCodecContext->channels);
 	    }
 
 	    double audioFramePTS = pts + avFrameBytesTransmittedPerLine / (sampleSize * avCodecContext->sample_rate);
