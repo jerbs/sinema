@@ -46,7 +46,8 @@ Demuxer::Demuxer(event_processor_ptr_type evt_proc)
       queuedAudioPackets(0),
       queuedVideoPackets(0),
       targetQueuedAudioPackets(10),
-      targetQueuedVideoPackets(10)
+      targetQueuedVideoPackets(10),
+      numAnnouncedStreams(0)
 {
     av_register_all();
 }
@@ -58,7 +59,7 @@ int Demuxer::interruptCallback(void* ptr)
     // FFmpeg regulary calls interrupt_cb in blocking functions to test 
     // if asynchronous interruption is needed:
     Demuxer* obj = (Demuxer*)ptr;
-    return obj->m_event_processor->terminating();
+    return obj->m_event_processor->terminating() || !obj->m_event_processor->empty();
 }
 
 void Demuxer::process(boost::shared_ptr<InitEvent> event)
@@ -116,16 +117,24 @@ void Demuxer::process(boost::shared_ptr<OpenFileReq> event)
 	// Dump information about file onto standard error
 	av_dump_format(avFormatContext, 0, event->fileName.c_str(), 0);
 
+	int audioStreamNum = 0;
 	// Find the first audio and video stream
 	for (unsigned int i=0; i < avFormatContext->nb_streams; i++)
 	{
-	    if (avFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
-		audioStreamIndex < 0)
+	    AVCodecContext* avCodecContext =  avFormatContext->streams[i]->codec;
+
+	    // In general not all (subtitle) streams are known here.
+	    // That's especially the case for MPEG2 PS/TS system streams.
+
+	    if (avCodecContext->codec_type == AVMEDIA_TYPE_AUDIO &&
+		audioStreamNum < 2)
+		// 		audioStreamIndex < 0)
 	    {
+		audioStreamNum++;
 		audioStreamIndex = i;
 	    }
 
-	    if (avFormatContext->streams[i]->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+	    if (avCodecContext->codec_type == AVMEDIA_TYPE_VIDEO &&
 		videoStreamIndex < 0)
 	    {
 		videoStreamIndex = i;
@@ -332,6 +341,8 @@ void Demuxer::updateSystemStreamStatusClosing()
 	    avformat_close_input(&avFormatContext);
 	    avFormatContext = 0;
 
+	    numAnnouncedStreams = 0;
+
 	    mediaPlayer->queue_event(boost::make_shared<CloseFileResp>());
 
 	    queue_deferred_events();
@@ -467,7 +478,14 @@ void Demuxer::operator()()
 		videoDecoder->queue_event(boost::make_shared<EndOfVideoStream>());
 	    }
 
-	    if (!m_event_processor->empty())
+	    // TODO: Avoid that first subtitles are lost here.
+
+	    if (avFormatContext->nb_streams != numAnnouncedStreams)
+	    {
+		checkForNewStreams();
+	    }
+
+	    while (!m_event_processor->empty())
 	    {
 		m_event_processor->dequeue_and_process();
 	    }
@@ -477,4 +495,66 @@ void Demuxer::operator()()
 	    m_event_processor->dequeue_and_process();
 	}
     }
+}
+
+void Demuxer::checkForNewStreams()
+{
+    for (unsigned int i=numAnnouncedStreams; i < avFormatContext->nb_streams; i++)
+    {
+	numAnnouncedStreams++;
+	sendAnnounceNewStream(i);
+
+
+    }
+}
+
+void Demuxer::sendAnnounceNewStream(int index)
+{
+    AVStream *avStream = avFormatContext->streams[index];
+    AVCodecContext* avCodecContext =  avStream->codec;
+    AVDictionaryEntry *lang = av_dict_get(avStream->metadata, "language", NULL, 0);
+
+    std::string language;
+    if (lang)
+    {
+	language = std::string(lang->value);
+    }
+
+    std::string codecName(avcodec_get_name(avCodecContext->codec_id));
+
+    char buf[256];
+    avcodec_string(buf, sizeof(buf), avCodecContext, 0);
+    std::string info(buf);
+
+    NotificationNewStream::StreamType streamType;
+
+    switch (avCodecContext->codec_type)
+    {
+    case AVMEDIA_TYPE_VIDEO:    streamType = NotificationNewStream::Video; break;
+    case AVMEDIA_TYPE_AUDIO:    streamType = NotificationNewStream::Audio; break;
+    case AVMEDIA_TYPE_SUBTITLE: streamType = NotificationNewStream::Subtitle; break;
+    default:                    streamType = NotificationNewStream::Other; break;
+    }
+
+    std::cout << "[" << index << "] " << avCodecContext->codec_type
+	      << " (" << language << ") " << codecName << " - " << info << std::endl;
+
+    mediaPlayer->queue_event(boost::make_shared<NotificationNewStream>(index, streamType, language, info));
+}
+
+std::ostream& operator<<(std::ostream& os, const AVMediaType avMediaType)
+{
+    switch(avMediaType)
+    {
+    case AVMEDIA_TYPE_UNKNOWN: os << "Unknown"; break;
+    case AVMEDIA_TYPE_VIDEO: os << "Video"; break;
+    case AVMEDIA_TYPE_AUDIO: os << "Audio"; break;
+    case AVMEDIA_TYPE_DATA: os << "Data"; break;
+    case AVMEDIA_TYPE_SUBTITLE: os << "Subtitle"; break;
+    case AVMEDIA_TYPE_ATTACHMENT: os << "Attachment"; break;
+    case AVMEDIA_TYPE_NB: os << "NB"; break;
+    default: os << "type=" << int(avMediaType);
+    }
+
+    return os;
 }

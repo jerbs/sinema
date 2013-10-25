@@ -42,6 +42,7 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
     : m_MainWindow(0),
       m_PlayList(playList),
       m_UiMergeIdChannels(0),
+      m_UiMergeIdStreams(0),
       m_acceptAdjustmentPositionValueChanged(true),
       m_acceptAdjustmentVolumeValueChanged(true),
       m_AdjustmentPosition(0.0, 0.0, 101.0, 0.1, 1.0, 1.0),
@@ -62,6 +63,7 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
     // Create actions for menus and toolbars:
     m_refActionGroup = Gtk::ActionGroup::create();
     m_refActionGroupChannels = Gtk::ActionGroup::create();
+    m_refActionGroupStreams = Gtk::ActionGroup::create();
 
     // Menu: File
     m_refActionGroup->add(Gtk::Action::create("FileMenu", "File"));
@@ -175,6 +177,10 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
 					      "Record", "Record"),
 			  sigc::mem_fun(*this, &SignalDispatcher::on_media_record));
 
+    m_refActionGroup->add(Gtk::Action::create("VideoStreamMenu", "Video"));
+    m_refActionGroup->add(Gtk::Action::create("AudioStreamMenu", "Audio"));
+    m_refActionGroup->add(Gtk::Action::create("SubtitleStreamMenu", "Subtitle"));
+
     // Menu: Channels
     m_refActionGroup->add(Gtk::Action::create("ChannelMenu", "Channels"));
     m_refActionGroup->add(Gtk::Action::create("ChannelNext", "_Next", "Switch to next channel"),
@@ -191,6 +197,7 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
     m_refUIManager = Gtk::UIManager::create();
     m_refUIManager->insert_action_group(m_refActionGroup);
     m_refUIManager->insert_action_group(m_refActionGroupChannels);
+    m_refUIManager->insert_action_group(m_refActionGroupStreams);
 
     //Layout the actions in a menubar and toolbar:
     Glib::ustring ui_info =
@@ -235,6 +242,13 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
         "      <menuitem action='MediaPrevious'/>"
         "      <menuitem action='MediaForward'/>"
         "      <menuitem action='MediaRewind'/>"
+        "      <separator/>"
+        "      <menu action='VideoStreamMenu'>"
+        "      </menu>"
+        "      <menu action='AudioStreamMenu'>"
+        "      </menu>"
+        "      <menu action='SubtitleStreamMenu'>"
+        "      </menu>"
         "      <separator/>"
         "      <menuitem action='MediaRecord'/>"
         "    </menu>"
@@ -332,6 +346,8 @@ SignalDispatcher::SignalDispatcher(GtkmmPlayList& playList)
 	std::cerr << "building menus failed: " <<  ex->what();
     }
 #endif //GLIBMM_EXCEPTIONS_ENABLED
+
+    updateStreamSelectionMenues();
 
     m_refActionLeaveFullscreen->set_visible(false);
     m_refActionPause->set_visible(false);
@@ -1076,6 +1092,11 @@ void SignalDispatcher::on_media_record()
     TRACE_DEBUG();
 }
 
+void SignalDispatcher::on_stream_selected(NotificationNewStream::StreamType type, int num)
+{
+    TRACE_DEBUG(<< type << ", " << num);
+}
+
 void SignalDispatcher::on_channel_next()
 {
     TRACE_DEBUG();
@@ -1275,6 +1296,138 @@ int getTunerFrequency(const StationData& sd)
     ChannelFrequencyTable cft = ChannelFrequencyTable::create(sd.standard.c_str());
     int ch = ChannelFrequencyTable::getChannelNumber(cft, sd.channel.c_str());
     return ChannelFrequencyTable::getChannelFreq(cft, ch) + sd.fine;
+}
+
+void SignalDispatcher::on_notification_new_stream(const NotificationNewStream& event)
+{
+    TRACE_DEBUG();
+
+    std::cout << "on_notification_new_stream: " << event.index << ", "<< event.streamType << std::endl;
+
+    m_streams.push_back(event);
+
+    updateStreamSelectionMenues();
+}
+
+void SignalDispatcher::updateStreamSelectionMenues()
+{
+    // Remove menu entries from UIManager:
+    if (m_UiMergeIdStreams)
+    {
+	m_refUIManager->remove_ui(m_UiMergeIdStreams);
+    }
+
+    // Remove old action group from UIManager:
+    m_refUIManager->remove_action_group(m_refActionGroupStreams);
+
+    m_VideoStreamSelectRadioAction.clear();
+    m_AudioStreamSelectRadioAction.clear();
+    m_SubtitleStreamSelectRadioAction.clear();
+
+    // Create a new action goup
+    m_refActionGroupStreams = Gtk::ActionGroup::create();
+
+    // Fill stream selection menues:
+    Gtk::RadioAction::Group videoStreamGroup;
+    Gtk::RadioAction::Group audioStreamGroup;
+    Gtk::RadioAction::Group subtitleStreamGroup;
+
+    Glib::ustring ui_info_video;
+    Glib::ustring ui_info_audio;
+    Glib::ustring ui_info_subtitle;
+
+    m_refActionGroupStreams->add(Gtk::RadioAction::create(videoStreamGroup, "VideoStreamNone", "None"),
+				 sigc::bind(sigc::mem_fun(this, &SignalDispatcher::on_stream_selected), NotificationNewStream::Video, -1));
+    m_refActionGroupStreams->add(Gtk::RadioAction::create(audioStreamGroup, "AudioStreamNone", "None"),
+				 sigc::bind(sigc::mem_fun(this, &SignalDispatcher::on_stream_selected), NotificationNewStream::Audio, -1));
+    m_refActionGroupStreams->add(Gtk::RadioAction::create(subtitleStreamGroup, "SubtitleStreamNone", "None", "None"),
+				 sigc::bind(sigc::mem_fun(this, &SignalDispatcher::on_stream_selected), NotificationNewStream::Subtitle, -1));
+
+    for(std::vector<NotificationNewStream>::const_iterator it = m_streams.begin();
+	it < m_streams.end(); it++)
+    {
+	const NotificationNewStream& si = *it;
+
+	const char* typeName;
+	std::vector<Glib::RefPtr<Gtk::RadioAction> >* radioActions;
+	Glib::ustring* ui_info;
+	Gtk::RadioAction::Group* group;
+
+	switch (si.streamType)
+	{
+	case NotificationNewStream::Video:
+	    typeName = "Video";
+	    radioActions = &m_VideoStreamSelectRadioAction;
+	    ui_info = &ui_info_video;
+	    group = &videoStreamGroup;
+	    break;
+	case NotificationNewStream::Audio:
+	    typeName = "Audio";
+	    radioActions = &m_AudioStreamSelectRadioAction;
+	    ui_info = &ui_info_audio;
+	    group = &audioStreamGroup;
+	    break;
+	case NotificationNewStream::Subtitle:
+	    typeName = "Subtitle";
+	    radioActions = &m_SubtitleStreamSelectRadioAction;
+	    ui_info = &ui_info_subtitle;
+	    group = &subtitleStreamGroup;
+	    break;
+	default:
+	    break;
+	}
+
+	int num = radioActions->size();
+	std::stringstream xmlName;
+	xmlName << typeName << si.index;
+	std::stringstream xmlCode;
+	xmlCode << "<menuitem action='" << xmlName.str() << "'/>";
+	ui_info->append(xmlCode.str());
+	Glib::ustring text;
+	text.append(si.language);
+	text.append(": ");
+	text.append(si.info);
+	Glib::RefPtr<Gtk::RadioAction> refRadioAction = Gtk::RadioAction::create(*group, xmlName.str(), text);
+	refRadioAction->property_value().set_value(num);
+	m_refActionGroupStreams->add(refRadioAction, sigc::bind(sigc::mem_fun(this, &SignalDispatcher::on_stream_selected), si.streamType, num) );
+	m_ChannelSelectRadioAction.push_back(refRadioAction);
+    }
+
+    Glib::ustring ui_info;
+    ui_info.append("<ui><menubar name='MenuBar'><menu action='MediaMenu'>");
+    ui_info.append("<menu action='VideoStreamMenu'>");
+    ui_info.append("<menuitem action='VideoStreamNone'/>");
+    ui_info.append(ui_info_video);
+    ui_info.append("</menu>");
+    ui_info.append("<menu action='AudioStreamMenu'>");
+    ui_info.append("<menuitem action='AudioStreamNone'/>");
+    ui_info.append(ui_info_audio);
+    ui_info.append("</menu>");
+    ui_info.append("<menu action='SubtitleStreamMenu'>");
+    ui_info.append("<menuitem action='SubtitleStreamNone'/>");
+    ui_info.append(ui_info_subtitle);
+    ui_info.append("</menu>");
+    ui_info.append("</menu></menubar></ui>");
+
+    m_refUIManager->insert_action_group(m_refActionGroupStreams);
+
+#ifdef GLIBMM_EXCEPTIONS_ENABLED
+    try
+    {
+	m_UiMergeIdStreams = m_refUIManager->add_ui_from_string(ui_info);
+    }
+    catch(const Glib::Error& ex)
+    {
+	std::cerr << "building menus failed: " <<  ex.what();
+    }
+#else
+    std::auto_ptr<Glib::Error> ex;
+    m_UiMergeIdStreams = m_refUIManager->add_ui_from_string(ui_info, ex);
+    if(ex.get())
+    {
+	std::cerr << "building menus failed: " <<  ex->what();
+    }
+#endif //GLIBMM_EXCEPTIONS_ENABLED
 }
 
 void SignalDispatcher::on_configuration_data_changed(boost::shared_ptr<ConfigurationData> event)

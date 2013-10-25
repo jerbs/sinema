@@ -630,6 +630,33 @@ struct SelectDeinterlacer
 
 // ===================================================================
 
+struct NotificationNewStream
+{
+    enum StreamType {
+	Video,
+	Audio,
+	Subtitle,
+	Other
+    };
+
+    NotificationNewStream(int index,
+			  StreamType streamType,
+			  std::string language,
+			  std::string info)
+	: index(index),
+	  streamType(streamType),
+	  language(language),
+	  info(info)
+    {}
+
+    int index;
+    StreamType streamType;
+    std::string language;
+    std::string info;
+};
+
+// ===================================================================
+
 #ifdef SYNCTEST
 #include "SyncTest.hpp"
 #endif

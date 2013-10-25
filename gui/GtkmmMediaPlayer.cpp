@@ -230,6 +230,12 @@ void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationVideoAttribute> eve
     notificationVideoAttribute(*event);
 }
 
+void GtkmmMediaPlayer::process(boost::shared_ptr<NotificationNewStream> event)
+{
+    TRACE_DEBUG();
+    notificationNewStream(*event);
+}
+
 void GtkmmMediaPlayer::process(boost::shared_ptr<CloseFileResp>)
 {
     notificationCurrentTime(0);

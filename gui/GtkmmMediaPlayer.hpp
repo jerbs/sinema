@@ -41,6 +41,7 @@ public:
     sigc::signal<void, NotificationClipping> notificationClipping;
     sigc::signal<void, NotificationDeinterlacerList> notificationDeinterlacerList;
     sigc::signal<void, NotificationVideoAttribute> notificationVideoAttribute;
+    sigc::signal<void, NotificationNewStream> notificationNewStream;
     sigc::signal<void> notificationFileClosed;
     sigc::signal<void> resizeMainWindow;
 
@@ -57,6 +58,7 @@ public:
     virtual void process(boost::shared_ptr<NotificationClipping> event);
     virtual void process(boost::shared_ptr<NotificationDeinterlacerList> event);
     virtual void process(boost::shared_ptr<NotificationVideoAttribute> event);
+    virtual void process(boost::shared_ptr<NotificationNewStream> event);
     virtual void process(boost::shared_ptr<CloseFileResp> event);
 
     virtual bool on_main_window_state_event(GdkEventWindowState* event);

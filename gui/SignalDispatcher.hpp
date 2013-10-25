@@ -98,6 +98,7 @@ public:
     bool on_play_list_window_state_event(GdkEventWindowState* event);
     void on_notification_video_size(const NotificationVideoSize& event);
     void on_notification_clipping(const NotificationClipping& event);
+    void on_notification_new_stream(const NotificationNewStream& event);
     void on_notification_file_closed();
 
     void on_set_title(Glib::ustring title);
@@ -137,6 +138,7 @@ public:
     virtual void on_media_forward();
     virtual void on_media_rewind();
     virtual void on_media_record();
+    virtual void on_stream_selected(NotificationNewStream::StreamType, int num);
     virtual void on_channel_next();
     virtual void on_channel_previous();
     virtual void on_channel_selected(int num);
@@ -152,16 +154,19 @@ public:
 
 private:
     void updateGuiConfiguration();
+    void updateStreamSelectionMenues();
 
     MainWindow* m_MainWindow;
 
     GtkmmPlayList& m_PlayList;
 
     Gtk::UIManager::ui_merge_id m_UiMergeIdChannels;
+    Gtk::UIManager::ui_merge_id m_UiMergeIdStreams;
 
     Glib::RefPtr<Gtk::UIManager> m_refUIManager;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroup;
     Glib::RefPtr<Gtk::ActionGroup> m_refActionGroupChannels;
+    Glib::RefPtr<Gtk::ActionGroup> m_refActionGroupStreams;
     Glib::RefPtr<Gtk::Action> m_refActionEnterFullscreen;
     Glib::RefPtr<Gtk::Action> m_refActionLeaveFullscreen;
     Glib::RefPtr<Gtk::Action> m_refActionPlay;
@@ -210,6 +215,11 @@ private:
     bool m_isEnabled_showConfigWindow;
     bool m_isEnabled_showControlWindow;
     bool m_isEnabled_showPlayListWindow;
+
+    std::vector<NotificationNewStream> m_streams;
+    std::vector<Glib::RefPtr<Gtk::RadioAction> > m_VideoStreamSelectRadioAction;
+    std::vector<Glib::RefPtr<Gtk::RadioAction> > m_AudioStreamSelectRadioAction;
+    std::vector<Glib::RefPtr<Gtk::RadioAction> > m_SubtitleStreamSelectRadioAction;
 };
 
 #endif

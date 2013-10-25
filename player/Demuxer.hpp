@@ -65,6 +65,8 @@ class Demuxer : public event_receiver<Demuxer>
 
     std::string fileName;
 
+    unsigned int numAnnouncedStreams;
+
 public:
     Demuxer(event_processor_ptr_type evt_proc);
     ~Demuxer();
@@ -101,6 +103,8 @@ private:
 
     void updateSystemStreamStatusOpening();
     void updateSystemStreamStatusClosing();
+    void checkForNewStreams();
+    void sendAnnounceNewStream(int index);
 };
 
 struct AvErrorCode
@@ -122,5 +126,8 @@ inline std::ostream& operator<<(std::ostream& os, const AvErrorCode& error)
     os << buf << "(" << error.error_code << ")";
     return os;
 }
+
+
+std::ostream& operator<<(std::ostream& os, const AVMediaType avMediaType);
 
 #endif
