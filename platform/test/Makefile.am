@@ -9,7 +9,7 @@ eventTest_CPPFLAGS = $(AM_CFLAGS) \
 eventTest_CXXFLAGS = -std=c++0x
 eventTest_LDFLAGS = $(BOOST_LDFLAGS)
 eventTest_LDADD = ../libplatform.la \
-		  $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
+		  $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) $(BOOST_SYSTEM_LIB) \
 		  -lz -lm
 
 ## client

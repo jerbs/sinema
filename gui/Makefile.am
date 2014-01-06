@@ -23,7 +23,7 @@ sinema_SOURCES = About.cpp About.hpp \
 		 X11InputDevice.cpp X11InputDevice.hpp \
 		 SignalDispatcher.cpp SignalDispatcher.hpp
 sinema_CXXFLAGS= $(GUI_CFLAGS) -std=c++0x
-sinema_LDFLAGS = -rdynamic -L/usr/X11R6/lib $(BOOST_LDFLAGS) \
+sinema_LDFLAGS = -rdynamic $(FIRST_LDFLAGS) -L/usr/X11R6/lib $(BOOST_LDFLAGS) \
                  -Wl,-rpath,$(prefix)/lib \
                  -Wl,--enable-new-dtags
 
@@ -49,10 +49,10 @@ sinema_LDADD   = ../receiver/libreceiver.la \
 		 ../common/libcommon.la \
 		 ../platform/libplatform.la \
 		 $(GUI_LIBS) $(FFMPEG_LIBS) \
-		 $(BOOST_REGEX_LIB) \
+		 $(BOOST_REGEX_LIB) $(BOOST_SYSTEM_LIB) \
 		 $(BOOST_SYSTEM_LIB) $(BOOST_SERIALIZATION_LIB) \
 		 $(BOOST_THREAD_LIB) $(BOOST_FILESYSTEM_LIB) \
-		 -lX11 -lXext -lXv \
+		 -lX11 -lXext -lXv -lXi \
 		 -lz -lm -ljpeg \
 		 -lasound
 

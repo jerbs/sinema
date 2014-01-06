@@ -52,7 +52,8 @@ ffmpeg_install $(PREFIX)/bin/ffmpeg: $(FFMPEG_BUILD_DIR)/ffmpeg
 define sinema_env
     export CFLAGS="-g -O0"; \
     export CXXFLAGS="-g -O0"; \
-    export CPPFLAGS='-Wall -Wextra'; \
+    export CPPFLAGS="-Wall -Wextra -I$(PREFIX)/include"; \
+    export FIRST_LDFLAGS="-L$(PREFIX)/lib"; \
     export PKG_CONFIG_PATH=$(PREFIX)/lib/pkgconfig
 endef
 
@@ -64,7 +65,8 @@ endef
 define sinema_configure_recipe
     cd $(TOP_DIR); \
     $(sinema_env); \
-    ./configure --prefix=$(PREFIX)
+    ./configure --prefix=$(PREFIX) \
+                --with-boost-libdir=/usr/lib/x86_64-linux-gnu
 endef
 
 define sinema_make_recipe

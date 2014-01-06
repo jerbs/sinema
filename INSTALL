@@ -1,44 +1,21 @@
 Installing Sinema
 =================
 
-The GNU autotools build system is used.
+Sinema depends on the FFmpeg library to decode audio and video files. Since
+the FFmpeg library is changing its API frequently, a FFmpeg version that is
+known to work is configured as submodule. That subrepository may even contain
+some FFmpeg patches.
 
-If you have cloned the git repository then bootstrapping is the first step:
+Read build/INSTALL about how to build that FFmpeg version and Sinema on top
+of it.
+
+Sinema itself is using the GNU autotools build system. The build steps are:
 
   ./bootstrap
-
-If you are using a distribution file, then this step is already done and
-you can start with calling the configure script:
-
   ./configure
-
-Sinema extensively uses Boost. It depends on Boost 1.42. If your system
-has installed an older Boost version, you first have to upgrade your.
-Boost is available at http://www.boost.org. The "Getting Started" section
-contains a description about how to install Boost. By default the Boost
-library is installed under /usr/local and you will have to parallel Boost
-installations on your system. The used m4 script does not properly handle
-this situation and needs some assistance:
-
-  ./configure --with-boost=/usr/local/ --with-boost-libdir=/usr/local/lib/
-
-Without using the additional options the build will still work, but the
-runtime linker will use the wrong shared libraries. On my system this 
-resulted in a segmentation fault when terminating Sinema.
-
-The next step is to compile and link the the application:
-
   make
-
-The source code uses features of the new upcoming C++ standard C++10.
-Sinema is tested with gcc 4.4.3. With older versions compilation may fail.
-
-For installing the application you must have the necessary permissions.
-Usually root access is required:
-
   sudo make install
 
 Now it is possible to start Sinema:
 
   sinema
-

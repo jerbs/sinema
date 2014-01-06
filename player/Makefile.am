@@ -35,8 +35,8 @@ synctest_CXXFLAGS = -std=c++0x
 synctest_LDFLAGS = $(BOOST_LDFLAGS) -L/usr/X11R6/lib 
 synctest_LDADD = ../platform/libplatform.la \
 		 $(FFMPEG_LIBS) \
-		 $(BOOST_THREAD_LIB) \
-		 -lX11 -lXext -lXv \
+		 $(BOOST_THREAD_LIB) $(BOOST_SYSTEM_LIB) \
+		 -lX11 -lXext -lXv -lXi \
 		 -lz -lm \
 		 -lasound
 

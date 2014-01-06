@@ -58,6 +58,7 @@ dnl 4. Libraries
 dnl ------------
 dnl
 dnl Check for libraries. Libraries may be needed for further checks.
+AC_SUBST(FIRST_LDFLAGS)
 
 PKG_CHECK_MODULES([FFMPEG], [libavformat libavcodec libavutil libswscale])
 AC_SUBST(FFMPEG_CFLAGS)
@@ -67,7 +68,7 @@ PKG_CHECK_MODULES([GUI], [gtkmm-2.4 >= 2.8.0])
 AC_SUBST(GUI_CFLAGS)
 AC_SUBST(GUI_LIBS)
 
-AX_BOOST_BASE([1.42.0])
+AX_BOOST_BASE([1.53.0])
 AX_BOOST_FILESYSTEM
 AX_BOOST_REGEX
 AX_BOOST_SERIALIZATION
