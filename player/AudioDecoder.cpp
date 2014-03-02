@@ -491,6 +491,12 @@ void AudioDecoder::queue()
 	boost::shared_ptr<AudioFrame> audioFrame(frameQueue.front());
 	frameQueue.pop();
 
+	double durationAlreadyTransmitted =
+	    double(avFrameBytesTransmittedPerLine) /
+	    double(sampleSize * avCodecContext->sample_rate);
+	double audioFramePTS = pts + durationAlreadyTransmitted;
+	audioFrame->setPTS(audioFramePTS);
+
 	TRACE_DEBUG(<< "CodecSampleFormat = " << avCodecContext->sample_fmt
 		    << ", OutputSampleFormat = " << outputAvSampleFormat
 		    << ", numChannels = " << avCodecContext->channels
@@ -526,10 +532,7 @@ void AudioDecoder::queue()
 			   avCodecContext->channels);
 	    }
 
-	    double audioFramePTS = pts + avFrameBytesTransmittedPerLine / (sampleSize * avCodecContext->sample_rate);
 	    audioFrame->setFrameByteSize(bytesToCopyPerLine * avCodecContext->channels);
-	    audioFrame->setPTS(audioFramePTS);
-
 	    avFrameBytesTransmittedPerLine += bytesToCopyPerLine;
 
 	    TRACE_DEBUG(<< "PTS = " << audioFramePTS
@@ -547,10 +550,7 @@ void AudioDecoder::queue()
 		   avFrame->data[0] + avFrameBytesTransmittedPerLine,
 		   size);
 
-	    double audioFramePTS = pts + avFrameBytesTransmittedPerLine / (sampleSize * avCodecContext->sample_rate);
 	    audioFrame->setFrameByteSize(size);
-	    audioFrame->setPTS(audioFramePTS);
-
 	    avFrameBytesTransmittedPerLine += size;
 	}
 
@@ -562,7 +562,16 @@ void AudioDecoder::queue()
 			  avCodecContext->sample_fmt);
 #endif
 
-	TRACE_DEBUG(<< "Queueing AudioFrame with " << audioFrame->getFrameByteSize() << " bytes");
+	{
+	    double duration =
+		double(audioFrame->getFrameByteSize()) /
+		double(sampleSize * avCodecContext->channels * avCodecContext->sample_rate);
+	    TRACE_DEBUG(<< "Queueing AudioFrame: PTS=" << audioFrame->getPTS()
+			<< ", duration=" << duration
+			<< ", nextPTS=" << audioFrame->getPTS() + duration
+			<< ", size=" << audioFrame->getFrameByteSize() << " bytes");
+	}
+
 	audioOutput->queue_event(audioFrame);
 
 	if (avFrameBytesTransmittedPerLine == avFrame->nb_samples * sampleSize)
