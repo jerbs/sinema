@@ -351,7 +351,7 @@ void AudioDecoder::decode()
 	int frameFinished;
 	int ret = avcodec_decode_audio4(avCodecContext, avFrame, &frameFinished, &avPacket);
 
-	if (ret>=0)
+	if (ret>0)
 	{
 	    // ret contains the number of bytes consumed in packet.
 	    avPacket.size -= ret;
@@ -395,11 +395,17 @@ void AudioDecoder::decode()
 		}
 	    }
 	}
+	else if (ret == 0)
+	{
+	    // Decoder consumed no data. Discarding packet to avoid deadlock.
+	    avPacket.size = 0;
+	    TRACE_ERROR(<< "avcodec_decode_audio4 returned 0");
+	}
 	else
 	{
-	    // Decode failed, consume complete packet.
+	    // Decoding failed, consuming complete packet.
 	    avPacket.size = 0;
-	    TRACE_ERROR(<< "avcodec_decode_video failed: " << AvErrorCode(ret));
+	    TRACE_ERROR(<< "avcodec_decode_audio4 failed: " << AvErrorCode(ret));
 	}
     }
 
